@@ -1,0 +1,143 @@
+"use strict";
+class ChatChannelList {
+  constructor(options) {
+    this.options = options;
+    this.selected = new Set();
+    this.anchor = null;
+    this.menu = document.createElement("div");
+    this.menu.className = "channel-context-menu";
+    this.menu.setAttribute("role", "menu");
+    this.menu.hidden = true;
+    document.body.append(this.menu);
+    document.addEventListener("pointerdown", (event) => {
+      if (!this.menu.contains(event.target)) this.menu.hidden = true;
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { this.menu.hidden = true; this.selected.clear(); this.paint(); }
+      if (!event.target.closest("#channels")) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        this.selected = new Set(this.options.state().channels.map((channel) => channel.id));
+        this.paint();
+      }
+      if (event.key === "Delete" && this.selected.size) {
+        event.preventDefault(); this.remove([...this.selected]);
+      }
+    });
+  }
+  bind(button, channel) {
+    const order = this.options.state().channels.map((item) => item.id);
+    this.selected = new Set([...this.selected].filter((id) => order.includes(id)));
+    button.dataset.channelId = channel.id;
+    button.classList.toggle("channel-multiselected", this.selected.has(channel.id));
+    button.onclick = (event) => {
+      if (event.shiftKey && order.includes(this.anchor)) {
+        if (!event.ctrlKey && !event.metaKey) this.selected.clear();
+        const start = order.indexOf(this.anchor), end = order.indexOf(channel.id);
+        order.slice(Math.min(start, end), Math.max(start, end) + 1).forEach((id) => this.selected.add(id));
+      } else if (event.ctrlKey || event.metaKey) {
+        if (!this.selected.delete(channel.id)) this.selected.add(channel.id);
+        this.anchor = channel.id;
+      } else {
+        this.selected = new Set([channel.id]); this.anchor = channel.id; this.options.open(channel.id);
+      }
+      this.paint();
+    };
+    button.oncontextmenu = (event) => {
+      event.preventDefault();
+      if (!this.selected.has(channel.id)) this.selected = new Set([channel.id]);
+      this.paint(); this.showMenu(channel, event.clientX, event.clientY);
+    };
+    button.draggable = true;
+    button.ondragstart = (event) => {
+      if (!this.selected.has(channel.id)) this.selected = new Set([channel.id]);
+      this.paint();
+      const ids = order.filter((id) => this.selected.has(id));
+      event.dataTransfer.setData("application/x-omni-channels", JSON.stringify(ids));
+      event.dataTransfer.effectAllowed = "move";
+      this.dragIds = ids;
+      const preview = document.createElement("div");
+      preview.className = "channel-drag-card";
+      const title = document.createElement("strong"); title.textContent = "# " + channel.name;
+      const detail = document.createElement("span");
+      detail.textContent = ids.length > 1 ? this.options.text("drag.count").replace("{count}", ids.length) : this.options.text("drag.move");
+      preview.append(title, detail); document.body.append(preview);
+      event.dataTransfer.setDragImage(preview, 30, 20);
+      setTimeout(() => preview.remove(), 0);
+    };
+    button.ondragover = (event) => {
+      if (!event.dataTransfer.types.includes("application/x-omni-channels") || this.dragIds?.includes(channel.id)) return;
+      event.preventDefault(); event.dataTransfer.dropEffect = "move";
+      const after = event.clientY > button.getBoundingClientRect().top + button.offsetHeight / 2;
+      button.classList.toggle("channel-drop-before", !after);
+      button.classList.toggle("channel-drop-after", after);
+    };
+    button.ondragleave = () => button.classList.remove("channel-drop-before", "channel-drop-after");
+    button.ondragend = () => { this.dragIds = null; this.paint(); };
+    button.ondrop = async (event) => {
+      event.preventDefault();
+      const after = button.classList.contains("channel-drop-after");
+      button.classList.remove("channel-drop-before", "channel-drop-after");
+      try {
+        const raw = event.dataTransfer.getData("application/x-omni-channels");
+        const ids = JSON.parse(raw);
+        await this.options.request("/channels/reorder", { method: "POST", json: { ids, target: channel.id, after } });
+        this.options.refresh();
+      } catch (error) { this.options.report(error); }
+    };
+  }
+  paint() {
+    document.querySelectorAll("#channels [data-channel-id]").forEach((button) => {
+      button.classList.toggle("channel-multiselected", this.selected.has(button.dataset.channelId));
+      button.classList.remove("channel-drop-before", "channel-drop-after");
+    });
+  }
+  showMenu(channel, x, y) {
+    this.menu.replaceChildren();
+    const action = (key, callback, danger = false) => {
+      const button = document.createElement("button");
+      button.textContent = this.options.text(key); button.setAttribute("role", "menuitem");
+      if (danger) button.className = "danger";
+      button.onclick = async () => { this.menu.hidden = true; try { await callback(); } catch (error) { this.options.report(error); } };
+      this.menu.append(button);
+    };
+    const ids = this.options.state().channels.map((item) => item.id).filter((id) => this.selected.has(id));
+    action("chat.open", () => this.options.open(channel.id));
+    if (channel.id !== "general" && ids.length === 1) action("chat.edit", () => this.edit(channel));
+    action("chat.read", async () => { await this.options.request("/channels/read", { method: "POST", json: { ids } }); this.options.refresh(); });
+    action("chat.create", () => this.options.create());
+    action("chat.select_all", () => { this.selected = new Set(this.options.state().channels.map((item) => item.id)); this.paint(); });
+    if (ids.some((id) => id !== "general")) action("chat.delete", () => this.remove(ids), true);
+    this.menu.hidden = false;
+    this.menu.style.left = Math.max(8, Math.min(x, window.innerWidth - this.menu.offsetWidth - 8)) + "px";
+    this.menu.style.top = Math.max(8, Math.min(y, window.innerHeight - this.menu.offsetHeight - 8)) + "px";
+  }
+  async remove(ids) {
+    ids = ids.filter((id) => id !== "general");
+    if (!ids.length) return;
+    try {
+      await this.options.request("/channels", { method: "DELETE", json: { ids } });
+      this.selected.clear();
+      if (ids.includes(this.options.state().channel)) this.options.open("general");
+      this.options.refresh();
+    } catch (error) { this.options.report(error); }
+  }
+  edit(channel) {
+    const dialog = document.createElement("dialog");
+    const form = document.createElement("form");
+    const title = document.createElement("h2"); title.textContent = this.options.text("chat.edit");
+    const name = document.createElement("input"); name.value = channel.name; name.required = true; name.maxLength = 80; name.setAttribute("aria-label", this.options.text("chat.channel_name"));
+    const description = document.createElement("textarea"); description.value = channel.description; description.maxLength = 500; description.setAttribute("aria-label", this.options.text("chat.channel_description"));
+    const actions = document.createElement("div"); actions.className = "actions";
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = this.options.text("common.cancel"); cancel.onclick = () => dialog.close();
+    const save = document.createElement("button"); save.className = "primary"; save.textContent = this.options.text("common.save");
+    actions.append(cancel, save); form.append(title, name, description, actions); dialog.append(form); document.body.append(dialog);
+    dialog.onclose = () => dialog.remove();
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      try { await this.options.request("/channels/update", { method: "POST", json: { id: channel.id, name: name.value, tool: channel.tool, description: description.value } }); dialog.close(); this.options.refresh(); }
+      catch (error) { this.options.report(error); }
+    };
+    dialog.showModal(); name.focus();
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "assets/bible-source"]
+	path = assets/bible-source
+	url = https://github.com/thiagobodruk/bible.git

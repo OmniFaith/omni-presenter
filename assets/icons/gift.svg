@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="24"
+   height="24"
+   viewBox="0 0 6.3500001 6.3500001"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     id="layer1"
+     transform="translate(-128.93007,-3.2936371)"><g
+       id="g317"
+       style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-dasharray:none;stroke-opacity:1"
+       transform="translate(347.82139,24.247949)"><path
+         id="rect277"
+         style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+         d="m -17.681614,213.80666 1.884051,0 a 0.4,0.4 45 0 1 0.4,0.4 l 0,3.01931 a 0.4,0.4 135 0 1 -0.4,0.4 h -1.884051"
+         transform="rotate(90)" /><rect
+         style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+         id="rect300"
+         width="1.1568621"
+         height="4.1711879"
+         x="-18.838476"
+         y="213.63072"
+         rx="0.26458332"
+         ry="0.26458332"
+         transform="rotate(90)" /><g
+         id="g313"
+         style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-dasharray:none;stroke-opacity:1"><path
+           style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
+           d="m -215.71632,-18.840974 c -0.0297,0.03627 -0.81977,-0.007 -1.3216,-0.26635 -0.74922,-0.387307 -0.32742,-1.069336 0.10743,-1.053408 0.64415,0.02359 1.33081,1.322279 1.21417,1.319758 z"
+           id="path311" /><path
+           style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
+           d="m -215.71632,-18.840974 c 0.0297,0.03627 0.81977,-0.007 1.3216,-0.26635 0.74922,-0.387307 0.32742,-1.069336 -0.10743,-1.053408 -0.64415,0.02359 -1.33081,1.322279 -1.21417,1.319758 z"
+           id="path312" /></g><path
+         style="fill:none;stroke:#1a1a1a;stroke-width:0.529167;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
+         d="m -215.71632,-18.840974 v 3.443413"
+         id="path317" /></g></g></svg>

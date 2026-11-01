@@ -1,0 +1,113 @@
+{
+  "api_version": 1,
+  "id": "omni-presenter.stage-tools",
+  "name": "Stage Tools",
+  "version": "1.5.0",
+  "author": "Omni Presenter",
+  "description": "Placar interativo, metas, cronômetro crescente, avisos rotativos e fundos Plasma.",
+  "translations": {
+    "en":{"name":"Stage Tools","description":"Interactive scores, goals, stopwatch, rotating notices and Plasma backgrounds."},
+    "pt-BR":{"name":"Ferramentas de palco","description":"Placar interativo, metas, cronômetro crescente, avisos rotativos e fundos Plasma."},
+    "es":{"name":"Herramientas de escenario","description":"Marcador interactivo, metas, cronómetro, avisos rotativos y fondos Plasma."}
+  },
+  "components": [
+    {
+      "id": "scoreboard", "name": "Placar interativo", "description": "Edite os nomes e controle os pontos pelos botões do componente.",
+      "translations":{"en":{"name":"Interactive scoreboard","description":"Edit team names and control scores with the component buttons."},"es":{"name":"Marcador interactivo","description":"Edita los nombres y controla los puntos con los botones del componente."}},
+      "fields": [
+        {"id":"team_a","label":"Equipe A","kind":"text","default":"Equipe A","translations":{"en":{"label":"Team A"},"es":{"label":"Equipo A"}}},
+        {"id":"score_a","label":"Pontos A","kind":"number","default":0,"min":0,"max":999,"translations":{"en":{"label":"Score A"},"es":{"label":"Puntos A"}}},
+        {"id":"team_b","label":"Equipe B","kind":"text","default":"Equipe B","translations":{"en":{"label":"Team B"},"es":{"label":"Equipo B"}}},
+        {"id":"score_b","label":"Pontos B","kind":"number","default":0,"min":0,"max":999,"translations":{"en":{"label":"Score B"},"es":{"label":"Puntos B"}}},
+        {"id":"team_c","label":"Equipe C","kind":"text","default":"Equipe C","condition":"teams >= 3","translations":{"en":{"label":"Team C"},"es":{"label":"Equipo C"}}},
+        {"id":"score_c","label":"Pontos C","kind":"number","default":0,"min":0,"max":999,"condition":"teams >= 3","translations":{"en":{"label":"Score C"},"es":{"label":"Puntos C"}}},
+        {"id":"team_d","label":"Equipe D","kind":"text","default":"Equipe D","condition":"teams >= 4","translations":{"en":{"label":"Team D"},"es":{"label":"Equipo D"}}},
+        {"id":"score_d","label":"Pontos D","kind":"number","default":0,"min":0,"max":999,"condition":"teams >= 4","translations":{"en":{"label":"Score D"},"es":{"label":"Puntos D"}}},
+        {"id":"teams","label":"Equipes","kind":"number","default":2,"min":2,"max":4,"step":1,"translations":{"en":{"label":"Number of teams"},"es":{"label":"Cantidad de equipos"}}},
+        {"id":"team_scale","label":"Tamanho dos nomes","kind":"number","default":1.0,"min":0.4,"max":2.5,"step":0.05,"translations":{"en":{"label":"Team names size"},"es":{"label":"Tamaño de los nombres"}}},
+        {"id":"score_scale","label":"Tamanho dos pontos","kind":"number","default":1.0,"min":0.4,"max":2.5,"step":0.05,"translations":{"en":{"label":"Score size"},"es":{"label":"Tamaño de los puntos"}}},
+        {"id":"team_weight","label":"Peso dos nomes","kind":"select","default":"normal","options":["light","normal","semibold","bold"],"translations":{"en":{"label":"Team names weight","opt_light":"Light","opt_normal":"Normal","opt_semibold":"SemiBold","opt_bold":"Bold"},"pt-BR":{"label":"Peso dos nomes","opt_light":"Fina (Light)","opt_normal":"Normal","opt_semibold":"Seminegrito","opt_bold":"Negrito"},"es":{"label":"Peso de los nombres","opt_light":"Fina (Light)","opt_normal":"Normal","opt_semibold":"Seminegrita","opt_bold":"Negrita"}}},
+        {"id":"score_weight","label":"Peso dos pontos","kind":"select","default":"bold","options":["normal","bold","extrabold","black"],"translations":{"en":{"label":"Score weight","opt_normal":"Normal","opt_bold":"Bold","opt_extrabold":"ExtraBold","opt_black":"Black"},"pt-BR":{"label":"Peso dos pontos","opt_normal":"Normal","opt_bold":"Negrito","opt_extrabold":"Extranegrito","opt_black":"Preta (Black)"},"es":{"label":"Peso de los puntos","opt_normal":"Normal","opt_bold":"Negrita","opt_extrabold":"Extranegrita","opt_black":"Negra (Black)"}}},
+        {"id":"team_color","label":"Cor dos nomes","kind":"color","default":"#FFFFFFBE","translations":{"en":{"label":"Team names color"},"es":{"label":"Color de los nombres"}}},
+        {"id":"score_color","label":"Cor dos pontos","kind":"color","default":"#FFFFFFFF","translations":{"en":{"label":"Score color"},"es":{"label":"Color de los puntos"}}},
+        {"id":"score_suffix","label":"Sufixo dos pontos","kind":"text","default":"","translations":{"en":{"label":"Score suffix"},"es":{"label":"Sufijo de puntos"}}},
+        {"id":"orientation","label":"Orientação","kind":"select","default":"horizontal","options":["horizontal","vertical"],"appearance":true,"translations":{"en":{"label":"Orientation","opt_horizontal":"Horizontal","opt_vertical":"Vertical"},"es":{"label":"Orientación","opt_horizontal":"Horizontal","opt_vertical":"Vertical"}}},
+        {"id":"style","label":"Estilo visual","kind":"select","default":"cards","options":["cards","clean","versus"],"appearance":true,"translations":{"en":{"label":"Visual style","opt_cards":"Cards","opt_clean":"Minimalist","opt_versus":"Versus (VS)"},"es":{"label":"Estilo visual","opt_cards":"Tarjetas","opt_clean":"Minimalista","opt_versus":"Duelo (VS)"}}},
+        {"id":"accent","label":"Cor do destaque","kind":"color","default":"#1E325AFF","appearance":true,"translations":{"en":{"label":"Accent color"},"es":{"label":"Color de acento"}}},
+        {"id":"bg","label":"Fundo da caixa","kind":"color","default":"#0F172AE6","appearance":true,"translations":{"en":{"label":"Box background"},"es":{"label":"Fondo de la caja"}}},
+        {"id":"radius","label":"Arredondamento","kind":"number","default":18.0,"min":0.0,"max":100.0,"appearance":true,"translations":{"en":{"label":"Corner radius"},"es":{"label":"Radio de esquina"}}}
+      ],
+      "buttons": [
+        {"label":"A +1","script":"props.score_a = min(props.score_a + 1, 999); props"},
+        {"label":"B +1","script":"props.score_b = min(props.score_b + 1, 999); props"},
+        {"label":"C +1","script":"if props.score_c == () { props.score_c = 0; } props.score_c = min(props.score_c + 1, 999); props","condition":"teams >= 3"},
+        {"label":"D +1","script":"if props.score_d == () { props.score_d = 0; } props.score_d = min(props.score_d + 1, 999); props","condition":"teams >= 4"},
+        {"label":"Zerar","script":"props.score_a = 0; props.score_b = 0; if props.score_c != () { props.score_c = 0; } if props.score_d != () { props.score_d = 0; } props","translations":{"en":{"label":"Reset"},"es":{"label":"Reiniciar"}}}
+      ],
+      "render":"let count = if props.teams != () { props.teams.to_int() } else { 2 }; if count < 2 { count = 2; } if count > 4 { count = 4; } let names = [props.team_a, props.team_b]; let scores = [props.score_a, props.score_b]; if count >= 3 { let tc = if props.team_c != () { props.team_c } else { \"Equipe C\" }; let sc = if props.score_c != () { props.score_c } else { 0 }; names.push(tc); scores.push(sc); } if count >= 4 { let td = if props.team_d != () { props.team_d } else { \"Equipe D\" }; let sd = if props.score_d != () { props.score_d } else { 0 }; names.push(td); scores.push(sd); } let is_vert = if props.orientation != () { props.orientation == \"vertical\" } else { false }; let style = if props.style != () { props.style } else { \"cards\" }; let bg_str = if props.bg != () { props.bg } else { \"#0F172AE6\" }; let bg_col = color(bg_str); let acc_str = if props.accent != () { props.accent } else { \"#1E325AFF\" }; let acc_col = color(acc_str); let rad = if props.radius != () { props.radius } else { 18.0 }; let t_scale = if props.team_scale != () { props.team_scale.to_float() } else { 1.0 }; let s_scale = if props.score_scale != () { props.score_scale.to_float() } else { 1.0 }; let t_col_str = if props.team_color != () { props.team_color } else { \"#FFFFFFBE\" }; let t_col = color(t_col_str); let s_col_str = if props.score_color != () { props.score_color } else { \"#FFFFFFFF\" }; let s_col = color(s_col_str); let s_suff = if props.score_suffix != () { props.score_suffix } else { \"\" }; let t_w_str = if props.team_weight != () { props.team_weight } else { \"normal\" }; let t_weight = if t_w_str == \"light\" { 300 } else if t_w_str == \"semibold\" { 600 } else if t_w_str == \"bold\" { 700 } else { 400 }; let s_w_str = if props.score_weight != () { props.score_weight } else { \"bold\" }; let s_weight = if s_w_str == \"normal\" { 400 } else if s_w_str == \"extrabold\" { 800 } else if s_w_str == \"black\" { 900 } else { 700 }; let items = []; if style != \"clean\" || bg_col[3] > 10 { items.push(#{kind: \"rect\", rect: [0.0, 0.0, 1.0, 1.0], color: bg_col, radius: rad}); } if !is_vert { let margin = 0.04; let gap = 0.03; let col_w = (1.0 - margin * 2.0 - gap * (count - 1)) / count; for i in 0..count { let x = margin + i * (col_w + gap); items.push(#{kind: \"text\", text: names[i], rect: [x, 0.10, col_w, 0.16], font_scale: (if count > 2 { 0.40 } else { 0.48 }) * t_scale, font_weight: t_weight, color: t_col, align: \"center\"}); if style == \"cards\" { let box_w = col_w * 0.88; let box_x = x + (col_w - box_w) * 0.5; items.push(#{kind: \"rect\", rect: [box_x, 0.28, box_w, 0.58], color: acc_col, radius: rad * 0.6}); items.push(#{kind: \"text\", text: scores[i].to_string() + s_suff, rect: [box_x, 0.28, box_w, 0.58], font_scale: (if count > 2 { 0.95 } else { 1.25 }) * s_scale, font_weight: s_weight, color: s_col, align: \"center\"}); } else if style == \"versus\" { let box_w = col_w * 0.90; let box_x = x + (col_w - box_w) * 0.5; items.push(#{kind: \"rect\", rect: [box_x, 0.28, box_w, 0.58], color: acc_col, radius: 12.0}); items.push(#{kind: \"text\", text: scores[i].to_string() + s_suff, rect: [box_x, 0.28, box_w, 0.58], font_scale: (if count > 2 { 0.95 } else { 1.25 }) * s_scale, font_weight: s_weight, color: s_col, align: \"center\"}); } else { items.push(#{kind: \"text\", text: scores[i].to_string() + s_suff, rect: [x, 0.28, col_w, 0.58], font_scale: (if count > 2 { 1.05 } else { 1.35 }) * s_scale, font_weight: s_weight, color: s_col, align: \"center\"}); } } if count == 2 { if style == \"versus\" { items.push(#{kind: \"rect\", rect: [0.46, 0.44, 0.08, 0.26], color: [24, 28, 42, 230], radius: 8.0}); items.push(#{kind: \"text\", text: \"VS\", rect: [0.46, 0.44, 0.08, 0.26], font_scale: 0.55, font_weight: 800, color: [250, 204, 21, 255], align: \"center\"}); } else if style == \"clean\" { items.push(#{kind: \"text\", text: \"×\", rect: [0.47, 0.10, 0.06, 0.16], font_scale: 0.45, color: [255, 255, 255, 140], align: \"center\"}); items.push(#{kind: \"text\", text: \":\", rect: [0.47, 0.28, 0.06, 0.58], font_scale: 1.1, color: [255, 255, 255, 180], align: \"center\"}); } else { items.push(#{kind: \"text\", text: \"×\", rect: [0.47, 0.45, 0.06, 0.24], font_scale: 0.9, color: [255, 255, 255, 130], align: \"center\"}); } } } else { let margin = 0.06; let gap = 0.03; let row_h = (1.0 - margin * 2.0 - gap * (count - 1)) / count; for i in 0..count { let y = margin + i * (row_h + gap); if style == \"cards\" || style == \"versus\" { items.push(#{kind: \"rect\", rect: [0.04, y, 0.92, row_h], color: [255, 255, 255, 18], radius: rad * 0.5}); let sbox_w = 0.24; let sbox_x = 0.96 - sbox_w - 0.02; let sbox_h = row_h * 0.82; let sbox_y = y + (row_h - sbox_h) * 0.5; items.push(#{kind: \"rect\", rect: [sbox_x, sbox_y, sbox_w, sbox_h], color: acc_col, radius: 8.0}); items.push(#{kind: \"text\", text: scores[i].to_string() + s_suff, rect: [sbox_x, sbox_y, sbox_w, sbox_h], font_scale: 0.85 * s_scale, font_weight: s_weight, color: s_col, align: \"center\"}); items.push(#{kind: \"text\", text: names[i], rect: [0.08, y, 0.58, row_h], font_scale: 0.55 * t_scale, font_weight: t_weight, color: t_col, align: \"left\"}); } else { items.push(#{kind: \"text\", text: names[i], rect: [0.06, y, 0.60, row_h], font_scale: 0.60 * t_scale, font_weight: t_weight, color: t_col, align: \"left\"}); items.push(#{kind: \"text\", text: scores[i].to_string() + s_suff, rect: [0.70, y, 0.24, row_h], font_scale: 0.85 * s_scale, font_weight: s_weight, color: s_col, align: \"right\"}); } } } items"
+    },
+    {
+      "id":"goal","name":"Meta e progresso","description":"Uma barra de progresso com valor, meta e legenda configuráveis.",
+      "translations":{"en":{"name":"Goal and progress","description":"A progress bar with configurable values, goal and label."},"es":{"name":"Meta y progreso","description":"Una barra de progreso con valor, meta y etiqueta configurables."}},
+      "fields":[
+        {"id":"label","label":"Legenda","kind":"text","default":"Nossa meta"},
+        {"id":"value","label":"Valor atual","kind":"number","default":40.0,"min":0.0,"max":1000000.0},
+        {"id":"goal","label":"Meta","kind":"number","default":100.0,"min":1.0,"max":1000000.0},
+        {"id":"accent","label":"Cor da barra","kind":"color","default":"#34D399","appearance":true},
+        {"id":"bg","label":"Fundo da caixa","kind":"color","default":"#283246FF","appearance":true,"translations":{"en":{"label":"Box background"},"es":{"label":"Fondo de la caja"}}},
+        {"id":"radius","label":"Arredondamento","kind":"number","default":16.0,"min":0.0,"max":100.0,"appearance":true,"translations":{"en":{"label":"Corner radius"},"es":{"label":"Radio de esquina"}}}
+      ],
+      "buttons":[{"label":"+10","script":"props.value = min(props.value + 10.0, 1000000.0); props"}],
+      "render":"let ratio = max(0.0, min(1.0, props.value / props.goal)); let bg = color(props.bg); [#{kind:\"text\",text:props.label + \" · \" + (ratio * 100.0).to_int().to_string() + \"%\",rect:[0.0,0.0,1.0,0.5],font_scale:0.65}, #{kind:\"rect\",rect:[0.0,0.6,1.0,0.25],color:bg,radius:props.radius}, #{kind:\"rect\",rect:[0.0,0.6,max(0.001,ratio),0.25],color:color(props.accent),radius:props.radius}]"
+    },
+    {
+      "id":"stopwatch","name":"Cronômetro crescente","animated":true,
+      "translations":{"en":{"name":"Stopwatch"},"es":{"name":"Cronómetro"}},
+      "fields":[
+        {"id":"label","label":"Legenda","kind":"text","default":"Tempo decorrido"},
+        {"id":"running","label":"Em execução","kind":"toggle","default":false,"hidden":true},
+        {"id":"started_at","label":"Início","kind":"number","default":0,"min":0,"hidden":true},
+        {"id":"elapsed_ms","label":"Tempo","kind":"number","default":0,"min":0,"hidden":true}
+      ],
+      "buttons":[
+        {"label":"Iniciar / retomar","script":"if !props.running { props.started_at = now - props.elapsed_ms; props.running = true; } props"},
+        {"label":"Pausar","script":"if props.running { props.elapsed_ms = now - props.started_at; props.running = false; } props"},
+        {"label":"Zerar","script":"props.running = false; props.elapsed_ms = 0; props.started_at = now; props"}
+      ],
+      "render":"let elapsed = if props.running { now - props.started_at } else { props.elapsed_ms }; [#{kind:\"text\",text:props.label,rect:[0.0,0.0,1.0,0.35],font_scale:0.55}, #{kind:\"text\",text:(elapsed / 1000).to_string() + \" s\",rect:[0.0,0.35,1.0,0.65],font_scale:1.3}]"
+    },
+    {
+      "id":"announcements","name":"Avisos rotativos","animated":true,
+      "translations":{"en":{"name":"Rotating notices"},"es":{"name":"Avisos rotativos"}},
+      "fields":[
+        {"id":"messages","label":"Avisos separados por |","kind":"multiline","default":"Seja bem-vindo!|Silencie o celular|Acompanhe nossa programação"},
+        {"id":"seconds","label":"Segundos por aviso","kind":"number","default":5,"min":1,"max":60},
+        {"id":"transition","label":"Transição entre textos","kind":"select","default":"fade","options":["fade","slide_h","slide_v","zoom","cut"],"appearance":true,"translations":{"en":{"label":"Text transition","opt_fade":"Fade","opt_slide_h":"Horizontal slide","opt_slide_v":"Vertical slide","opt_zoom":"Zoom","opt_cut":"Cut"},"pt-BR":{"label":"Transição entre textos","opt_fade":"Dissolver (Fade)","opt_slide_h":"Deslizar lateral","opt_slide_v":"Deslizar vertical","opt_zoom":"Zoom suave","opt_cut":"Corte seco"},"es":{"label":"Transición entre textos","opt_fade":"Desvanecer (Fade)","opt_slide_h":"Deslizar lateral","opt_slide_v":"Deslizar vertical","opt_zoom":"Zoom suave","opt_cut":"Corte seco"}}},
+        {"id":"transition_ms","label":"Duração da transição (ms)","kind":"number","default":800,"min":100,"max":3000,"step":100,"condition":"transition != cut","appearance":true,"translations":{"en":{"label":"Transition duration (ms)"},"es":{"label":"Duración de la transición (ms)"}}},
+        {"id":"bg","label":"Fundo da caixa","kind":"color","default":"#141E37EB","appearance":true,"translations":{"en":{"label":"Box background"},"es":{"label":"Fondo de la caja"}}},
+        {"id":"radius","label":"Arredondamento","kind":"number","default":12.0,"min":0.0,"max":100.0,"appearance":true,"translations":{"en":{"label":"Corner radius"},"es":{"label":"Radio de esquina"}}}
+      ],
+      "render":"let items = props.messages.split(\"|\"); if items.is_empty() { items.push(\"Aviso\"); } let total = items.len(); let sec = if props.seconds != () { props.seconds.to_int() } else { 5 }; if sec < 1 { sec = 1; } let sec_ms = sec * 1000; let trans_type = if props.transition != () { props.transition } else { \"fade\" }; let trans_ms = if props.transition_ms != () { props.transition_ms.to_int() } else { 800 }; if trans_ms > sec_ms / 2 { trans_ms = sec_ms / 2; } if trans_ms < 50 { trans_ms = 50; } let bg_str = if props.bg != () { props.bg } else { \"#141E37EB\" }; let bg = color(bg_str); let rad = if props.radius != () { props.radius } else { 12.0 }; let res = [#{kind:\"rect\", color:bg, radius:rad}]; let is_cut = trans_type == \"cut\" || trans_type == \"none\"; if total == 1 || is_cut { let index = (now / sec_ms) % total; res.push(#{kind:\"text\", text:items[index], rect:[0.05, 0.05, 0.90, 0.90], font_scale:0.8}); } else { let curr_idx = (now / sec_ms) % total; let next_idx = (curr_idx + 1) % total; let t_in_item = now % sec_ms; let hold_ms = sec_ms - trans_ms; if t_in_item < hold_ms { res.push(#{kind:\"text\", text:items[curr_idx], rect:[0.05, 0.05, 0.90, 0.90], font_scale:0.8}); } else { let p = (t_in_item - hold_ms).to_float() / trans_ms.to_float(); if p > 1.0 { p = 1.0; } if p < 0.0 { p = 0.0; } let op_out = 1.0 - p; let op_in = p; if trans_type == \"slide_h\" || trans_type == \"slide\" || trans_type == \"slide_left\" || trans_type == \"slide_right\" || trans_type == \"wipe\" { let offset_out = -p * 0.4; let offset_in = (1.0 - p) * 0.4; res.push(#{kind:\"text\", text:items[curr_idx], rect:[0.05 + offset_out, 0.05, 0.90, 0.90], font_scale:0.8, opacity:op_out}); res.push(#{kind:\"text\", text:items[next_idx], rect:[0.05 + offset_in, 0.05, 0.90, 0.90], font_scale:0.8, opacity:op_in}); } else if trans_type == \"slide_v\" || trans_type == \"slide_up\" || trans_type == \"slide_down\" { let offset_out = -p * 0.35; let offset_in = (1.0 - p) * 0.35; res.push(#{kind:\"text\", text:items[curr_idx], rect:[0.05, 0.05 + offset_out, 0.90, 0.90], font_scale:0.8, opacity:op_out}); res.push(#{kind:\"text\", text:items[next_idx], rect:[0.05, 0.05 + offset_in, 0.90, 0.90], font_scale:0.8, opacity:op_in}); } else if trans_type == \"zoom\" || trans_type == \"zoom_out\" { let scale_out = 0.8 - p * 0.2; let scale_in = 0.6 + p * 0.2; res.push(#{kind:\"text\", text:items[curr_idx], rect:[0.05, 0.05, 0.90, 0.90], font_scale:scale_out, opacity:op_out}); res.push(#{kind:\"text\", text:items[next_idx], rect:[0.05, 0.05, 0.90, 0.90], font_scale:scale_in, opacity:op_in}); } else { res.push(#{kind:\"text\", text:items[curr_idx], rect:[0.05, 0.05, 0.90, 0.90], font_scale:0.8, opacity:op_out}); res.push(#{kind:\"text\", text:items[next_idx], rect:[0.05, 0.05, 0.90, 0.90], font_scale:0.8, opacity:op_in}); } } } res"
+    }
+  ],
+  "shaders":[
+    {
+      "id":"plasma","name":"Plasma · Stage Tools","description":"Interferências de luz e ondas cromáticas.",
+      "translations":{"en":{"name":"Plasma · Stage Tools","description":"Light interference and chromatic waves."},"pt-BR":{"name":"Plasma · Ferramentas de palco"},"es":{"name":"Plasma · Herramientas de escenario","description":"Interferencias de luz y ondas cromáticas."}},
+      "wgsl":"fn plugin_color(p: vec2f, t: f32) -> vec3f { let a = sin(p.x*5.0+t)+cos(p.y*4.0-t*0.7)+sin(length(p)*7.0-t); return palette(0.5+0.5*sin(a),0.35+0.35*cos(a+t*0.3)); }",
+      "glsl":"vec3 plugin_color(vec2 p,float t){float a=sin(p.x*5.+t)+cos(p.y*4.-t*.7)+sin(length(p)*7.-t);return palette(.5+.5*sin(a),.35+.35*cos(a+t*.3));}"
+    }
+  ],
+  "commands":[
+    {
+      "id":"reset-scoreboard","name":"Zerar placar","description":"Zera os pontos de ambas as equipes no placar interativo.",
+      "translations":{"en":{"name":"Reset scoreboard","description":"Resets both team scores on the interactive scoreboard."},"es":{"name":"Reiniciar marcador","description":"Reinicia los puntajes de ambos equipos en el marcador interactivo."}},
+      "script":"[#{kind: \"notify\", text: \"Use os botões do placar para zerar os pontos\"}]"
+    },
+    {
+      "id":"announce-notice","name":"Preparar aviso","description":"Prepara um aviso personalizado na prévia.",
+      "translations":{"en":{"name":"Prepare notice","description":"Prepares a custom notice in the preview."},"es":{"name":"Preparar aviso","description":"Prepara un aviso personalizado en la vista previa."}},
+      "script":"[#{kind: \"preview_text\", title: \"Aviso\", text: \"Personalize este aviso no editor\"}]"
+    }
+  ]
+}

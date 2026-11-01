@@ -1,0 +1,671 @@
+@media (max-width: 860px) {
+  body,
+  body[data-presenting="true"] {
+    zoom: 1 !important;
+    width: 100vw;
+    height: var(--app-height);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 42px minmax(0, 1fr) 82px calc(
+        58px + env(safe-area-inset-bottom)
+      );
+  }
+  .app-rail,
+  .header-right {
+    display: none;
+  }
+  .app-header {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 5px 11px;
+    gap: 10px;
+  }
+  .app-heading h1 {
+    font-size: 12px;
+  }
+  .quick-bar {
+    display: flex;
+  }
+  #quick-empty {
+    font-size: 10px;
+  }
+  #mobile-options {
+    display: inline-flex;
+  }
+  .workspace {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 5px;
+  }
+  #native-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #native-layout > .panel {
+    height: auto;
+    flex-shrink: 0;
+  }
+  body[data-view="library"] #native-layout > .panel,
+  body[data-view="playlist"] #native-layout > .panel,
+  body[data-view="themes"] #native-layout > .panel {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+  }
+  .panel {
+    padding: 6px 9px;
+    border-radius: 10px;
+  }
+  .panel-heading {
+    height: 29px;
+    min-height: 29px;
+  }
+  .panel-heading h2 {
+    font-size: 13px;
+  }
+  .native-header-grip {
+    display: none;
+  }
+  .native-toolbar {
+    margin: 5px 0 8px;
+    height: 36px;
+    min-height: 36px;
+    gap: 8px;
+  }
+  .native-toolbar .icon-button {
+    min-width: 34px;
+    width: 34px;
+    min-height: 34px;
+    height: 34px;
+  }
+  .native-toolbar .native-icon {
+    font-size: 17px;
+  }
+  .resource-tabs {
+    margin: 5px 0 8px;
+    gap: 5px;
+  }
+  .resource-tabs > button {
+    min-height: 30px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .resource-tabs > button .native-icon {
+    font-size: 13px;
+  }
+  .search-field,
+  body:not([data-search-open="true"]) #catalog > .search-field {
+    display: flex;
+    min-height: 38px;
+    margin: 3px 0 8px;
+  }
+  .search-field input {
+    font-size: 16px;
+    padding: 7px 0;
+  }
+  .folder-strip {
+    font-size: 11px;
+  }
+  .resource-row {
+    min-height: 45px;
+    padding: 7px 6px;
+    margin-bottom: 5px;
+  }
+  .resource-mark .native-icon {
+    font-size: 16px;
+  }
+  .resource-title > span:not(.position):not(.resource-mark) {
+    display: block;
+  }
+  .resource-title strong {
+    display: block;
+    max-width: 100%;
+    font-size: 13px;
+  }
+  .resource-title small {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+  }
+  .resource-row .row-actions {
+    position: static;
+    opacity: 1;
+    background: transparent;
+  }
+  .resource-row .row-actions .icon-button {
+    width: 32px;
+    height: 34px;
+    min-width: 32px;
+    min-height: 34px;
+  }
+  .resource-row .row-actions .native-icon {
+    font-size: 15px;
+  }
+  .native-song-heading {
+    padding: 6px 0 10px;
+    gap: 8px;
+  }
+  .native-song-title {
+    font-size: 14px;
+  }
+  .native-song-artist {
+    font-size: 12px;
+  }
+  #lyrics-panel {
+    min-height: 220px;
+  }
+  #lyrics-panel .slides-grid {
+    flex: 0 1 auto;
+  }
+  body[data-lyrics-mode="list"] .slides-grid {
+    gap: 12px;
+  }
+  body[data-lyrics-mode="list"] .slide-card {
+    padding: 12px;
+  }
+  body[data-lyrics-mode="list"] .slide-text {
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .slide-card .project-slide {
+    opacity: 1;
+    width: 30px;
+    height: 28px;
+    min-width: 30px;
+    min-height: 28px;
+    right: 4px;
+    bottom: 4px;
+  }
+  .slide-card .project-slide .native-icon {
+    font-size: 14px;
+  }
+  body[data-lyrics-mode="cards"] .slides-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .monitor {
+    flex-shrink: 0;
+  }
+  .stage {
+    margin-top: 5px;
+    aspect-ratio: 16/9;
+    max-height: 235px;
+  }
+  .stage > div {
+    font-size: 18px;
+  }
+  .monitor-footer {
+    padding: 6px 0;
+  }
+  .monitor-footer strong,
+  .monitor-footer small {
+    font-size: 10px;
+  }
+  #native-monitor-tabs {
+    display: flex;
+    flex-shrink: 0;
+    align-self: center;
+    gap: 3px;
+    padding: 3px;
+    margin: 1px 0;
+    border-radius: 7px;
+    background: var(--pill);
+  }
+  #native-monitor-tabs button {
+    border: 0;
+    background: transparent;
+    padding: 4px 16px;
+    min-height: 30px;
+    font-size: 12px;
+  }
+  #native-monitor-tabs .active {
+    background: var(--card);
+    border: 1px solid var(--line);
+  }
+  #native-monitor-tabs .native-icon {
+    font-size: 13px;
+  }
+  .playlist-row {
+    min-height: 42px;
+    padding: 6px;
+    margin-bottom: 5px;
+  }
+  .playlist-row .position .native-icon {
+    font-size: 15px;
+  }
+  .playlist-row .resource-title strong {
+    font-size: 13px;
+  }
+  .playlist-row .playlist-status {
+    width: 27px;
+    min-width: 27px;
+    height: 30px;
+    min-height: 30px;
+  }
+  .native-row-more {
+    position: static;
+    opacity: 1;
+    width: 28px;
+    min-width: 28px;
+  }
+  .notice-button {
+    opacity: 1;
+    align-self: stretch;
+    min-height: 36px;
+    font-size: 12px;
+    margin-top: 8px;
+    border: 1px solid var(--line);
+  }
+  .themes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .theme-card {
+    max-width: none;
+  }
+  .theme-card > span:last-child {
+    font-size: 10px;
+  }
+  .native-theme-option {
+    display: flex !important;
+    justify-content: center;
+    min-height: 36px;
+  }
+  .performance-bar,
+  body:not([data-presenting="true"]) .performance-bar {
+    grid-column: 1;
+    grid-row: 3;
+    visibility: visible;
+    height: 82px;
+    padding: 3px 8px 5px;
+    border: 0;
+    border-top: 1px solid var(--line);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--panel);
+    box-sizing: border-box;
+  }
+  .native-dock-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+    min-height: 20px;
+    flex: 0 0 20px;
+  }
+  .native-dock-cards {
+    display: none;
+  }
+  .now-playing {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 20px;
+  }
+  .now-playing > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    max-width: 90%;
+  }
+  .now-playing strong {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .now-playing small {
+    font-size: 11px;
+    color: var(--secondary);
+    white-space: nowrap;
+  }
+  .mobile-nav {
+    grid-column: 1;
+    grid-row: 4;
+    display: flex;
+    align-items: stretch;
+    gap: 3px;
+    padding: 3px 5px max(3px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .mobile-nav button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+    padding: 5px 2px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--secondary);
+    font-size: 10px;
+  }
+  .mobile-nav .native-icon {
+    font-size: 20px;
+  }
+  .mobile-nav .active {
+    color: var(--accent);
+    background: var(--soft);
+  }
+  .mobile-nav .active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 15px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .bible-choices {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .bible-choices.book {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bible-choices button {
+    min-height: 35px;
+    font-size: 13px;
+  }
+  #bible-version {
+    min-height: 34px;
+    font-size: 12px;
+  }
+  .passage {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .bible-footer .actions {
+    grid-template-columns: 1fr 38px 1fr;
+    gap: 7px;
+  }
+  .bible-footer button {
+    min-height: 38px;
+    font-size: 12px;
+  }
+  .bible-footer .icon-button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+  .error {
+    top: 47px;
+  }
+  #toast {
+    bottom: 150px;
+  }
+  dialog {
+    padding: 17px;
+    border-radius: 10px;
+    width: calc(100% - 20px);
+  }
+  dialog input,
+  dialog textarea {
+    font-size: 16px;
+  }
+  dialog .actions button {
+    min-height: 38px;
+  }
+  .native-context-menu {
+    min-width: 220px;
+  }
+  .native-context-menu > button {
+    height: 39px;
+    font-size: 13px;
+  }
+  .mobile-sheet {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    margin: 0;
+    width: 100%;
+    max-height: 85%;
+    border-radius: 14px 14px 0 0;
+    padding: 17px 14px max(20px, env(safe-area-inset-bottom));
+  }
+  .mobile-sheet > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .mobile-sheet h2 {
+    font-size: 14px;
+    margin: 0;
+  }
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .sheet-grid > button {
+    flex-direction: column;
+    gap: 9px;
+    min-height: 74px;
+    font-size: 12px;
+  }
+  .sheet-grid .native-icon {
+    font-size: 23px;
+    color: var(--accent);
+  }
+  .mobile-profile {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .mobile-profile select {
+    flex: 1;
+    font-size: 14px;
+  }
+  .mobile-pins {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .mobile-pins h3 {
+    color: var(--secondary);
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  #mobile-quick-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  #mobile-quick-items button {
+    min-height: 34px;
+    font-size: 12px;
+  }
+  .native-dock-toolbar {
+    flex: 0 0 20px;
+    height: 20px;
+    min-height: 20px;
+  }
+  .native-dock-toolbar .now-playing > div {
+    gap: 8px;
+  }
+  .native-dock-toolbar .now-playing strong,
+  .native-dock-toolbar .now-playing small {
+    font-size: 11px;
+  }
+  .native-dock-options,
+  .native-progress {
+    display: none;
+  }
+  .native-dock-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 46px;
+    flex: 0 0 46px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .native-dock-bottom .transport {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+  .native-dock-bottom .navigation {
+    width: 100%;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    border-radius: 23px;
+    background: var(--pill);
+    border: 1px solid var(--line);
+    box-sizing: border-box;
+  }
+  .native-dock-bottom .navigation .icon-button {
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.08s ease, background 0.12s ease;
+  }
+  .native-dock-bottom .navigation .icon-button:active {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    transform: scale(0.92);
+  }
+  .native-dock-bottom .navigation .icon-button:disabled {
+    opacity: 0.28;
+    pointer-events: none;
+    transform: none;
+  }
+  .native-dock-bottom .navigation .subtle {
+    width: 36px;
+    min-width: 36px;
+    max-width: 38px;
+    color: var(--secondary);
+  }
+  .native-dock-bottom .navigation .subtle .native-icon {
+    font-size: 16px;
+  }
+  .native-dock-bottom .navigation button[data-direction="previous"] {
+    flex: 1;
+    min-width: 46px;
+    max-width: 60px;
+    color: var(--ink);
+  }
+  .native-dock-bottom .navigation button[data-direction="previous"] .native-icon {
+    font-size: 22px;
+  }
+  #native-slide-jump {
+    width: 44px;
+    min-width: 36px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    outline: none;
+    box-shadow: none;
+  }
+  #native-slide-jump:focus {
+    color: var(--accent);
+  }
+  .native-dock-bottom .navigation button[data-direction="next"],
+  .native-dock-bottom .navigation .next-slide {
+    flex: 1;
+    min-width: 46px;
+    max-width: 60px;
+    color: var(--accent);
+  }
+  .native-dock-bottom .navigation button[data-direction="next"] .native-icon,
+  .native-dock-bottom .navigation .next-slide .native-icon {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .native-dock-final {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .native-dock-final .native-button-label {
+    display: none;
+  }
+  .native-dock-final .native-dock-action {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    border-radius: 23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    border: 1px solid var(--line);
+    background: var(--pill);
+    color: var(--secondary);
+    transition: transform 0.08s ease, background 0.12s ease;
+  }
+  .native-dock-final .native-dock-action:active {
+    transform: scale(0.92);
+    background: var(--hover);
+  }
+  .native-dock-final .native-dock-action .native-icon {
+    font-size: 19px;
+  }
+  .native-dock-final #hide-toggle.active {
+    background: #fef08a !important;
+    color: #854d0e !important;
+    border-color: #eab308 !important;
+  }
+  :root[data-theme="dark"] .native-dock-final #hide-toggle.active {
+    background: #eab308 !important;
+    color: #0f172a !important;
+    border-color: #facc15 !important;
+  }
+  .native-dock-final .native-dock-action.danger {
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, var(--pill));
+    border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+  }
+  .native-dock-final .native-dock-action.danger:active {
+    background: color-mix(in srgb, var(--danger) 20%, var(--pill));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

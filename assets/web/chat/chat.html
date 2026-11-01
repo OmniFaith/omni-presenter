@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#315fea" />
+    <title>Omni Presenter · Chat da equipe</title>
+    <link rel="stylesheet" href="/chat.css" />
+    <link rel="stylesheet" href="/chat-workspace.css" />
+    <link rel="stylesheet" href="/chat-picker.css" />
+    <link rel="stylesheet" href="/chat-cards.css" />
+    <link rel="stylesheet" href="/chat-channels.css" />
+    <script defer src="/chat-icons.js"></script>
+    <script defer src="/chat-channels.js"></script>
+    <script defer src="/chat.js"></script>
+    <script defer src="/chat-attachments.js"></script>
+    <script defer src="/chat-emoji.js"></script>
+    <script defer src="/chat-bible.js"></script>
+    <script defer src="/chat-bootstrap.js"></script>
+  </head>
+  <body>
+    <section id="login" class="login">
+      <form id="login-form" class="login-card">
+        <h1>Conecte-se à equipe</h1>
+        <p>
+          Escolha seu perfil e use a senha definida em Configurações → Perfis.
+          A senha padrão é omni-presenter.
+        </p>
+        <div id="login-avatar" class="profile-photo"></div>
+        <label>Perfil<select id="profile" required></select></label
+        ><label
+          >Senha<input
+            id="code"
+            autocomplete="current-password"
+            type="password"
+            required /></label
+        ><button class="primary">Entrar no chat</button>
+        <p id="login-error" role="alert"></p>
+      </form>
+    </section>
+    <div id="app" hidden>
+      <section id="workspace-header" class="floating-panel">
+        <div class="chat-brand-icon">
+          <i data-icon="chat"></i>
+        </div>
+        <div class="workspace-title">
+          <h1>Chat da equipe</h1>
+          <p>Canais, mensagens privadas e arquivos na rede local</p>
+        </div>
+        <span id="online-count"></span>
+        <button
+          id="notify"
+          class="header-icon"
+          title="Ativar notificações"
+          aria-label="Ativar notificações"
+        >
+          <i data-icon="bell"></i><span id="notification-count" hidden></span>
+        </button>
+        <button id="network-info" class="soft-primary">Acesso na rede</button>
+        <a href="/control" class="header-control soft-primary">Controle web</a>
+      </section>
+      <aside id="sidebar">
+        <div class="section-title">
+          Canais <button id="new-channel" title="Criar canal" aria-label="Criar canal"><i data-icon="plus"></i></button>
+        </div>
+        <nav id="channels"></nav>
+        <div class="section-title">Mensagens privadas</div>
+        <nav id="people"></nav>
+        <footer>
+          <div class="identity-row">
+            <div id="identity-avatar" class="profile-photo"></div>
+            <div>
+              <b id="identity"></b><span id="connection">Conectando…</span>
+            </div>
+          </div>
+          <button id="logout">Sair</button>
+        </footer>
+      </aside>
+      <main>
+        <header>
+          <button id="menu" class="header-icon" title="Canais" aria-label="Canais"><i data-icon="menu"></i></button>
+          <div>
+            <h1 id="room-title"># equipe</h1>
+            <p id="room-description">Conversas da equipe na rede local</p>
+          </div>
+          <input
+            id="search"
+            hidden
+            type="search"
+            placeholder="Pesquisar mensagens…"
+            aria-label="Pesquisar mensagens"
+          /><button
+            id="search-all"
+            hidden
+            title="Pesquisar em todas as conversas acessíveis"
+          >
+            Todos
+          </button>
+          <button
+            id="search-toggle"
+            class="header-icon"
+            title="Pesquisar mensagens"
+            aria-label="Pesquisar mensagens"
+            aria-expanded="false"
+          >
+            <i data-icon="search"></i>
+          </button>
+        </header>
+        <div id="status" role="status" hidden></div>
+        <div id="messages" aria-live="polite">
+          <button id="older" hidden>Carregar mensagens anteriores</button>
+          <div id="timeline"></div>
+        </div>
+        <section id="composer">
+          <div id="recording" hidden>
+            <span class="record-dot"></span
+            ><span id="recording-time">Gravando…</span
+            ><button id="cancel-recording">Cancelar</button>
+          </div>
+          <div class="compose-row">
+            <button
+              id="attach"
+              title="Enviar arquivo ou mídia"
+              aria-label="Enviar arquivo"
+            ><i data-icon="plus"></i></button
+            ><textarea
+              id="input"
+              rows="1"
+              placeholder="Escreva uma mensagem…"
+              aria-label="Mensagem"
+            ></textarea
+            ><button
+              id="bible"
+              title="Enviar texto bíblico"
+              aria-label="Enviar texto bíblico"
+            ><i data-icon="bible"></i></button
+            ><button
+              id="song"
+              title="Enviar louvor do aplicativo"
+              aria-label="Enviar louvor"
+            ><i data-icon="song"></i></button
+            ><button id="emoji" title="Emojis" aria-label="Emojis"><i data-icon="smile"></i></button
+            ><button
+              id="record"
+              class="primary"
+              title="Gravar áudio"
+              aria-label="Gravar áudio"
+            ><i data-icon="record"></i></button
+            ><button
+              id="send"
+              class="primary"
+              hidden
+              title="Enviar mensagem"
+              aria-label="Enviar mensagem"
+            ><i data-icon="send"></i></button>
+          </div>
+          <div id="emojis" hidden></div>
+          <small id="composer-hint"
+            >Enter para enviar · Shift+Enter para nova linha</small
+          ><input id="file" type="file" hidden /><input
+            id="audio-fallback"
+            type="file"
+            accept="audio/*"
+            capture
+            hidden
+          />
+        </section>
+      </main>
+    </div>
+    <div
+      id="notification-toast"
+      class="floating-panel"
+      hidden
+      role="status"
+    ></div>
+    <dialog id="network-dialog">
+      <h2>Acesso na rede</h2>
+      <p>
+        Compartilhe este endereço com a equipe. Cada pessoa entra com seu perfil
+        e código do Omni Presenter.
+      </p>
+      <input id="network-link" readonly aria-label="Endereço do chat" />
+      <p>
+        Para gravar pelo navegador, use HTTPS e confie no certificado local.
+      </p>
+      <a href="/api/chat/certificate">Baixar certificado local</a>
+      <div class="actions"><button data-close>Fechar</button></div>
+    </dialog>
+    <dialog id="channel-dialog">
+      <form id="channel-form">
+        <h2>Criar canal</h2>
+        <p>Organize as conversas por equipe ou ferramenta.</p>
+        <label
+          >Nome do canal<input
+            id="channel-name"
+            maxlength="80"
+            required
+            placeholder="ex.: mesa-de-som" /></label
+        ><label>Tipo de canal</label
+        ><input id="channel-tool" type="hidden" value="general" />
+        <div class="tool-choices" role="group" aria-label="Tipo de canal">
+          <button type="button" data-tool="general">Conversa geral</button
+          ><button type="button" data-tool="bible">Bíblia</button
+          ><button type="button" data-tool="songs">Louvores</button
+          ><button type="button" data-tool="media">Mídias e arquivos</button>
+        </div>
+        <label
+          >Descrição (opcional)<input id="channel-description" maxlength="500"
+        /></label>
+        <div class="actions">
+          <button type="button" data-close>Cancelar</button
+          ><button class="primary">Criar canal</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="bible-dialog" class="reference-picker">
+      <form id="bible-form">
+        <h2>Enviar texto bíblico</h2>
+        <label>Versão<select id="bible-version"></select></label
+        ><label
+          ><span id="bible-stage">Livro</span><input
+            id="bible-reference"
+             placeholder="Digite ou escolha abaixo…"
+             autocomplete="off"
+            required
+        /></label>
+        <label class="check"
+          ><input id="bible-merge" type="checkbox" />Reunir os versículos em um
+          único slide</label
+        >
+        <div id="bible-results" class="reference-results" aria-label="Resultados da busca bíblica" aria-live="polite"></div>
+        <div id="bible-preview" class="resource-preview" hidden></div>
+        <p id="bible-error" class="dialog-error" role="alert"></p>
+        <div class="actions">
+          <button type="button" data-close>Cancelar</button
+           ><button id="bible-send" class="primary" disabled>Enviar passagem</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="song-dialog">
+      <h2>Enviar louvor</h2>
+      <input
+        id="song-search"
+        type="search"
+        placeholder="Título, artista ou trecho…"
+      />
+      <div id="song-results"></div>
+      <p id="song-error" class="dialog-error" role="alert"></p>
+      <div class="actions"><button data-close>Fechar</button></div>
+    </dialog>
+  </body>
+</html>
