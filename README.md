@@ -97,6 +97,7 @@ English, Brazilian Portuguese and Spanish interface resources are included. Oper
 | [System architecture](docs/system.md) | Application state, browser commands, persistence and rendering |
 | [Development and localization](docs/development.md) | Build checks, Fluent catalogs and extension entry points |
 | [Builds and releases](docs/releases.md) | Portable builds, checksums and versioned release notes |
+| [Versioning policy](docs/versioning.md) | Version numbers, prereleases and release tags |
 | [Bible assets](assets/bible/README.md) · [Fonts](assets/fonts/README.md) | Bundled content, formats and font licensing |
 
 Browse the complete [documentation index](docs/README.md).
