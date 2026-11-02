@@ -390,6 +390,14 @@ include!(concat!(env!("OUT_DIR"), "/bible_assets.rs"));
 
 pub const DEFAULT_BIBLE: &str = "ARA";
 
+pub fn default_for_language(language: crate::core::i18n::Language) -> &'static str {
+    match language {
+        crate::core::i18n::Language::Portuguese => "ARA",
+        crate::core::i18n::Language::English => "EN_KJV",
+        crate::core::i18n::Language::Spanish => "ES_RVR1960",
+    }
+}
+
 fn bundled_name(id: &str) -> &'static str {
     if let Some(meta) = BUNDLED_BIBLES_META.iter().find(|m| m.id.eq_ignore_ascii_case(id)) {
         return meta.name;
@@ -509,6 +517,15 @@ impl BibleLibrary {
                 .first()
                 .map(|(id, _)| id.clone())
                 .unwrap_or_default()
+        }
+    }
+
+    pub fn default_version_for_language(&self, language: crate::core::i18n::Language) -> String {
+        let preferred = default_for_language(language);
+        if self.get(preferred).is_some() {
+            preferred.to_owned()
+        } else {
+            self.default_version()
         }
     }
 
@@ -667,5 +684,4 @@ mod tests {
         }
     }
 }
-
 

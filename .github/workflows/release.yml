@@ -25,7 +25,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: refs/tags/${{ steps.tag.outputs.tag }}
       - run: python3 tools/release.py validate "$TAG"
@@ -52,7 +52,7 @@ jobs:
             target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: refs/tags/${{ needs.validate.outputs.tag }}
           submodules: recursive
@@ -72,7 +72,7 @@ jobs:
       - name: Build Windows installer
         if: runner.os == 'Windows'
         run: python tools/release.py windows-installer ${{ needs.validate.outputs.tag }} ${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.target }}
           path: |
@@ -89,10 +89,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: refs/tags/${{ needs.validate.outputs.tag }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: dist
           merge-multiple: true

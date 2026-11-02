@@ -10,6 +10,28 @@ use crate::core::state::ControlPanelState;
 use eframe::egui;
 
 #[test]
+fn new_services_use_language_defaults_but_saved_versions_are_preserved() {
+    use crate::core::i18n::Language;
+
+    for (language, expected) in [
+        (Language::Portuguese, "ARA"),
+        (Language::English, "EN_KJV"),
+        (Language::Spanish, "ES_RVR1960"),
+    ] {
+        let mut state = ControlPanelState::default();
+        state.settings.language = language;
+        state.apply_profiles();
+        assert_eq!(state.bible_version, expected);
+        assert_eq!(state.bible_shortcuts, vec![expected]);
+        assert!(state.bible.library.get(expected).is_some());
+
+        state.settings.service_mut().bible_version = "EN_NKJV".into();
+        state.apply_profiles();
+        assert_eq!(state.bible_version, "EN_NKJV");
+    }
+}
+
+#[test]
 fn bible_search_accepts_leading_zeroes_in_chapters_and_verses() {
     for (query, digits, expected_search, selected) in [
         ("Atos 0", "2", "Atos 2:", None),
@@ -409,4 +431,3 @@ fn test_floating_bible_search_overlay_renders_from_any_page() {
     assert!(!output.shapes.is_empty(), "floating search overlay rendered shapes");
     assert_eq!(Command::BibleSearch.label_key(), "command-bible-search");
 }
-

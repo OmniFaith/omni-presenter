@@ -33,8 +33,19 @@ pub(super) fn version_bar(
                             let name = name.clone();
                             let active = current == version;
                             let id = ui.make_persistent_id(("bible_ver_btn", &version));
+                            let label = if crate::core::bible::bundled_meta(&version).is_some() {
+                                version.split_once('_')
+                                    .filter(|(prefix, _)| prefix.len() == 2)
+                                    .map_or(version.as_str(), |(_, abbreviation)| abbreviation)
+                            } else {
+                                version.as_str()
+                            };
+                            let font = egui::FontId::proportional(11.0);
+                            let text_width = ui.painter().layout_no_wrap(
+                                label.to_owned(), font.clone(), theme.text_primary,
+                            ).size().x;
                             let (rect, response) = ui
-                                .allocate_exact_size(egui::vec2(36.0, 27.0), egui::Sense::click());
+                                .allocate_exact_size(egui::vec2((text_width + 18.0).max(36.0), 27.0), egui::Sense::click());
                             let response = response
                                 .on_hover_cursor(egui::CursorIcon::PointingHand)
                                 .on_hover_text(name);
@@ -85,8 +96,8 @@ pub(super) fn version_bar(
                             ui.painter().text(
                                 rect.center(),
                                 egui::Align2::CENTER_CENTER,
-                                &version,
-                                egui::FontId::proportional(11.0),
+                                label,
+                                font,
                                 text_color,
                             );
 
@@ -873,4 +884,3 @@ fn render_version_row(
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
         .on_hover_text(format!("{name} ({lang}) - Clique para usar"));
 }
-

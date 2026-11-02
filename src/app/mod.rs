@@ -102,8 +102,12 @@ impl PresentationApp {
                 control_state.apply_profiles();
                 control_state.apply_theme_to_live();
             }
-            Ok(None) => control_state.capture_profiles(),
+            Ok(None) => {
+                control_state.apply_profiles();
+                control_state.capture_profiles();
+            }
             Err(error) => {
+                control_state.apply_profiles();
                 control_state.capture_profiles();
                 control_state.notify(control_state.settings.language.format(
                     "services-could-not-load-preferences",

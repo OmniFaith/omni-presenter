@@ -550,7 +550,7 @@ impl ControlPanelState {
         self.bible_version = if self.bible.library.get(&service.bible_version).is_some() {
             service.bible_version
         } else {
-            crate::core::bible::DEFAULT_BIBLE.into()
+            self.bible.library.default_version_for_language(self.settings.language)
         };
         let available: Vec<String> = self
             .bible
