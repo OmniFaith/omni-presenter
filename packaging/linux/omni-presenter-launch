@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+# The application stores its database relative to its working directory.
+mkdir -p "$XDG_DATA_HOME/omni-presenter"
+cd "$XDG_DATA_HOME/omni-presenter"
+exec /app/bin/omni-presenter "$@"

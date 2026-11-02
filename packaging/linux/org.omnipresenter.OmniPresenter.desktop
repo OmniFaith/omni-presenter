@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Omni Presenter
+Comment=Prepare and present lyrics, Scripture and media
+Exec=omni-presenter
+Icon=org.omnipresenter.OmniPresenter
+Categories=AudioVideo;Presentation;
+Terminal=false

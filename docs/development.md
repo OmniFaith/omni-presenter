@@ -13,6 +13,8 @@ python3 tools/i18n_audit.py --catalogs
 
 `cargo test` includes domain, service, UI and integration tests. Some tests are explicitly ignored because they require a graphical compositor, multicast network, Chromium or Playwright; inspect their `#[ignore]` annotations before running them in a suitable environment. Media tests may exercise locally installed tools. `tests/architecture_tests.rs` checks that Rust source modules stay within the project's line limit; it is not a substitute for reviewing coupling or behavior.
 
+For portable builds, versioned release notes and GitHub Releases, see the [release guide](releases.md).
+
 ## Localization
 
 English (`locales/en/`) is the source catalog; Brazilian Portuguese (`locales/pt-BR/`) and Spanish (`locales/es/`) provide corresponding Fluent files. `build.rs` embeds the resources. The registry negotiates supported locale identifiers and falls back to English per message.

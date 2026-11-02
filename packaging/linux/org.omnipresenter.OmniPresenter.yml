@@ -1,0 +1,39 @@
+app-id: org.omnipresenter.OmniPresenter
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: omni-presenter-launch
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=home
+modules:
+  - name: omni-presenter
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 omni-presenter /app/bin/omni-presenter
+      - install -Dm755 omni-presenter-launch /app/bin/omni-presenter-launch
+      - install -Dm644 org.omnipresenter.OmniPresenter.desktop /app/share/applications/org.omnipresenter.OmniPresenter.desktop
+      - install -Dm644 org.omnipresenter.OmniPresenter.svg /app/share/icons/hicolor/scalable/apps/org.omnipresenter.OmniPresenter.svg
+      - install -Dm644 LICENSE /app/share/licenses/omni-presenter/LICENSE
+      - install -Dm644 bible-LICENSE /app/share/licenses/omni-presenter/bible-LICENSE
+      - install -Dm644 NotoEmoji-OFL.txt /app/share/licenses/omni-presenter/NotoEmoji-OFL.txt
+    sources:
+      - type: file
+        path: omni-presenter
+      - type: file
+        path: omni-presenter-launch
+      - type: file
+        path: org.omnipresenter.OmniPresenter.desktop
+      - type: file
+        path: org.omnipresenter.OmniPresenter.svg
+      - type: file
+        path: LICENSE
+      - type: file
+        path: bible-LICENSE
+      - type: file
+        path: NotoEmoji-OFL.txt
