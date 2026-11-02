@@ -146,12 +146,31 @@ def publish(remote):
     status = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)
     if status.strip():
         raise SystemExit("Commit or stash all changes before creating a release tag")
-    subprocess.run(["git", "tag", tag], cwd=ROOT, check=True)
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    local = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{tag}^{{}}"],
+                           cwd=ROOT, text=True, capture_output=True)
+    remote_tags = subprocess.check_output(
+        ["git", "ls-remote", "--tags", remote, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+        cwd=ROOT, text=True)
+    remote_refs = dict(line.split("\t", 1)[::-1] for line in remote_tags.splitlines())
+    remote_sha = remote_refs.get(f"refs/tags/{tag}^{{}}") or remote_refs.get(f"refs/tags/{tag}")
+    if (local.returncode == 0 and local.stdout.strip() != head) or (remote_sha and remote_sha != head):
+        raise SystemExit(f"Tag {tag} points to an older or different commit, so retrying it would "
+                         "build old code. Choose a new Cargo version and matching release notes; "
+                         "the existing tag will not be changed.")
+    if local.returncode != 0:
+        subprocess.run(["git", "tag", tag], cwd=ROOT, check=True)
+    if remote_sha:
+        subprocess.run(["gh", "workflow", "run", "release.yml", "--ref", tag, "-f", f"tag={tag}"],
+                       cwd=ROOT, check=True)
+        print(f"Restarted the release workflow for existing tag {tag}.")
+        return "workflow_dispatch"
     try:
         subprocess.run(["git", "push", remote, f"refs/tags/{tag}"], cwd=ROOT, check=True)
     except subprocess.CalledProcessError:
         raise SystemExit(f"Push failed. Local tag {tag} was kept; push it manually or delete it before retrying.")
     print(f"Tag {tag} sent to {remote}; follow the build in GitHub Actions.")
+    return "push"
 
 
 def build_all(remote):
@@ -181,13 +200,13 @@ def build_all(remote):
     sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     started = datetime.now(timezone.utc) - timedelta(seconds=5)
     print(f"Starting release {tag} on GitHub ({repo}); all platforms will build there.", flush=True)
-    publish(remote)
+    event = publish(remote)
     deadline = time.monotonic() + 180
     run_id = None
     while time.monotonic() < deadline:
         result = subprocess.check_output(
             ["gh", "run", "list", "--repo", repo, "--workflow", "release.yml", "--branch", tag,
-             "--event", "push", "--limit", "30", "--json", "databaseId,headSha,createdAt"],
+             "--event", event, "--limit", "30", "--json", "databaseId,headSha,createdAt"],
             cwd=ROOT, text=True)
         for run in json.loads(result):
             created = datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
