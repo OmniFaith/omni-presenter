@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="Omni Presenter Logo" width="120" height="120" />
+
 # Omni Presenter
 
 **English** 路 [Portugu锚s (Brasil)](README.pt-BR.md) 路 [Espa帽ol](README.es.md)
@@ -25,19 +27,27 @@ A live presentation workspace for lyrics, Scripture, media and visual designs 鈥
 
 ---
 
-<!-- Add a screenshot here when available: ![Omni Presenter workspace](docs/images/workspace.png) -->
+## Screenshots
+
+<div align="center">
+
+| Workspace | Settings & Preferences |
+| :---: | :---: |
+| <img src="assets/omni-presenter.png" alt="Omni Presenter Workspace" width="480" /> | <img src="assets/omni-presenter-settings.png" alt="Omni Presenter Settings" width="480" /> |
+
+</div>
 
 ## One workspace, from preparation to presentation
 
 Omni Presenter brings the content and controls for a live event into one desktop application. Build a playlist from your library, check the next item in preview, and keep the live output independent while you prepare what comes next.
 
-| | |
-| --- | --- |
+|                        |                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
 | **Build your library** | Organize songs and lyrics, Bible passages, images, video and custom text for reuse across events. |
-| **Plan the event** | Assemble playlists and work with operator and service profiles. |
-| **Design the output** | Use presentation themes and create visual compositions with layers, text and assets. |
-| **Stay in control** | Prepare content in preview before sending it live to physical displays or browser screens. |
-| **Work together** | Enable browser control and chat for your team on the local network. |
+| **Plan the event**     | Assemble playlists and work with operator and service profiles.                                   |
+| **Design the output**  | Use presentation themes and create visual compositions with layers, text and assets.              |
+| **Stay in control**    | Prepare content in preview before sending it live to physical displays or browser screens.        |
+| **Work together**      | Enable browser control and chat for your team on the local network.                               |
 
 ## From library to live
 
@@ -91,14 +101,14 @@ English, Brazilian Portuguese and Spanish interface resources are included. Oper
 
 ## Documentation
 
-| Guide | Find out about |
-| --- | --- |
-| [Operations](docs/operations.md) | Startup, presentation outputs, networking, backups and troubleshooting |
-| [System architecture](docs/system.md) | Application state, browser commands, persistence and rendering |
-| [Development and localization](docs/development.md) | Build checks, Fluent catalogs and extension entry points |
-| [Builds and releases](docs/releases.md) | Portable builds, checksums and versioned release notes |
-| [Versioning policy](docs/versioning.md) | Version numbers, prereleases and release tags |
-| [Bible assets](assets/bible/README.md) 路 [Fonts](assets/fonts/README.md) | Bundled content, formats and font licensing |
+| Guide                                                                    | Find out about                                                         |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [Operations](docs/operations.md)                                         | Startup, presentation outputs, networking, backups and troubleshooting |
+| [System architecture](docs/system.md)                                    | Application state, browser commands, persistence and rendering         |
+| [Development and localization](docs/development.md)                      | Build checks, Fluent catalogs and extension entry points               |
+| [Builds and releases](docs/releases.md)                                  | Portable builds, checksums and versioned release notes                 |
+| [Versioning policy](docs/versioning.md)                                  | Version numbers, prereleases and release tags                          |
+| [Bible assets](assets/bible/README.md) 路 [Fonts](assets/fonts/README.md) | Bundled content, formats and font licensing                            |
 
 Browse the complete [documentation index](docs/README.md).
 

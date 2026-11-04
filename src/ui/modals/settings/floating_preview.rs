@@ -113,13 +113,17 @@ pub fn render_floating_screen_preview(
     let aspect = aspect_ratio.clamp(0.5, 3.5);
 
     let viewport_id = egui::ViewportId::from_hash_of("screen_preview_native_window");
-    let builder = egui::ViewportBuilder::default()
+    let mut builder = egui::ViewportBuilder::default()
         .with_title(&window_title)
         .with_inner_size([720.0, 480.0])
         .with_min_inner_size([380.0, 260.0])
         .with_decorations(true)
         .with_resizable(true)
         .with_active(true);
+
+    if let Some(icon) = crate::services::windowing::app_icon() {
+        builder = builder.with_icon(icon);
+    }
 
     ctx.show_viewport_immediate(viewport_id, builder, |ctx, _class| {
         if ctx.input(|i| i.viewport().close_requested()) {

@@ -42,14 +42,20 @@ fn main() -> eframe::Result {
 }
 
 fn native_options() -> eframe::NativeOptions {
+    let mut builder = egui::ViewportBuilder::default()
+        // eframe uses the ROOT viewport flag to enable alpha-capable
+        // backbuffers for every wgpu viewport, including the projector.
+        .with_transparent(true)
+        .with_inner_size([1260.0, 760.0])
+        .with_min_inner_size([980.0, 600.0])
+        .with_title("Omni Presenter");
+
+    if let Some(icon) = services::windowing::app_icon() {
+        builder = builder.with_icon(icon);
+    }
+
     let mut options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            // eframe uses the ROOT viewport flag to enable alpha-capable
-            // backbuffers for every wgpu viewport, including the projector.
-            .with_transparent(true)
-            .with_inner_size([1260.0, 760.0])
-            .with_min_inner_size([980.0, 600.0])
-            .with_title("Omni Presenter"),
+        viewport: builder,
         ..Default::default()
     };
     services::windowing::configure(&mut options);

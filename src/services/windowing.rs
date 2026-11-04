@@ -27,3 +27,14 @@ pub fn configure(options: &mut eframe::NativeOptions) {
     #[cfg(not(target_os = "linux"))]
     let _ = options;
 }
+
+/// Loads the application icon embedded from assets/logo.png for window viewports.
+pub fn app_icon() -> Option<eframe::egui::IconData> {
+    let image = image::load_from_memory(include_bytes!("../../assets/logo.png")).ok()?.into_rgba8();
+    let (width, height) = image.dimensions();
+    Some(eframe::egui::IconData {
+        rgba: image.into_raw(),
+        width,
+        height,
+    })
+}

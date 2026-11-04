@@ -27,13 +27,17 @@ pub fn render_preview_modal(
         language.text("control-inspect-slides"),
         slide_deck.live_title()
     );
-    let builder = egui::ViewportBuilder::default()
+    let mut builder = egui::ViewportBuilder::default()
         .with_title(window_title)
         .with_inner_size([960.0, 440.0])
         .with_min_inner_size([540.0, 260.0])
         .with_decorations(true)
         .with_resizable(true)
         .with_active(true);
+
+    if let Some(icon) = crate::services::windowing::app_icon() {
+        builder = builder.with_icon(icon);
+    }
 
     ctx.show_viewport_immediate(viewport_id, builder, |ctx, _class| {
         // Close modal on window close or Escape

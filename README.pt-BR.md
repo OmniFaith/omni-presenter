@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="Logo do Omni Presenter" width="128" height="128" />
+
 # Omni Presenter
 
 [English](README.md) · **Português (Brasil)** · [Español](README.es.md)
@@ -25,7 +27,15 @@ Uma área de trabalho para apresentações ao vivo com letras, passagens bíblic
 
 ---
 
-<!-- Adicione uma captura de tela aqui quando estiver disponível: ![Área de trabalho do Omni Presenter](docs/images/workspace.png) -->
+## Capturas de tela
+
+<div align="center">
+
+| Área de trabalho | Configurações e Preferências |
+| :---: | :---: |
+| <img src="assets/omni-presenter.png" alt="Área de trabalho do Omni Presenter" width="480" /> | <img src="assets/omni-presenter-settings.png" alt="Configurações do Omni Presenter" width="480" /> |
+
+</div>
 
 ## Uma área de trabalho, da preparação à apresentação
 

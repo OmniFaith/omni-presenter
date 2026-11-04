@@ -7,6 +7,8 @@ InstallDir "$LOCALAPPDATA\Programs\Omni Presenter"
 RequestExecutionLevel user
 
 !define MUI_ABORTWARNING
+!define MUI_ICON "${PROJECT_ROOT}\assets\logo.ico"
+!define MUI_UNICON "${PROJECT_ROOT}\assets\logo.ico"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${PROJECT_ROOT}\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
@@ -20,6 +22,7 @@ Section "Install"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
   File /oname=omni-presenter.exe "${BINARY}"
+  File /oname=logo.ico "${PROJECT_ROOT}\assets\logo.ico"
   File /oname=LICENSE "${PROJECT_ROOT}\LICENSE"
   File /oname=operations.md "${PROJECT_ROOT}\docs\operations.md"
   SetOutPath "$INSTDIR\licenses"
@@ -28,16 +31,16 @@ Section "Install"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "DisplayName" "Omni Presenter"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "DisplayIcon" "$INSTDIR\omni-presenter.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "DisplayIcon" "$INSTDIR\logo.ico"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\OmniPresenter" "NoRepair" 1
   CreateDirectory "$LOCALAPPDATA\Omni Presenter\workspace"
   SetOutPath "$LOCALAPPDATA\Omni Presenter\workspace"
   CreateDirectory "$SMPROGRAMS\Omni Presenter"
-  CreateShortCut "$SMPROGRAMS\Omni Presenter\Omni Presenter.lnk" "$INSTDIR\omni-presenter.exe"
-  CreateShortCut "$SMPROGRAMS\Omni Presenter\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-  CreateShortCut "$DESKTOP\Omni Presenter.lnk" "$INSTDIR\omni-presenter.exe"
+  CreateShortCut "$SMPROGRAMS\Omni Presenter\Omni Presenter.lnk" "$INSTDIR\omni-presenter.exe" "" "$INSTDIR\logo.ico"
+  CreateShortCut "$SMPROGRAMS\Omni Presenter\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\logo.ico"
+  CreateShortCut "$DESKTOP\Omni Presenter.lnk" "$INSTDIR\omni-presenter.exe" "" "$INSTDIR\logo.ico"
 SectionEnd
 
 Section "Uninstall"
@@ -47,6 +50,7 @@ Section "Uninstall"
   RMDir "$SMPROGRAMS\Omni Presenter"
   Delete "$DESKTOP\Omni Presenter.lnk"
   Delete "$INSTDIR\omni-presenter.exe"
+  Delete "$INSTDIR\logo.ico"
   Delete "$INSTDIR\LICENSE"
   Delete "$INSTDIR\operations.md"
   Delete "$INSTDIR\licenses\bible-source-LICENSE"
