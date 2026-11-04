@@ -203,6 +203,7 @@ impl eframe::App for PresentationApp {
 
         // Global keyboard handling
         self.handle_global_input(&ctx, is_text_focused, modal_was_open);
+        crate::ui::containers::selection::file_drop::handle_remaining(&ctx, &mut self.control_state);
         crate::ui::containers::selection::poll_media_import(&ctx, &mut self.control_state, Some(&self.db));
         self.control_state.refresh_media_duration();
         self.draw_global_search(&ctx);

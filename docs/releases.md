@@ -22,7 +22,7 @@ Install the Flatpak with `flatpak install --user ./package-name.flatpak` and lau
 ## Prepare a release
 
 1. Choose a version using the [versioning guide](versioning.md). Update `package.version` in `Cargo.toml` and run `cargo check` to update `Cargo.lock`. Review and commit both files.
-2. Copy `release-notes/TEMPLATE.md` to `release-notes/vX.Y.Z.md` or, for example, `release-notes/vX.Y.Z-alpha.1.md`. Write the notes for the GitHub Release description. Keep previous files as release history.
+2. Review the automatically prepared `release-notes/vX.Y.Z.md` (or, for example, `release-notes/vX.Y.Z-alpha.1.md`) and edit its user-facing highlights and known issues. If no file exists for the chosen version, copy `release-notes/TEMPLATE.md`. Keep previous files as release history. See the [versioning guide](versioning.md) for how upcoming notes are generated.
 3. Commit and push these changes, including the workflow, to GitHub. Install the [GitHub CLI](https://cli.github.com/) and authenticate with `gh auth login`. Then run:
 
    ```sh

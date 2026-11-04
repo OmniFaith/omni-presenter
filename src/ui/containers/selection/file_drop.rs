@@ -26,6 +26,15 @@ pub(crate) fn handle(ui: &egui::Ui, state: &mut ControlPanelState, rect: egui::R
     }
 }
 
+/// Import drops not already handled by a more specific workspace target.
+pub(crate) fn handle_remaining(ctx: &egui::Context, state: &mut ControlPanelState) {
+    if state.media_conversion_prompt.is_some() { return; }
+    let paths = ctx.input_mut(|input| std::mem::take(&mut input.raw.dropped_files)
+        .into_iter().map(|file| file.path().to_path_buf())
+        .filter(|path| !path.as_os_str().is_empty()).collect::<Vec<_>>());
+    if !paths.is_empty() { super::actions::import_media_paths(state, paths); }
+}
+
 fn paint(ui: &egui::Ui, rect: egui::Rect, theme: &AppTheme) {
     let painter = ui
         .ctx()

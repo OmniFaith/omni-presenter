@@ -16,6 +16,7 @@ pub(super) enum LibraryAction {
     Move(Vec<i64>, String),
     Playlist(Vec<i64>),
     Pin(Vec<i64>),
+    Convert(i64),
     DeleteFolder(String),
     Create(Option<String>),
 }
@@ -56,7 +57,7 @@ pub(super) fn create(
 
 pub fn import_media(state: &mut ControlPanelState, db: Option<&AppDb>, folder: Option<&str>) {
     let _ = db;
-    if state.media_import_task.is_some() {
+    if state.media_import_task.is_some() || state.media_conversion_prompt.is_some() {
         return;
     }
     let language = state.settings.language;
@@ -82,7 +83,7 @@ pub fn import_media(state: &mut ControlPanelState, db: Option<&AppDb>, folder: O
 
 /// Share the asynchronous import path with OS file drops, without a dialog.
 pub fn import_media_paths(state: &mut ControlPanelState, mut paths: Vec<std::path::PathBuf>) {
-    if state.media_import_task.is_some() {
+    if state.media_import_task.is_some() || state.media_conversion_prompt.is_some() {
         state.notify(state.settings.language.text("workspace-wait-for-the-current-media-import-to-finish"));
         return;
     }
@@ -133,18 +134,34 @@ pub fn poll_media_import(
         return;
     };
     let (folder, _) = state.media_import_task.take().unwrap();
+    let converting = std::mem::take(&mut state.media_conversion_running);
     let paths = match result {
         Ok(paths) => paths,
         Err(error) => {
-            state.notify(error);
+            if converting {
+                state.media_conversion_prompt = state.media_conversion_retry.take();
+                state.notify(state.settings.language.format("library-conversion-error", &[("error", &error)]));
+            } else {
+                state.notify(error);
+            }
             return;
         }
     };
+    if converting { state.media_conversion_retry = None; }
     if paths.is_empty() {
         return;
     }
+    if !converting && state.settings.ask_media_conversion
+        && paths.iter().any(|path| crate::services::media_conversion::convertible(path))
+    {
+        state.media_conversion_prompt = Some(crate::services::media_conversion::Prompt::new(paths, folder, true));
+        return;
+    }
+    finish_import(state, db, paths, &folder);
+}
+
+pub(super) fn finish_import(state: &mut ControlPanelState, db: Option<&AppDb>, paths: Vec<std::path::PathBuf>, folder: &str) {
     let language = state.settings.language;
-    let folder = folder.as_str();
     for path in paths {
         let title = path
             .file_stem()
@@ -291,6 +308,18 @@ fn execute_inner(
         }
         LibraryAction::Playlist(ids) => append_items(kind, entries, &ids, state, false),
         LibraryAction::Pin(ids) => append_items(kind, entries, &ids, state, true),
+        LibraryAction::Convert(id) => {
+            if state.media_import_task.is_some() || state.media_conversion_prompt.is_some() {
+                state.notify(state.settings.language.text("workspace-wait-for-the-current-media-import-to-finish"));
+            } else if let Some(item) = entries.iter().find(|item| item.id == id) {
+                let path = std::path::PathBuf::from(&item.content);
+                if crate::services::media_conversion::convertible(&path) {
+                    state.media_conversion_prompt = Some(crate::services::media_conversion::Prompt::new(vec![path], item.folder.clone(), false));
+                } else {
+                    state.notify(state.settings.language.text("library-conversion-unsupported"));
+                }
+            }
+        }
         LibraryAction::Delete(ids) => {
             for id in &ids {
                 if let Some(db) = db {

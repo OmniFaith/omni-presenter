@@ -104,6 +104,8 @@ impl PresentationApp {
         // Web Media Modal Dialog (YouTube, Vimeo, etc.)
         crate::ui::render_web_media_modal(ctx, &mut self.control_state, Some(&self.db));
 
+        crate::ui::containers::selection::render_media_conversion(ctx, &mut self.control_state, Some(&self.db));
+
         // Global QR Code modal dialog for sharing links
         crate::ui::components::render_active_qr_dialog(ctx, &self.control_state.theme);
 

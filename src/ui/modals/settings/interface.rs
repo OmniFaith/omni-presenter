@@ -66,6 +66,16 @@ pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppT
         });
     });
 
+    card(ui, theme, |ui| {
+        setting_toggle(
+            ui,
+            &mut draft.ask_media_conversion,
+            language.text("library-conversion-setting"),
+            language.text("library-conversion-setting-hint"),
+            theme,
+        );
+    });
+
     // --- Appearance & Theme Mode ---
     super::appearance::render(ui, draft, theme);
     let operator = draft

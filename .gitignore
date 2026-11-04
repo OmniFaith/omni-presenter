@@ -4,5 +4,6 @@ omni-presenter.db
 /chat-media/
 /design-assets/
 /web_media/
+/converted-media/
 dist/
 graphify-out/

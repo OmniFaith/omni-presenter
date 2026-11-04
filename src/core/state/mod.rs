@@ -231,6 +231,9 @@ pub struct ControlPanelState {
     // Media items & selection
     pub media_items: Vec<MediaItem>,
     pub media_import_task: Option<(String, crate::services::tasks::BackgroundTask<Vec<std::path::PathBuf>>)>,
+    pub media_conversion_prompt: Option<crate::services::media_conversion::Prompt>,
+    pub media_conversion_retry: Option<crate::services::media_conversion::Prompt>,
+    pub media_conversion_running: bool,
     pub open_media_folders: std::collections::HashSet<String>,
     pub selected_media_ids: std::collections::HashSet<i64>,
     pub media_selection_anchor: Option<i64>,
@@ -348,6 +351,9 @@ impl Default for ControlPanelState {
 
             media_items: Vec::new(),
             media_import_task: None,
+            media_conversion_prompt: None,
+            media_conversion_retry: None,
+            media_conversion_running: false,
             open_media_folders: std::collections::HashSet::new(),
             selected_media_ids: std::collections::HashSet::new(),
             media_selection_anchor: None,

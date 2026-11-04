@@ -29,7 +29,9 @@ On Linux, `--configure-mdns` is an administrative setup operation. It checks for
 
 ## Storage and backups
 
-The default database, `omni-presenter.db`, contains workspace data and settings. Chat media can be stored in `chat-media/` alongside the database; web-video downloads use `web_media/` relative to the process working directory. Design assets can be copied to a `design-assets/` directory. Other songs, images, video, wallpapers or fonts may be referenced by paths outside these directories.
+The default database, `omni-presenter.db`, contains workspace data and settings. Chat media can be stored in `chat-media/` alongside the database; web-video downloads use `web_media/` relative to the process working directory. Converted media copies are saved in `converted-media/` relative to the working directory. Design assets can be copied to a `design-assets/` directory. Other songs, images, video, wallpapers or fonts may be referenced by paths outside these directories.
+
+Media imported from the file picker or dropped into the application can be converted before being added. Conversion is also available from a media item's context menu. PNG and WebP images and FLAC audio are lossless; MP4/H.264 and MP3 prioritize compatibility at high quality, while MKV/FFV1 offers lossless video in larger files. Conversion requires `ffmpeg` with the selected encoders installed. Original files are retained; PDF, animated GIF and SVG are imported unchanged. Video conversion keeps the first video stream and audio streams, but does not copy subtitles or additional video streams. The import prompt can be disabled in the dialog and re-enabled under Interface settings.
 
 For a consistent backup, close the application first, then copy the database, relevant local asset directories and every externally referenced file. Preserve paths where possible. To restore, put the files back in their original locations, launch from the intended working directory and verify the library, media and outputs before an event.
 

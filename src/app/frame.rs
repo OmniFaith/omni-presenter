@@ -56,6 +56,7 @@ impl PresentationApp {
         }
 
         let modal_was_open = self.control_state.settings_ui.open
+            || self.control_state.media_conversion_prompt.is_some()
             || self.control_state.song_editor.open
             || self.control_state.theme_editor.open
             || self.control_state.strophe_editor.open

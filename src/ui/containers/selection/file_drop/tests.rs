@@ -58,6 +58,7 @@ fn dropping_a_file_imports_once_and_opens_media_without_reading_image_bytes() {
     let ctx = egui::Context::default();
     let db = AppDb::open_in_memory().unwrap();
     let mut state = ControlPanelState::default();
+    state.settings.ask_media_conversion = false;
     state.selected_tab = 4;
     let path = std::env::temp_dir().join(format!("{}.png", crate::core::preferences::new_id("drop-test")));
     image::RgbaImage::new(2, 2).save(&path).unwrap();
@@ -88,4 +89,40 @@ fn a_drop_outside_the_library_is_not_consumed_or_imported() {
     ));
     assert!(state.media_import_task.is_none());
     assert_eq!(state.selected_tab, 0);
+}
+
+#[test]
+fn dropping_media_asks_before_import_and_can_import_originals() {
+    let ctx = egui::Context::default();
+    let db = AppDb::open_in_memory().unwrap();
+    let mut state = ControlPanelState::default();
+    let path = std::env::temp_dir().join(format!("{}.png", crate::core::preferences::new_id("drop-prompt")));
+    image::RgbaImage::new(2, 2).save(&path).unwrap();
+    frame(&ctx, &mut state, egui::pos2(80.0, 80.0), None);
+    frame(&ctx, &mut state, egui::pos2(80.0, 80.0), Some(path.clone()));
+    finish(&ctx, &mut state, &db);
+    assert!(state.media_items.is_empty());
+    let prompt = state.media_conversion_prompt.take().expect("import should ask about conversion");
+    assert!(prompt.from_import);
+    super::super::actions::finish_import(&mut state, Some(&db), prompt.paths, &prompt.folder);
+    assert_eq!(state.media_items.len(), 1);
+    assert_eq!(state.media_items[0].file_path, path.canonicalize().unwrap().to_string_lossy());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn unhandled_drop_elsewhere_in_the_app_opens_the_same_prompt() {
+    let ctx = egui::Context::default();
+    let db = AppDb::open_in_memory().unwrap();
+    let mut state = ControlPanelState::default();
+    let path = std::env::temp_dir().join(format!("{}.png", crate::core::preferences::new_id("global-drop")));
+    image::RgbaImage::new(2, 2).save(&path).unwrap();
+    let mut input = egui::RawInput::default();
+    input.dropped_files.push(Arc::new(LocalFile(path.clone())));
+    let mut output = ctx.run_ui(input, |_ui| super::handle_remaining(&ctx, &mut state));
+    output.textures_delta.clear();
+    finish(&ctx, &mut state, &db);
+    assert!(state.media_conversion_prompt.as_ref().is_some_and(|prompt| prompt.from_import));
+    assert!(state.media_items.is_empty());
+    std::fs::remove_file(path).unwrap();
 }

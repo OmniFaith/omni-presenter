@@ -150,6 +150,16 @@ fn asynchronous_media_import_preserves_the_destination_and_refreshes_the_library
 }
 
 #[test]
+fn conversion_preference_is_enabled_for_old_settings_and_can_be_saved() {
+    let old: crate::core::preferences::AppSettings = serde_json::from_str("{}").unwrap();
+    assert!(old.ask_media_conversion);
+    let mut settings = old;
+    settings.ask_media_conversion = false;
+    let restored: crate::core::preferences::AppSettings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+    assert!(!restored.ask_media_conversion);
+}
+
+#[test]
 fn test_custom_text_crud_and_folders_in_db() {
     let db = AppDb::open_in_memory().unwrap();
     db.add_folder_to_category("text", "Liturgy").unwrap();

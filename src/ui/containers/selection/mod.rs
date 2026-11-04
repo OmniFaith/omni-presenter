@@ -1,4 +1,5 @@
 mod actions;
+mod conversion;
 pub(crate) mod file_drop;
 mod model;
 #[cfg(test)]
@@ -13,6 +14,7 @@ use crate::{
 use actions::LibraryAction;
 pub use actions::import_media;
 pub use actions::poll_media_import;
+pub use conversion::render_media_conversion;
 use eframe::egui;
 use egui_phosphor::regular::*;
 use model::{LibraryEntry, LibraryKind};
@@ -818,6 +820,12 @@ fn row(
             && context_menu_item(ui, PENCIL_SIMPLE, language.text("common-edit"), &theme).clicked()
         {
             *action = Some(LibraryAction::Edit(item.id));
+            ui.close();
+        }
+        if kind == LibraryKind::Media
+            && context_menu_item(ui, ARROWS_CLOCKWISE, language.text("library-convert-media"), &theme).clicked()
+        {
+            *action = Some(LibraryAction::Convert(item.id));
             ui.close();
         }
         if context_menu_item(ui, LIST_PLUS, language.text("common-add-playlist"), &theme).clicked()
