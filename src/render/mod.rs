@@ -7,8 +7,8 @@ pub mod text;
 pub mod design;
 pub mod theme;
 
-pub use text::{TextLayout, layout, render};
+pub use text::{TextLayout, layout, render, render_with_override_color};
 pub use theme::{
     get_or_load_texture, get_or_load_thumbnail, paint_gradient_rect, paint_theme_bg,
-    prewarm_slides_in_egui, render_theme_lyrics,
+    prewarm_slides_in_egui, render_theme_lyrics, render_theme_lyrics_with_color,
 };

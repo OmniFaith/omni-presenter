@@ -50,32 +50,9 @@ pub(crate) fn render_slide_card(
     } else {
         ui.painter()
             .rect_filled(card_rect, tokens.radius_md, tokens.bg_pill);
-        let scale = (card_w / 144.0).clamp(0.6, 3.5);
-        let base_size = 10.5 * scale;
-        let lines: Vec<&str> = slide_content.lines().collect();
 
-        // Shrink the font so the widest line fits inside the card.
-        let widest = lines
-            .iter()
-            .map(|line| {
-                ui.painter()
-                    .layout_no_wrap(
-                        line.trim().to_owned(),
-                        FontId::proportional(base_size),
-                        tokens.text_primary,
-                    )
-                    .size()
-                    .x
-            })
-            .fold(0.0_f32, f32::max);
-        let max_w = (card_rect.width() - 10.0).max(1.0);
-        let fit = if widest > max_w {
-            (max_w / widest).clamp(0.4, 1.0)
-        } else {
-            1.0
-        };
-
-        if slide_content.trim().is_empty() {
+        let clean = crate::core::slides::strip_comments(slide_content);
+        if clean.trim().is_empty() {
             ui.painter().text(
                 card_rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -84,25 +61,13 @@ pub(crate) fn render_slide_card(
                 tokens.text_muted,
             );
         } else {
-            let font_size = base_size * fit;
-            let line_height = font_size * 1.35;
-            let total_text_h = lines.len() as f32 * line_height;
-            let start_y = card_rect.center().y - total_text_h / 2.0;
-            let painter = ui
-                .painter()
-                .with_clip_rect(card_rect.intersect(ui.clip_rect()));
-            for (line_idx, line) in lines.iter().enumerate() {
-                painter.text(
-                    egui::pos2(
-                        card_rect.center().x,
-                        start_y + line_idx as f32 * line_height + line_height * 0.5,
-                    ),
-                    egui::Align2::CENTER_CENTER,
-                    line.trim(),
-                    FontId::proportional(font_size),
-                    tokens.text_primary,
-                );
-            }
+            crate::render::render_theme_lyrics_with_color(
+                ui.painter(),
+                card_rect,
+                live_theme,
+                slide_content,
+                Some(tokens.text_primary),
+            );
         }
     }
 

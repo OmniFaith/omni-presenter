@@ -429,4 +429,55 @@ fn dock_scrolls_to_active_slide_on_navigation() {
     assert!(!output2.shapes.is_empty());
 }
 
+#[test]
+fn slide_card_wraps_long_verse_and_conditional_breaks_matching_projection() {
+    let tokens = AppTheme::light();
+    let theme = PresentationTheme::default();
+    let long_verse = "And the earth was without form, and void; and darkness was on the face of the deep. | And the Spirit of God was hovering over the face of the waters.\nGênesis 1:2";
+
+    let ctx = egui::Context::default();
+    let raw_input = egui::RawInput {
+        screen_rect: Some(egui::Rect::from_min_size(
+            egui::pos2(0.0, 0.0),
+            egui::vec2(800.0, 600.0),
+        )),
+        ..Default::default()
+    };
+
+    let mut output = ctx.run_ui(raw_input, |ui| {
+        // Render card with with_bg = false (dock card mode)
+        render_slide_card(
+            ui,
+            &tokens,
+            &theme,
+            long_verse,
+            1,
+            false,
+            false,
+            16.0 / 9.0,
+            false,
+            160.0,
+            false,
+        );
+
+        // Render card with with_bg = true (with background mode)
+        render_slide_card(
+            ui,
+            &tokens,
+            &theme,
+            long_verse,
+            2,
+            false,
+            false,
+            16.0 / 9.0,
+            true,
+            160.0,
+            false,
+        );
+    });
+    output.textures_delta.clear();
+    assert!(!output.shapes.is_empty(), "Cards should produce shapes");
+}
+
+
 

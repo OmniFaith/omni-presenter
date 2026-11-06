@@ -331,6 +331,17 @@ pub fn render_theme_lyrics(
     super::text::render(painter, slide_rect, theme, raw_text);
 }
 
+/// Versão de [`render_theme_lyrics`] que permite sobrepor a cor do texto (ex: para cartões sem background na UI).
+pub fn render_theme_lyrics_with_color(
+    painter: &egui::Painter,
+    slide_rect: egui::Rect,
+    theme: &PresentationTheme,
+    raw_text: &str,
+    override_color: Option<egui::Color32>,
+) {
+    super::text::render_with_override_color(painter, slide_rect, theme, raw_text, override_color);
+}
+
 /// Pré-aquece todos os glifos das estrofes da música no atlas do egui,
 /// eliminando completamente qualquer travamento ou atraso na troca de estrofes durante o ao vivo.
 pub fn prewarm_slides_in_egui(

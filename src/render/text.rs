@@ -250,6 +250,16 @@ fn text_shape(
 }
 
 pub fn render(painter: &egui::Painter, rect: Rect, theme: &PresentationTheme, text: &str) {
+    render_with_override_color(painter, rect, theme, text, None);
+}
+
+pub fn render_with_override_color(
+    painter: &egui::Painter,
+    rect: Rect,
+    theme: &PresentationTheme,
+    text: &str,
+    override_color: Option<Color32>,
+) {
     let clean_text = crate::core::slides::strip_comments(text);
     if clean_text.trim().is_empty() || !rect.is_positive() {
         return;
@@ -273,18 +283,6 @@ pub fn render(painter: &egui::Painter, rect: Rect, theme: &PresentationTheme, te
     let view_box = Rect::from_min_size(to_view(box_rect.min), box_rect.size() * view_scale);
     let mut clipped =
         painter.with_clip_rect(painter.clip_rect().intersect(rect).intersect(view_box));
-    clipped.multiply_opacity(theme.options.text_opacity.clamp(0.0, 1.0));
-    if theme.box_bg_enabled {
-        clipped.rect_filled(view_box, theme.box_radius * view_scale, theme.box_bg_color);
-    }
-    if theme.box_border_enabled {
-        clipped.rect_stroke(
-            view_box,
-            theme.box_radius * view_scale,
-            Stroke::new(theme.box_border_width * view_scale, theme.box_border_color),
-            egui::StrokeKind::Inside,
-        );
-    }
     let directives = crate::core::markup::parse_slide_directives(text);
     let align_h = directives.align.as_deref().unwrap_or(theme.align_h.as_str());
     let x = match align_h {
@@ -300,6 +298,31 @@ pub fn render(painter: &egui::Painter, rect: Rect, theme: &PresentationTheme, te
     let position = to_view(egui::pos2(x, y));
     let scale = text_layout.scale * view_scale;
     let angle = theme.options.text_rotation.to_radians();
+
+    if let Some(color) = override_color {
+        clipped.add(text_shape(
+            text_layout.galley,
+            position,
+            scale,
+            color,
+            angle,
+            Some(color),
+        ));
+        return;
+    }
+
+    clipped.multiply_opacity(theme.options.text_opacity.clamp(0.0, 1.0));
+    if theme.box_bg_enabled {
+        clipped.rect_filled(view_box, theme.box_radius * view_scale, theme.box_bg_color);
+    }
+    if theme.box_border_enabled {
+        clipped.rect_stroke(
+            view_box,
+            theme.box_radius * view_scale,
+            Stroke::new(theme.box_border_width * view_scale, theme.box_border_color),
+            egui::StrokeKind::Inside,
+        );
+    }
     let base_color =
         readable_text_color(theme).linear_multiply(theme.options.text_opacity.clamp(0.0, 1.0));
     let shadow_enabled = theme.shadow_enabled || directives.shadow_color.is_some();
