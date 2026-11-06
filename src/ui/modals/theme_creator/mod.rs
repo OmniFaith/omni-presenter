@@ -277,17 +277,25 @@ pub fn render_theme_creator_modal(
     if should_save {
         let theme_to_save = state.theme_editor.editing.clone();
 
-        if let Some(app_db) = db {
-            let _ = app_db.save_theme(&theme_to_save);
-        }
-
         if let Some(edit_idx) = state.theme_editor.editing_index {
             if edit_idx < state.themes.len() {
                 state.themes[edit_idx] = theme_to_save.clone();
             }
+            if let Some(app_db) = db {
+                let _ = app_db.save_theme(&theme_to_save);
+            }
         } else {
-            state.themes.push(theme_to_save.clone());
-            state.selected_theme_index = state.themes.len() - 1;
+            state.themes.insert(0, theme_to_save.clone());
+            state.selected_theme_index = 0;
+            if let Some(app_db) = db {
+                let _ = app_db.save_theme(&theme_to_save);
+                let ids: Vec<String> = state.themes.iter().map(|t| t.id.clone()).collect();
+                let _ = app_db.update_themes_order(&ids);
+            }
+        }
+
+        if let Some(idx) = state.themes.iter().position(|t| t.id == state.live_theme_id) {
+            state.live_theme_index = idx;
         }
 
         if state.theme_editor.editing_index == Some(state.live_theme_index)

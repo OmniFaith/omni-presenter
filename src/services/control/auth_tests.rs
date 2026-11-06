@@ -130,3 +130,20 @@ fn password_login_protects_control_and_previews_and_password_changes_revoke_sess
             .is_ok()
     );
 }
+
+#[test]
+fn web_translations_contain_both_hyphen_and_underscore_aliases() {
+    let db = AppDb::open_in_memory().unwrap();
+    let control = WebControl::new(db);
+    let response = request(&control, "GET", "/api/control/translations?lang=pt-BR", "", "");
+    assert!(response.starts_with("HTTP/1.0 200"), "response was: {response}");
+    assert!(response.contains(r#""control-native-preview""#));
+    assert!(response.contains(r#""control.native_preview""#));
+    assert!(response.contains(r#""native_preview""#));
+    assert!(response.contains(r#""control-native-songs""#));
+    assert!(response.contains(r#""control.native_songs""#));
+    assert!(response.contains(r#""native_songs""#));
+    assert!(response.contains(r#""control.native_shortcuts""#));
+    assert!(response.contains(r#""control.native_no_shortcuts""#));
+    assert!(response.contains(r#""control.native_font_sample""#));
+}

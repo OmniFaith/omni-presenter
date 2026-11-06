@@ -8,7 +8,32 @@ export const model = {
   onState: () => {},
   themeOverride: localStorage.getItem("control-theme"),
 };
-export const t = (key) => model.texts["control." + key] || key;
+export function normalizeKey(key) {
+  return String(key || "").toLowerCase().replace(/[._]/g, "-");
+}
+
+export const t = (key) => {
+  if (key === undefined || key === null || key === "") return "";
+  const strKey = String(key);
+  if (model.texts[strKey] !== undefined) return model.texts[strKey];
+
+  const norm = normalizeKey(strKey);
+  const controlNorm = norm.startsWith("control-") ? norm : "control-" + norm;
+  if (model.texts[controlNorm] !== undefined) return model.texts[controlNorm];
+
+  if (norm.startsWith("control-")) {
+    const stripped = norm.slice(8);
+    if (model.texts[stripped] !== undefined) return model.texts[stripped];
+  }
+
+  const chatNorm = norm.startsWith("chat-") ? norm : "chat-" + norm;
+  if (model.texts[chatNorm] !== undefined) return model.texts[chatNorm];
+
+  if (model.texts["control." + strKey] !== undefined) return model.texts["control." + strKey];
+  if (model.texts[norm] !== undefined) return model.texts[norm];
+
+  return strKey;
+};
 export function node(tag, text, className) {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;

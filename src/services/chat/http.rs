@@ -412,7 +412,7 @@ pub fn serve(mut request: tiny_http::Request, chat: &ChatService) {
         }
         match (method.as_str(), path) {
             ("GET", "/api/chat/translations") => {
-                Ok(json!(interface_language.interface_messages()))
+                Ok(crate::services::control::web_translations(interface_language))
             }
             ("GET", "/api/chat/emojis") => {
                 let language = crate::core::i18n::Language::from_code(

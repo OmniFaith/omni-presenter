@@ -314,7 +314,7 @@ pub fn default_themes() -> Vec<PresentationTheme> {
             };
             theme.options.shader.speed = speed;
             theme.options.shader.colors = colors;
-            theme.sort_order = index as i32;
+            theme.sort_order = 10 + index as i32;
             theme
         })
         .collect()

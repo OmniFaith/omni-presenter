@@ -24,6 +24,31 @@ fn decode(value: &str) -> String {
     String::from_utf8_lossy(&bytes).into_owned()
 }
 
+pub fn web_translations(language: crate::core::i18n::Language) -> serde_json::Value {
+    let raw = language.interface_messages();
+    let mut messages = serde_json::Map::with_capacity(raw.len() * 5);
+    for (key, val) in raw {
+        let val_json = serde_json::Value::String(val);
+        messages.insert(key.clone(), val_json.clone());
+        if let Some(rest) = key.strip_prefix("control-") {
+            let underscore = rest.replace('-', "_");
+            messages.insert(format!("control.{underscore}"), val_json.clone());
+            messages.insert(format!("control.{rest}"), val_json.clone());
+            messages.insert(underscore, val_json.clone());
+            messages.insert(rest.to_string(), val_json);
+        } else if let Some(rest) = key.strip_prefix("chat-") {
+            let underscore = rest.replace('-', "_");
+            messages.insert(format!("chat.{underscore}"), val_json.clone());
+            messages.insert(format!("chat.{rest}"), val_json.clone());
+            if let Some(stage) = rest.strip_prefix("bible-stage-") {
+                messages.insert(format!("chat.bible_stage.{stage}"), val_json.clone());
+                messages.insert(format!("bible_stage.{stage}"), val_json);
+            }
+        }
+    }
+    serde_json::Value::Object(messages)
+}
+
 pub fn serve(request: tiny_http::Request, control: &WebControl) {
     let language = crate::services::i18n::language(&request, Some(control.language()));
     let url = request.url().to_owned();
@@ -102,7 +127,7 @@ pub fn serve(request: tiny_http::Request, control: &WebControl) {
     };
     if request.method().as_str() == "GET" {
         if path == "/api/control/translations" {
-            reply(request, 200, "application/json; charset=utf-8", json!(language.interface_messages()).to_string().into_bytes());
+            reply(request, 200, "application/json; charset=utf-8", web_translations(language).to_string().into_bytes());
             return;
         }
         if path == "/api/control/ui-font" {
@@ -273,12 +298,7 @@ pub fn serve(request: tiny_http::Request, control: &WebControl) {
                         .collect::<Vec<_>>()
                 ))
             }
-            ("GET", "/api/control/translations") => Ok(json!(
-                crate::core::i18n::Language::from_code(
-                    params.get("lang").map(String::as_str).unwrap_or("pt-BR")
-                )
-                .export(&["control.", "chat.bible_"])
-            )),
+            ("GET", "/api/control/translations") => Ok(web_translations(language)),
             ("POST", "/api/control/command") => {
                 let mime = request
                     .headers()

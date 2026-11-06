@@ -447,9 +447,11 @@ export function translateNative() {
   });
   $("library-heading")?.setAttribute("data-i18n", "native_library");
   document.querySelectorAll("button[title]").forEach((control) => {
-    if (model.texts["control." + control.title]) {
-      control.title = t(control.title);
-      control.setAttribute("aria-label", control.title);
+    const tip = control.dataset.tip || control.title;
+    const translated = t(tip);
+    if (translated && translated !== tip) {
+      control.title = translated;
+      control.setAttribute("aria-label", translated);
     }
   });
 }

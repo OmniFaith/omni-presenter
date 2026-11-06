@@ -5,7 +5,7 @@ mod http;
 mod types;
 #[cfg(test)]
 mod auth_tests;
-pub use http::{serve, serve_preview};
+pub use http::{serve, serve_preview, web_translations};
 pub use types::{ControlCommand, ResourceKind};
 
 use crate::{core::bible::BibleLibrary, services::db::AppDb};

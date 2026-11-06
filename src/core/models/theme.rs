@@ -167,7 +167,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 10,
+                sort_order: 20,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 145.0,
                     emphasis_color: [250, 204, 21],
@@ -217,7 +217,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 11,
+                sort_order: 21,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 135.0,
                     emphasis_color: [96, 165, 250],
@@ -267,7 +267,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 12,
+                sort_order: 22,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 145.0,
                     emphasis_color: [245, 158, 11],
@@ -317,7 +317,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 13,
+                sort_order: 23,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 140.0,
                     emphasis_color: [110, 231, 183],
@@ -367,7 +367,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 14,
+                sort_order: 24,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 180.0,
                     emphasis_color: [251, 191, 36],
@@ -418,7 +418,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 15,
+                sort_order: 25,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 135.0,
                     emphasis_color: [216, 180, 254],
@@ -468,7 +468,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 16,
+                sort_order: 26,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 120.0,
                     emphasis_color: [252, 211, 77],
@@ -518,7 +518,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 17,
+                sort_order: 27,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 165.0,
                     emphasis_color: [180, 83, 9],
@@ -568,7 +568,7 @@ impl PresentationTheme {
                 is_gradient: false,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 18,
+                sort_order: 28,
                 options: Default::default(),
             },
             Self {
@@ -614,7 +614,7 @@ impl PresentationTheme {
                 is_gradient: true,
                 is_animated: false,
                 is_favorite: false,
-                sort_order: 19,
+                sort_order: 29,
                 options: super::theme_options::ThemeOptions {
                     gradient_angle: 135.0,
                     ..Default::default()

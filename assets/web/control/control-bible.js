@@ -78,7 +78,9 @@ async function searchBible(autocomplete = false) {
       return searchBible(true);
     }
     $("bible-stage").textContent =
-      model.texts["chat.bible_stage." + result.stage] || result.stage;
+      t("chat.bible_stage." + result.stage) ||
+      model.texts["chat.bible_stage." + result.stage] ||
+      result.stage;
     $("bible-choices").className = "bible-choices " + result.stage;
     choiceIndex = 0;
     $("bible-choices").replaceChildren(
