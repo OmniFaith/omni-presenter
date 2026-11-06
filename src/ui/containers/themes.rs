@@ -382,8 +382,7 @@ pub fn render_themes_column(
             }
             if let Some(t_idx) = clicked_theme_idx {
                 state.selected_theme_index = t_idx;
-                state.apply_theme_to_live();
-                applied = (true, true);
+                applied = (true, false);
             }
 
             if let Some(idx) = action_apply_live {
@@ -444,4 +443,28 @@ pub fn render_themes_column(
             }
         });
     applied
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clicking_theme_changes_preview_only_and_not_live() {
+        let mut state = ControlPanelState::default();
+        state.themes = crate::services::shaders::default_themes();
+        state.selected_theme_index = 0;
+        state.live_theme_id = state.themes[0].id.clone();
+        state.live_theme_index = 0;
+
+        let ctx = egui::Context::default();
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            let _ = render_themes_column(ui, &mut state, None);
+        });
+        output.textures_delta.clear();
+
+        // Ensure live theme remains unchanged when browsing themes
+        assert_eq!(state.live_theme_id, state.themes[0].id);
+        assert_eq!(state.live_theme_index, 0);
+    }
 }

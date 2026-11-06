@@ -321,7 +321,7 @@ fn live_theme_control_renders_and_switches_theme() {
     state.themes.push(second_theme.clone());
 
     let mut output = ctx.run_ui(raw_input, |ui| {
-        live_theme_control(ui, &tokens, Language::Portuguese, &mut state);
+        live_theme_control(ui, &tokens, Language::Portuguese, &mut state, None);
     });
     output.textures_delta.clear();
     assert!(!output.shapes.is_empty());

@@ -187,10 +187,12 @@ pub(crate) fn live_theme_control(
     tokens: &AppTheme,
     language: Language,
     state: &mut ControlPanelState,
+    slide_deck: Option<&mut SlideDeck>,
 ) {
-    let current_name = state.live_theme().name.clone();
-    let current_id = state.live_theme().id.clone();
-    let label = format!("{}: {}", language.text("control-live-theme"), current_name);
+    let current_theme = state.live_theme();
+    let current_id = current_theme.id.clone();
+    let localized_name = language.text(&current_theme.name);
+    let label = format!("{}: {}", language.text("control-live-theme"), localized_name);
 
     let popup_id = ui.make_persistent_id("dock_live_theme_popup");
     let is_open = egui::Popup::is_id_open(ui.ctx(), popup_id);
@@ -205,21 +207,18 @@ pub(crate) fn live_theme_control(
     )
     .on_hover_text(language.text("control-change-live-theme"));
 
-    if response.clicked() {
-        egui::Popup::toggle_id(ui.ctx(), popup_id);
-    }
-
     let mut selected_theme = None;
     egui::Popup::menu(&response)
         .id(popup_id)
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .show(|ui| {
-            ui.set_max_width(240.0);
+            ui.set_max_width(260.0);
             egui::ScrollArea::vertical()
-                .max_height(260.0)
+                .max_height(280.0)
                 .show(ui, |ui| {
                     for (idx, theme) in state.themes.iter().enumerate() {
                         let is_selected = theme.id == current_id;
-                        let theme_name = crate::ui::i18n::text(ui, &theme.name);
+                        let theme_name = language.text(&theme.name);
                         let text = if is_selected {
                             format!("{} {}", CHECK, theme_name)
                         } else {
@@ -236,6 +235,15 @@ pub(crate) fn live_theme_control(
     if let Some(idx) = selected_theme {
         state.selected_theme_index = idx;
         state.apply_theme_to_live();
+        if let Some(deck) = slide_deck {
+            if let Some(scene) = &mut deck.live_design
+                && !scene.overlay
+                && scene.background_mode != "color"
+            {
+                scene.background_mode = "theme".into();
+                scene.theme_id = Some(state.live_theme_id.clone());
+            }
+        }
     }
 }
 
@@ -371,7 +379,7 @@ pub fn render_presentation_dock(
             }
 
             ui.add_space(4.0);
-            live_theme_control(ui, &tokens, language, state);
+            live_theme_control(ui, &tokens, language, state, Some(slide_deck));
 
             ui.add_space(4.0);
             if preview_mode_control(ui, &tokens, language, &mut state.dock_preview_bg) {
