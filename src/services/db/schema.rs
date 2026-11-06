@@ -246,11 +246,11 @@ impl AppDb {
             );
         }
 
-        for theme in crate::core::models::PresentationTheme::default_themes() {
+        for theme in crate::services::shaders::default_themes() {
             self.save_theme(&theme)?;
         }
 
-        for theme in crate::services::shaders::default_themes() {
+        for theme in crate::core::models::PresentationTheme::default_themes() {
             self.save_theme(&theme)?;
         }
 
@@ -261,6 +261,44 @@ impl AppDb {
 
         let _ = conn.execute(
             "INSERT OR IGNORE INTO app_migrations (name) VALUES ('presentation_themes_v3_purge_legacy_images')",
+            [],
+        );
+        Ok(())
+    }
+
+    pub fn prioritize_dynamic_themes(&self) -> Result<()> {
+        let installed: bool = self.conn.lock().unwrap().query_row(
+            "SELECT EXISTS(SELECT 1 FROM app_migrations WHERE name = 'prioritize_dynamic_themes_v1')",
+            [],
+            |row| row.get(0),
+        )?;
+        if installed {
+            return Ok(());
+        }
+
+        {
+            let conn = self.conn.lock().unwrap();
+            let _ = conn.execute(
+                "UPDATE themes SET is_favorite = 0 WHERE id = 'obsidian_pro';",
+                [],
+            );
+            let _ = conn.execute(
+                "UPDATE themes SET sort_order = sort_order + 20 WHERE bg_type != 'shader';",
+                [],
+            );
+        }
+
+        for theme in crate::services::shaders::default_themes() {
+            self.save_theme(&theme)?;
+        }
+
+        for theme in crate::core::models::PresentationTheme::default_themes() {
+            self.save_theme(&theme)?;
+        }
+
+        let conn = self.conn.lock().unwrap();
+        let _ = conn.execute(
+            "INSERT OR IGNORE INTO app_migrations (name) VALUES ('prioritize_dynamic_themes_v1')",
             [],
         );
         Ok(())

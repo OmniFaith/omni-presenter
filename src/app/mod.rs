@@ -70,6 +70,9 @@ impl PresentationApp {
         if let Err(error) = db.upgrade_default_presentation_themes() {
             eprintln!("Não foi possível atualizar os temas de apresentação: {error}");
         }
+        if let Err(error) = db.prioritize_dynamic_themes() {
+            eprintln!("Não foi possível priorizar os temas dinâmicos: {error}");
+        }
         let slide_deck = SlideDeck::from_db(&db);
         let mut control_state = ControlPanelState::default();
         match db.get_bible_translations() {

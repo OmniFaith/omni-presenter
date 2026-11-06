@@ -242,10 +242,10 @@ impl AppDb {
                 [],
             );
         }
-        for theme in PresentationTheme::default_themes() {
+        for theme in crate::services::shaders::default_themes() {
             self.save_theme(&theme)?;
         }
-        for theme in crate::services::shaders::default_themes() {
+        for theme in PresentationTheme::default_themes() {
             self.save_theme(&theme)?;
         }
         Ok(())

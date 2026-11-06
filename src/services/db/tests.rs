@@ -248,3 +248,15 @@ fn test_default_themes_upgrade_and_restore() {
     db.restore_default_presentation_themes().unwrap();
     assert!(db.get_all_themes().unwrap().iter().any(|t| t.id == "obsidian_pro"));
 }
+
+#[test]
+fn test_dynamic_themes_are_prioritized_first() {
+    let db = AppDb::open_in_memory().unwrap();
+    db.prioritize_dynamic_themes().unwrap();
+    let themes = db.get_all_themes().unwrap();
+    assert!(themes.len() >= 10);
+    for theme in themes.iter().take(10) {
+        assert_eq!(theme.bg_type, "shader", "Theme {} should be a shader", theme.id);
+        assert!(theme.id.starts_with("shader_"));
+    }
+}
