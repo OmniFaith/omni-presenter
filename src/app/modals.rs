@@ -9,9 +9,17 @@ impl PresentationApp {
         ctx: &egui::Context,
         is_text_focused: &mut bool,
     ) -> Option<usize> {
+        // Initial Setup / Welcome Wizard Modal Dialog (First Run)
+        let wizard_monitor_target = crate::ui::render_setup_wizard_modal(
+            ctx,
+            &mut self.control_state,
+            &self.monitors,
+            Some(&self.db),
+        );
+
         // Settings Modal Dialog
         crate::ui::render_settings_modal(ctx, &mut self.control_state, &self.monitors, Some(&self.db));
-        let monitor_changed_to = self.save_settings_draft();
+        let monitor_changed_to = self.save_settings_draft().or(wizard_monitor_target);
 
         // Floating Screen Preview Program/Window
         if self.control_state.settings_ui.floating_preview.is_some() {

@@ -1,10 +1,11 @@
+use crate::core::state::ControlPanelState;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, RichText};
 use egui_phosphor::regular::SPARKLE;
 
-use super::components::{card, section};
+use super::components::{card, section, styled_button, ButtonTone};
 
-pub(super) fn about(ui: &mut egui::Ui, theme: &AppTheme) {
+pub(super) fn about(ui: &mut egui::Ui, state: &mut ControlPanelState, theme: &AppTheme) {
     section(
         ui,
         "settings-about-title",
@@ -68,5 +69,39 @@ pub(super) fn about(ui: &mut egui::Ui, theme: &AppTheme) {
                 );
             });
         });
+    });
+
+    ui.add_space(8.0);
+
+    // --- Initial Setup Wizard Re-run Card ---
+    card(ui, theme, |ui| {
+        ui.horizontal(|ui| {
+            ui.label(
+                RichText::new(crate::ui::i18n::text(ui, "settings-wizard-title"))
+                    .size(13.5)
+                    .strong()
+                    .color(theme.text_primary),
+            );
+        });
+        ui.add_space(4.0);
+        ui.label(
+            RichText::new(crate::ui::i18n::text(ui, "settings-wizard-subtitle"))
+                .size(11.5)
+                .color(theme.text_secondary),
+        );
+        ui.add_space(6.0);
+        if styled_button(
+            ui,
+            Some(SPARKLE),
+            "settings-wizard-reopen",
+            ButtonTone::Secondary,
+            theme,
+        )
+        .clicked()
+        {
+            state.show_setup_wizard = true;
+            state.setup_wizard.step = 0;
+            state.settings_ui.open = false;
+        }
     });
 }

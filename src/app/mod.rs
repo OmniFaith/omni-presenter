@@ -116,6 +116,15 @@ impl PresentationApp {
             }
         }
         crate::services::plugins::sync_shader_themes(&mut control_state);
+        if !control_state.settings.first_run_completed {
+            control_state.show_setup_wizard = true;
+            control_state.setup_wizard.presentation_aspect_ratio = control_state.presentation_aspect_ratio;
+            control_state.setup_wizard.dock_preview_bg = control_state.dock_preview_bg;
+            if let Some(theme) = control_state.themes.get(control_state.selected_theme_index) {
+                control_state.setup_wizard.wrap_text = theme.options.wrap_text;
+                control_state.setup_wizard.auto_fit = theme.options.auto_fit;
+            }
+        }
         let last_saved_settings =
             serde_json::to_string(&control_state.settings).unwrap_or_default();
         match crate::services::chat::ChatService::new(db.clone(), &control_state.settings.operators)

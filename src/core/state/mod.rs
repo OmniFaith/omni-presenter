@@ -10,6 +10,7 @@ mod editors;
 pub mod events;
 mod lyrics_search;
 mod player;
+pub mod setup_wizard;
 mod web_media;
 pub use editors::{
     EditorSnapshot, SongEditorState, StropheEditorState, ThemeDragHandle, ThemeEditorState,
@@ -17,6 +18,7 @@ pub use editors::{
 pub use events::EventEditorDraft;
 pub use lyrics_search::WebLyricsSearchState;
 pub use player::{ActivePlayerMedia, PlayerMediaKind};
+pub use setup_wizard::SetupWizardState;
 pub use web_media::WebMediaModalState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -214,6 +216,8 @@ pub struct ControlPanelState {
     pub is_blackout: bool,
     pub show_presentation_dock: bool,
     pub show_presentation_settings_modal: bool,
+    pub show_setup_wizard: bool,
+    pub setup_wizard: SetupWizardState,
     pub presentation_started_at: Option<std::time::Instant>,
     pub presentation_timer_seconds_mode: bool,
     pub focus_dock_jump_input: bool,
@@ -339,6 +343,8 @@ impl Default for ControlPanelState {
             is_blackout: false,
             show_presentation_dock: true,
             show_presentation_settings_modal: false,
+            show_setup_wizard: false,
+            setup_wizard: SetupWizardState::default(),
             presentation_started_at: None,
             presentation_timer_seconds_mode: false,
             focus_dock_jump_input: false,

@@ -681,3 +681,26 @@ settings-background-theme-default = Tema visual da apresentação
 settings-background-custom-wallpaper = Papel de parede personalizado
 settings-screen-appearance-and-background = Aparência e Plano de Fundo
 
+settings-wizard-title = Assistente de Configuração
+settings-wizard-subtitle = Configuração Inicial e Personalização
+settings-wizard-welcome = Bem-vindo ao Omni Presenter
+settings-wizard-welcome-desc = Sistema moderno, completo e intuitivo para projeção e apresentação de cultos e eventos.
+settings-wizard-step-welcome = Boas-vindas
+settings-wizard-step-appearance = Tema
+settings-wizard-step-monitors = Projeção
+settings-wizard-step-breaks = Tipografia
+settings-wizard-step-ready = Conclusão
+settings-wizard-next = Próximo
+settings-wizard-back = Voltar
+settings-wizard-finish = Concluir e Começar a Usar
+settings-wizard-skip = Pular e Usar Padrões
+settings-wizard-auto-wrap = Quebra automática de linhas
+settings-wizard-auto-wrap-desc = Quebra o texto automaticamente em novas linhas para impedir que letras ou versículos saiam da tela.
+settings-wizard-auto-fit = Ajuste automático de tamanho (Auto-fit)
+settings-wizard-auto-fit-desc = Reduz suavemente a fonte para garantir que estrofes e passagens longas caibam perfeitamente no slide.
+settings-wizard-aspect-ratio = Proporção da tela de projeção
+settings-wizard-ready-title = Tudo pronto para apresentar!
+settings-wizard-ready-desc = Sua configuração inicial foi salva. Você pode ajustar essas opções a qualquer momento nas Preferências.
+settings-wizard-reopen = Executar Assistente de Configuração Inicial
+
+

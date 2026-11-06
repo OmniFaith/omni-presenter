@@ -537,6 +537,7 @@ pub struct AppSettings {
     pub last_bible_chapter: usize,
     pub last_bible_verse: usize,
     pub last_bible_verse_end: usize,
+    pub first_run_completed: bool,
 }
 
 impl Default for AppSettings {
@@ -572,6 +573,7 @@ impl Default for AppSettings {
             last_bible_chapter: 1,
             last_bible_verse: 1,
             last_bible_verse_end: 1,
+            first_run_completed: false,
         }
     }
 }

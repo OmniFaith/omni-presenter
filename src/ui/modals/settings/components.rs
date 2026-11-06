@@ -422,7 +422,7 @@ pub fn setting_toggle(
         .on_hover_text(description);
 }
 
-pub(super) fn appearance_card(
+pub(crate) fn appearance_card(
     ui: &mut egui::Ui,
     palette: &AppTheme,
     label: &str,

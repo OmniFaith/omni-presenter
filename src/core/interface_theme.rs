@@ -95,9 +95,19 @@ pub fn parse_color(value: &str) -> Option<[u8; 4]> {
 
 impl InterfaceTheme {
     pub fn localized_name(&self, language: crate::core::i18n::Language) -> &str {
+        self.localized_name_for_mode(language, true)
+    }
+
+    pub fn localized_name_for_mode(&self, language: crate::core::i18n::Language, dark: bool) -> &str {
         let key = match self.id.as_str() {
             "classic" => Some("appearance-theme-classic"),
-            "darker_pro" | "midnight" => Some("appearance-theme-darker-pro"),
+            "darker_pro" | "midnight" => {
+                if dark {
+                    Some("appearance-theme-darker-pro")
+                } else {
+                    Some("appearance-theme-lighter-pro")
+                }
+            }
             "forest" => Some("appearance-theme-forest"),
             "violet" => Some("appearance-theme-violet"),
             "sand" => Some("appearance-theme-sand"),
@@ -109,6 +119,12 @@ impl InterfaceTheme {
             if translated != key {
                 return translated;
             }
+            if key == "appearance-theme-lighter-pro" {
+                return "Light Pro";
+            }
+        }
+        if !dark && (self.id == "darker_pro" || self.id == "midnight") {
+            return "Light Pro";
         }
         crate::core::i18n::localize(&self.translations, language, "name", &self.name)
     }
@@ -355,5 +371,16 @@ mod tests {
         let mut invalid = InterfaceTheme::default();
         invalid.dark.insert("accent".into(), "#中文中文".into());
         assert!(invalid.validate().is_err());
+    }
+    #[test]
+    fn darker_pro_name_adapts_to_light_and_dark_mode() {
+        let theme = resolve_builtin("darker_pro").unwrap();
+        let lang = crate::core::i18n::Language::Portuguese;
+        assert_eq!(theme.localized_name_for_mode(lang, true), "Darker Pro");
+        assert_eq!(theme.localized_name_for_mode(lang, false), "Light Pro");
+
+        let lang_en = crate::core::i18n::Language::English;
+        assert_eq!(theme.localized_name_for_mode(lang_en, true), "Darker Pro");
+        assert_eq!(theme.localized_name_for_mode(lang_en, false), "Light Pro");
     }
 }

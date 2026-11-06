@@ -94,6 +94,8 @@ appearance-theme-darker-pro = Darker Pro
 
 appearance-theme-forest = Sage
 
+appearance-theme-lighter-pro = Light Pro
+
 appearance-theme-midnight = Darker Pro
 
 appearance-theme-sand = Sand

@@ -72,7 +72,7 @@ pub(super) fn render(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppThem
                         if appearance_card(
                             ui,
                             &palette,
-                            definition.localized_name(language),
+                            definition.localized_name_for_mode(language, dark),
                             choice == definition.id,
                             width,
                             theme,

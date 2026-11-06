@@ -681,3 +681,26 @@ settings-background-theme-default = Presentation visual theme
 settings-background-custom-wallpaper = Custom wallpaper
 settings-screen-appearance-and-background = Appearance & Background
 
+settings-wizard-title = Setup Wizard
+settings-wizard-subtitle = Initial Setup & Personalization
+settings-wizard-welcome = Welcome to Omni Presenter
+settings-wizard-welcome-desc = A modern, complete and intuitive presentation system for services and events.
+settings-wizard-step-welcome = Welcome
+settings-wizard-step-appearance = Theme
+settings-wizard-step-monitors = Projection
+settings-wizard-step-breaks = Typography
+settings-wizard-step-ready = Complete
+settings-wizard-next = Next
+settings-wizard-back = Back
+settings-wizard-finish = Finish & Start Using
+settings-wizard-skip = Skip & Use Defaults
+settings-wizard-auto-wrap = Automatic text wrapping
+settings-wizard-auto-wrap-desc = Automatically wraps lyrics and scripture across lines when they reach the slide boundaries.
+settings-wizard-auto-fit = Automatic font resizing (Auto-fit)
+settings-wizard-auto-fit-desc = Proportionally shrinks font size to guarantee long verses and stanzas fit inside the slide box.
+settings-wizard-aspect-ratio = Projection aspect ratio
+settings-wizard-ready-title = All set to present!
+settings-wizard-ready-desc = Your initial setup is complete. You can always change these settings anytime in Preferences.
+settings-wizard-reopen = Run Initial Setup Wizard
+
+

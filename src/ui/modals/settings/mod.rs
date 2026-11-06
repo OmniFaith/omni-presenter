@@ -491,7 +491,7 @@ pub fn render_settings_modal(
                         connections::connections(ui, &mut draft, state, &theme)
                     }
                     SettingsTab::Profiles => profiles::profiles(ui, &mut draft, &theme),
-                    SettingsTab::About => about::about(ui, &theme),
+                    SettingsTab::About => about::about(ui, state, &theme),
                     }
                 });
         });
