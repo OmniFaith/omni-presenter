@@ -413,7 +413,7 @@ pub fn render_settings_modal(
                             "settings-active-profiles",
                             &[
                                 ("operator", &draft.operator().name),
-                                ("service", &draft.service().name),
+                                ("service", &draft.service().display_name(draft.language)),
                             ],
                         ))
                         .size(11.5)

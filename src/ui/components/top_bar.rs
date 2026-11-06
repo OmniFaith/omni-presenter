@@ -68,12 +68,12 @@ pub fn render_top_bar(
             .settings
             .services
             .iter()
-            .map(|p| (p.id.clone(), p.name.clone()))
+            .map(|p| (p.id.clone(), p.display_name(language)))
             .collect();
         let active_operator = state.settings.active_operator.clone();
         let active_service = state.settings.active_service.clone();
         let operator_name = state.settings.operator().name.clone();
-        let service_name = state.settings.service().name.clone();
+        let service_name = state.settings.service().display_name(language);
         let screen_count = state
             .settings
             .screens

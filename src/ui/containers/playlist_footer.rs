@@ -95,7 +95,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
     let (event_name, active_time, schedule_info, item_count) = {
         let active = state.settings.service();
         (
-            active.name.clone(),
+            active.display_name(lang),
             active.recurrence.time.trim().to_string(),
             active.schedule_label_localized(lang),
             state.playlist.len(),
@@ -224,7 +224,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                     let time = s.recurrence.time.trim().to_string();
                     (
                         s.id.clone(),
-                        s.name.clone(),
+                        s.display_name(lang),
                         time,
                         s.schedule_label_localized(lang),
                         count,

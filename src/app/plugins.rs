@@ -78,7 +78,7 @@ impl PresentationApp {
             self.slide_deck.title()
         };
         let context = serde_json::json!({"title": title, "text": self.slide_deck.raw_text(),
-            "operator": self.control_state.settings.operator().name, "service": self.control_state.settings.service().name,
+            "operator": self.control_state.settings.operator().name, "service": self.control_state.settings.service().display_name(self.control_state.settings.language),
             "language": self.control_state.settings.language});
         let actions = runtime::actions(command, &props, &context)?;
         // Validate the full result before applying any actions.

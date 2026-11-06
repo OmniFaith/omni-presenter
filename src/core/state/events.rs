@@ -35,7 +35,7 @@ impl ControlPanelState {
         if let Some(service) = self.settings.services.iter().find(|s| s.id == event_id) {
             self.event_editor_draft = Some(EventEditorDraft {
                 id: Some(service.id.clone()),
-                name: service.name.clone(),
+                name: service.display_name(self.settings.language),
                 pattern: if service.recurrence.enabled {
                     service.recurrence.pattern.clone()
                 } else {
@@ -136,7 +136,7 @@ impl ControlPanelState {
         }
         self.capture_profiles();
         if let Some(idx) = self.settings.services.iter().position(|s| s.id == event_id) {
-            let deleted_name = self.settings.services[idx].name.clone();
+            let deleted_name = self.settings.services[idx].display_name(self.settings.language);
             self.settings.services.remove(idx);
             let next_id = self.settings.services[0].id.clone();
             self.switch_service(&next_id);
@@ -154,7 +154,11 @@ impl ControlPanelState {
             let new_id = crate::core::preferences::new_id("service");
             let mut new_profile = service.clone();
             new_profile.id = new_id.clone();
-            new_profile.name = format!("{} (Cópia)", service.name);
+            let base_name = service.display_name(self.settings.language);
+            new_profile.name = self.settings.language.format(
+                "workspace-copy-label",
+                &[("name", &base_name)],
+            );
             for item in &mut new_profile.playlist {
                 item.played = false;
                 item.id = crate::core::preferences::new_id("item");
@@ -666,7 +670,7 @@ pub mod tests {
         state.duplicate_event(&initial_id);
 
         assert_eq!(state.settings.services.len(), 2);
-        assert_eq!(state.settings.service().name, "Culto principal (Cópia)");
+        assert_eq!(state.settings.service().name, "New Event · copy");
         assert_eq!(state.playlist.len(), 1);
         assert!(!state.playlist[0].played);
 
@@ -674,6 +678,30 @@ pub mod tests {
         state.delete_event(&copy_id);
         assert_eq!(state.settings.services.len(), 1);
         assert_eq!(state.settings.active_service, initial_id);
+    }
+
+    #[test]
+    fn test_default_and_legacy_service_profile_name_is_internationalized() {
+        use crate::core::i18n::Language;
+        let default_service = crate::core::preferences::ServiceProfile::default();
+        assert_eq!(default_service.display_name(Language::English), "New Event");
+        assert_eq!(default_service.display_name(Language::Portuguese), "Novo Evento");
+        assert_eq!(default_service.display_name(Language::Spanish), "Nuevo Evento");
+
+        let legacy_service = crate::core::preferences::ServiceProfile {
+            name: "Culto principal".into(),
+            ..Default::default()
+        };
+        assert_eq!(legacy_service.display_name(Language::English), "New Event");
+        assert_eq!(legacy_service.display_name(Language::Portuguese), "Novo Evento");
+        assert_eq!(legacy_service.display_name(Language::Spanish), "Nuevo Evento");
+
+        let custom_service = crate::core::preferences::ServiceProfile {
+            name: "Conferência de Jovens".into(),
+            ..Default::default()
+        };
+        assert_eq!(custom_service.display_name(Language::English), "Conferência de Jovens");
+        assert_eq!(custom_service.display_name(Language::Portuguese), "Conferência de Jovens");
     }
 
     #[test]

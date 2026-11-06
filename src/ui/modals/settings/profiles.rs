@@ -291,7 +291,7 @@ pub(super) fn profiles(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppTh
                         ui.push_id(&p.id, |ui| {
                             if profile_card(
                                 ui,
-                                &p.name,
+                                &p.display_name(language),
                                 &language.format(
                                     "settings-items-in-repertoire",
                                     &[("count", &p.playlist.len().to_string())],
@@ -327,14 +327,19 @@ pub(super) fn profiles(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppTh
                         .color(theme.text_secondary),
                 );
                 ui.add_space(2.0);
-                text_input(
+                let mut current_name = draft.services[index].display_name(language);
+                if text_input(
                     ui,
                     "service_name_input",
-                    &mut draft.services[index].name,
+                    &mut current_name,
                     language.text("settings-e-g-family-service"),
                     Some(260.0),
                     theme,
-                );
+                )
+                .changed()
+                {
+                    draft.services[index].name = current_name;
+                }
             });
 
             ui.add_space(8.0);

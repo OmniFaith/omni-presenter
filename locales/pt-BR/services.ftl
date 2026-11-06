@@ -150,7 +150,7 @@ services-login-data-is-too-large = Dados de acesso muito grandes
 
 services-main-operator = Operador principal
 
-services-main-service = Culto principal
+services-main-service = Novo Evento
 
 services-mdns-configured-avahi-and-local-name-resolution-are-active = mDNS configurado: Avahi e resolução de nomes .local ativos.
 

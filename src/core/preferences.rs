@@ -319,13 +319,25 @@ impl ServiceProfile {
             String::new()
         }
     }
+
+    pub fn display_name(&self, language: crate::core::i18n::Language) -> String {
+        if self.name.is_empty()
+            || self.name == "workspace-new-event"
+            || self.name == "Culto principal"
+            || self.name == "services-main-service"
+        {
+            language.text("workspace-new-event").to_string()
+        } else {
+            language.text(&self.name).to_string()
+        }
+    }
 }
 
 impl Default for ServiceProfile {
     fn default() -> Self {
         Self {
             id: "service_default".into(),
-            name: "Culto principal".into(),
+            name: "workspace-new-event".into(),
             theme_id: "obsidian_pro".into(),
             idle_theme_id: "obsidian_pro".into(),
             aspect_ratio: 0.0,
