@@ -69,19 +69,21 @@ pub fn render_welcome_profile_modal(
                 .id_salt("welcome_profiles_scroll")
                 .max_height(280.0)
                 .show(ui, |ui| {
-                    let cols = ((ui.available_width() + 12.0) / (card_w + 12.0)).floor().max(1.0) as usize;
-                    let visible_cols = cols.min(operators.len());
-                    let total_row_w = visible_cols as f32 * card_w + (visible_cols.saturating_sub(1)) as f32 * 12.0;
-                    let left_pad = ((ui.available_width() - total_row_w) / 2.0).max(0.0);
+                    let avail_w = ui.available_width();
+                    let cols = ((avail_w + 12.0) / (card_w + 12.0)).floor().max(1.0) as usize;
 
-                    egui::Grid::new("welcome_profiles_grid")
-                        .spacing(egui::vec2(12.0, 12.0))
-                        .show(ui, |ui| {
-                            if left_pad > 0.0 {
-                                ui.add_space(left_pad);
+                    for chunk in operators.chunks(cols) {
+                        let row_count = chunk.len();
+                        let row_w = row_count as f32 * card_w + (row_count.saturating_sub(1)) as f32 * 12.0;
+                        let pad = ((avail_w - row_w) / 2.0).max(0.0);
+
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing = egui::vec2(12.0, 12.0);
+                            if pad > 0.0 {
+                                ui.add_space(pad);
                             }
 
-                            for (idx, p) in operators.iter().enumerate() {
+                            for p in chunk {
                                 let is_active = p.id == active_id;
                                 let (rect, resp) = ui.allocate_exact_size(
                                     egui::vec2(card_w, card_h),
@@ -171,15 +173,10 @@ pub fn render_welcome_profile_modal(
                                         theme.accent,
                                     );
                                 }
-
-                                if (idx + 1) % cols == 0 {
-                                    ui.end_row();
-                                    if left_pad > 0.0 {
-                                        ui.add_space(left_pad);
-                                    }
-                                }
                             }
                         });
+                        ui.add_space(8.0);
+                    }
                 });
 
             ui.add_space(10.0);
