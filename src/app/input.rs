@@ -86,8 +86,10 @@ impl PresentationApp {
                     }
                 }
             }
+            Command::PreviousSlide => self.slide_deck.prev_slide(),
             Command::FirstSlide => self.slide_deck.first_slide(),
             Command::LastSlide => self.slide_deck.last_slide(),
+            Command::Settings => self.control_state.settings_ui.open = true,
             Command::JumpSlide => {
                 self.control_state.show_presentation_dock = true;
                 self.control_state.focus_dock_jump_input = true;

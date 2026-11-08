@@ -587,6 +587,9 @@ impl SlideDeck {
                 self.preview_slide_index = self.live_index;
             }
             true
+        } else if self.live_slides.is_empty() && !self.slides.is_empty() && self.preview_slide_index + 1 < self.slides.len() {
+            self.preview_slide_index += 1;
+            true
         } else {
             false
         }
@@ -599,6 +602,8 @@ impl SlideDeck {
             if self.is_previewing_live_song() {
                 self.preview_slide_index = self.live_index;
             }
+        } else if self.live_slides.is_empty() && self.preview_slide_index > 0 {
+            self.preview_slide_index -= 1;
         }
     }
 
@@ -609,6 +614,8 @@ impl SlideDeck {
             if self.is_previewing_live_song() {
                 self.preview_slide_index = 0;
             }
+        } else if !self.slides.is_empty() {
+            self.preview_slide_index = 0;
         }
     }
 
@@ -619,6 +626,8 @@ impl SlideDeck {
             if self.is_previewing_live_song() {
                 self.preview_slide_index = self.live_index;
             }
+        } else if !self.slides.is_empty() {
+            self.preview_slide_index = self.slides.len() - 1;
         }
     }
 

@@ -214,3 +214,31 @@ fn test_theme_live_preview_in_settings_reverts_if_not_saved() {
     let (saved_theme, _) = ui::theme::AppTheme::resolve(&app.control_state.settings, &ctx);
     assert_eq!(app.control_state.theme, saved_theme);
 }
+
+#[test]
+fn test_execute_command_previous_slide_navigates_back() {
+    use crate::core::commands::Command;
+    use crate::core::slides::SlideDeck;
+    let mut app = PresentationApp::with_db(AppDb::open_in_memory().unwrap());
+    let ctx = egui::Context::default();
+
+    // Setup dummy song slides
+    app.slide_deck = SlideDeck::new("Strophe 1\n\nStrophe 2\n\nStrophe 3");
+    assert_eq!(app.slide_deck.current_index(), 0);
+
+    // Advance to slide 1
+    app.execute_command(&ctx, Command::NextSlide);
+    assert_eq!(app.slide_deck.current_index(), 1);
+
+    // Advance to slide 2
+    app.execute_command(&ctx, Command::NextSlide);
+    assert_eq!(app.slide_deck.current_index(), 2);
+
+    // Go back with PreviousSlide
+    app.execute_command(&ctx, Command::PreviousSlide);
+    assert_eq!(app.slide_deck.current_index(), 1);
+
+    // Go back to slide 0
+    app.execute_command(&ctx, Command::PreviousSlide);
+    assert_eq!(app.slide_deck.current_index(), 0);
+}
