@@ -73,6 +73,14 @@ pub struct EventRecurrence {
     pub days_of_week: Vec<u8>,
     /// Time of day in "HH:MM" format, e.g. "19:00"
     pub time: String,
+    #[serde(default)]
+    pub all_day: bool,
+    #[serde(default)]
+    pub week_of_month: u8,
+    #[serde(default)]
+    pub months: Vec<u8>,
+    #[serde(default)]
+    pub specific_dates: Vec<String>,
 }
 
 impl Default for EventRecurrence {
@@ -82,6 +90,10 @@ impl Default for EventRecurrence {
             pattern: "none".to_string(),
             days_of_week: vec![0],
             time: "19:00".to_string(),
+            all_day: false,
+            week_of_month: 0,
+            months: Vec::new(),
+            specific_dates: Vec::new(),
         }
     }
 }
@@ -217,7 +229,9 @@ impl ServiceProfile {
 
     pub fn schedule_label_localized(&self, lang: crate::core::i18n::Language) -> String {
         if self.recurrence.enabled {
-            let time_suffix = if self.recurrence.time.trim().is_empty() {
+            let time_suffix = if self.recurrence.all_day {
+                format!(" ({})", lang.text("workspace-all-day"))
+            } else if self.recurrence.time.trim().is_empty() {
                 String::new()
             } else {
                 format!(
@@ -286,22 +300,70 @@ impl ServiceProfile {
                     }
                 }
                 "monthly" => {
-                    let monthly_txt = lang.text("workspace-recurrence-monthly");
-                    format!("{monthly_txt}{time_suffix}")
+                    let mut desc = lang.text("workspace-recurrence-monthly").to_string();
+                    if self.recurrence.week_of_month > 0 && !self.recurrence.days_of_week.is_empty() {
+                        let week_label = match self.recurrence.week_of_month {
+                            1 => lang.text("workspace-week-1"),
+                            2 => lang.text("workspace-week-2"),
+                            3 => lang.text("workspace-week-3"),
+                            4 => lang.text("workspace-week-4"),
+                            5 => lang.text("workspace-week-last"),
+                            _ => lang.text("workspace-week-any"),
+                        };
+                        let day_keys = [
+                            "workspace-day-sun", "workspace-day-mon", "workspace-day-tue",
+                            "workspace-day-wed", "workspace-day-thu", "workspace-day-fri", "workspace-day-sat",
+                        ];
+                        let days_str: Vec<&str> = self.recurrence.days_of_week.iter()
+                            .filter_map(|&d| day_keys.get(d as usize).map(|k| lang.text(k)))
+                            .collect();
+                        desc = format!("{week_label} ({})", days_str.join(", "));
+                    }
+                    format!("{desc}{time_suffix}")
                 }
                 _ => {
+                    if !self.recurrence.specific_dates.is_empty() {
+                        let first = &self.recurrence.specific_dates[0];
+                        if self.recurrence.specific_dates.len() > 1 {
+                            return format!("{} (+{} datas){time_suffix}", first, self.recurrence.specific_dates.len() - 1);
+                        } else {
+                            return format!("{first}{time_suffix}");
+                        }
+                    }
                     if let Some(date) = &self.event_date {
                         if !date.is_empty() {
                             return format!("{date}{time_suffix}");
                         }
                     }
-                    let def_txt = lang.text("workspace-recurrence-default");
+                    let def_txt = lang.text("workspace-recurrence-none");
                     format!("{def_txt}{time_suffix}")
                 }
             }
+        } else if !self.recurrence.specific_dates.is_empty() {
+            let first = &self.recurrence.specific_dates[0];
+            let time_suffix = if self.recurrence.all_day {
+                format!(" ({})", lang.text("workspace-all-day"))
+            } else if self.recurrence.time.trim().is_empty() {
+                String::new()
+            } else {
+                format!(
+                    " {}",
+                    lang.format(
+                        "workspace-recurrence-at",
+                        &[("time", self.recurrence.time.trim())]
+                    )
+                )
+            };
+            if self.recurrence.specific_dates.len() > 1 {
+                return format!("{} (+{} datas){time_suffix}", first, self.recurrence.specific_dates.len() - 1);
+            } else {
+                return format!("{first}{time_suffix}");
+            }
         } else if let Some(date) = &self.event_date {
             if !date.trim().is_empty() {
-                let time_suffix = if self.recurrence.time.trim().is_empty() {
+                let time_suffix = if self.recurrence.all_day {
+                    format!(" ({})", lang.text("workspace-all-day"))
+                } else if self.recurrence.time.trim().is_empty() {
                     String::new()
                 } else {
                     format!(

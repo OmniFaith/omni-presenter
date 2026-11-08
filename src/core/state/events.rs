@@ -7,7 +7,11 @@ pub struct EventEditorDraft {
     pub pattern: String, // "none", "weekly", "monthly", "daily"
     pub days_of_week: Vec<u8>,
     pub time: String,
+    pub all_day: bool,
+    pub week_of_month: u8,
+    pub months: Vec<u8>,
     pub date: String,
+    pub specific_dates: Vec<String>,
     pub copy_current_playlist: bool,
     pub theme_id: String,
     pub idle_theme_id: String,
@@ -18,10 +22,14 @@ impl Default for EventEditorDraft {
         Self {
             id: None,
             name: String::new(),
-            pattern: "weekly".to_string(),
+            pattern: "none".to_string(),
             days_of_week: vec![0], // Domingo por padrão
             time: "19:00".to_string(),
+            all_day: false,
+            week_of_month: 0,
+            months: Vec::new(),
             date: String::new(),
+            specific_dates: Vec::new(),
             copy_current_playlist: false,
             theme_id: String::new(),
             idle_theme_id: String::new(),
@@ -37,6 +45,18 @@ impl ControlPanelState {
 
     pub fn open_edit_event_modal(&mut self, event_id: &str) {
         if let Some(service) = self.settings.services.iter().find(|s| s.id == event_id) {
+            let specific_dates = if !service.recurrence.specific_dates.is_empty() {
+                service.recurrence.specific_dates.clone()
+            } else if let Some(ref d) = service.event_date {
+                if !d.trim().is_empty() {
+                    vec![d.clone()]
+                } else {
+                    Vec::new()
+                }
+            } else {
+                Vec::new()
+            };
+
             self.event_editor_draft = Some(EventEditorDraft {
                 id: Some(service.id.clone()),
                 name: service.display_name(self.settings.language),
@@ -55,7 +75,11 @@ impl ControlPanelState {
                 } else {
                     service.recurrence.time.clone()
                 },
+                all_day: service.recurrence.all_day,
+                week_of_month: service.recurrence.week_of_month,
+                months: service.recurrence.months.clone(),
                 date: service.event_date.clone().unwrap_or_default(),
+                specific_dates,
                 copy_current_playlist: false,
                 theme_id: service.theme_id.clone(),
                 idle_theme_id: service.idle_theme_id.clone(),
@@ -74,22 +98,39 @@ impl ControlPanelState {
         if trimmed_name.is_empty() {
             self.show_event_editor_modal = false;
             return;
-        }
+        };
 
         self.capture_profiles();
 
         let recurrence_enabled = draft.pattern != "none";
+
+        let mut specific_dates = draft.specific_dates.clone();
+        if specific_dates.is_empty() && !draft.date.trim().is_empty() {
+            specific_dates.push(draft.date.trim().to_string());
+        }
+        let primary_date = specific_dates.first().cloned().or_else(|| {
+            if !draft.date.trim().is_empty() {
+                Some(draft.date.trim().to_string())
+            } else {
+                None
+            }
+        });
+
         let recurrence = crate::core::preferences::EventRecurrence {
             enabled: recurrence_enabled,
             pattern: draft.pattern.clone(),
             days_of_week: draft.days_of_week,
-            time: draft.time.trim().to_string(),
+            time: if draft.all_day {
+                "all_day".to_string()
+            } else {
+                draft.time.trim().to_string()
+            },
+            all_day: draft.all_day,
+            week_of_month: draft.week_of_month,
+            months: draft.months,
+            specific_dates: specific_dates.clone(),
         };
-        let event_date = if !draft.date.trim().is_empty() {
-            Some(draft.date.trim().to_string())
-        } else {
-            None
-        };
+        let event_date = primary_date;
 
         if let Some(id) = draft.id {
             if let Some(service) = self.settings.services.iter_mut().find(|s| s.id == id) {
@@ -98,6 +139,17 @@ impl ControlPanelState {
                 service.event_date = event_date;
                 service.theme_id = draft.theme_id.clone();
                 service.idle_theme_id = draft.idle_theme_id.clone();
+                for d in &specific_dates {
+                    if !service.sessions.iter().any(|s| &s.date == d)
+                        && service.event_date.as_deref() != Some(d.as_str())
+                    {
+                        service.sessions.push(crate::core::preferences::ServiceSession {
+                            id: crate::core::preferences::new_id("session"),
+                            date: d.clone(),
+                            playlist: Vec::new(),
+                        });
+                    }
+                }
             }
             if self.settings.active_service == id && !draft.theme_id.is_empty() {
                 if let Some(idx) = self.themes.iter().position(|t| t.id == draft.theme_id) {
@@ -124,6 +176,17 @@ impl ControlPanelState {
                 Vec::new()
             };
 
+            let mut sessions = Vec::new();
+            for (idx, d) in specific_dates.iter().enumerate() {
+                if idx > 0 {
+                    sessions.push(crate::core::preferences::ServiceSession {
+                        id: crate::core::preferences::new_id("session"),
+                        date: d.clone(),
+                        playlist: Vec::new(),
+                    });
+                }
+            }
+
             let new_profile = crate::core::preferences::ServiceProfile {
                 id: new_id.clone(),
                 name: trimmed_name.clone(),
@@ -132,6 +195,7 @@ impl ControlPanelState {
                 playlist,
                 event_date,
                 recurrence,
+                sessions,
                 ..Default::default()
             };
 
@@ -609,6 +673,7 @@ pub mod tests {
                 pattern: "weekly".into(),
                 days_of_week: vec![0],
                 time: "19:00".into(),
+                ..Default::default()
             },
             ..Default::default()
         };
@@ -621,6 +686,7 @@ pub mod tests {
                 pattern: "weekly".into(),
                 days_of_week: vec![2, 4],
                 time: "20:00".into(),
+                ..Default::default()
             },
             ..Default::default()
         };
@@ -812,6 +878,7 @@ pub mod tests {
             pattern: "weekly".into(),
             days_of_week: vec![0], // Domingo
             time: "09:00".into(),
+            ..Default::default()
         };
 
         // Evento 2: Noite (Domingo 19:00)
