@@ -799,7 +799,12 @@ fn row(
         }
     }
     if response.double_clicked() {
-        *action = Some(LibraryAction::Present(item.id));
+        let ids = if is_selected && kind.selected(state).len() > 1 {
+            kind.selected(state).iter().copied().collect::<Vec<_>>()
+        } else {
+            vec![item.id]
+        };
+        *action = Some(LibraryAction::Playlist(ids));
     }
     response.context_menu(|ui| {
         context_menu_header(ui);
