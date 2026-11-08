@@ -83,6 +83,39 @@ impl AppTheme {
         theme.radius_lg = (definition.rounding + 2.0).min(24.0);
         theme
     }
+
+    /// Resolves the effective `AppTheme` and dark-mode boolean for the active operator from settings.
+    pub fn resolve(
+        settings: &crate::core::preferences::AppSettings,
+        ctx: &egui::Context,
+    ) -> (Self, bool) {
+        let p = settings.operator();
+        let dark = p
+            .theme_mode
+            .is_dark(ctx.system_theme() == Some(egui::Theme::Dark), p.dark_mode);
+        let target_theme_id = if p.interface_theme_id == "midnight" {
+            "darker_pro"
+        } else {
+            p.interface_theme_id.as_str()
+        };
+        let definition = settings
+            .interface_themes
+            .iter()
+            .find(|theme| theme.id == target_theme_id)
+            .cloned()
+            .or_else(|| crate::core::interface_theme::resolve_builtin(target_theme_id))
+            .or_else(|| {
+                settings
+                    .plugins
+                    .iter()
+                    .filter(|plugin| plugin.enabled)
+                    .flat_map(|plugin| &plugin.package.interface_themes)
+                    .find(|theme| theme.id == target_theme_id)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        (Self::from_definition(&definition, dark), dark)
+    }
     /// Modern clean light theme aesthetic matching target design
     pub fn light() -> Self {
         Self {

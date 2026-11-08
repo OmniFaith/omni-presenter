@@ -19,7 +19,20 @@ impl PresentationApp {
         let ctx = ui.ctx().clone();
         crate::ui::i18n::install(&ctx, self.control_state.settings.language);
         self.apply_appearance(&ctx);
-        *ui.style_mut() = (*ctx.style_of(if self.control_state.settings.operator().dark_mode {
+        let dark = if self.control_state.settings_ui.open {
+            self.control_state
+                .settings_ui
+                .draft
+                .as_ref()
+                .map(|d| {
+                    let op = d.operator();
+                    op.theme_mode.is_dark(ctx.system_theme() == Some(egui::Theme::Dark), op.dark_mode)
+                })
+                .unwrap_or(self.control_state.settings.operator().dark_mode)
+        } else {
+            self.control_state.settings.operator().dark_mode
+        };
+        *ui.style_mut() = (*ctx.style_of(if dark {
             egui::Theme::Dark
         } else {
             egui::Theme::Light
@@ -73,21 +86,20 @@ impl PresentationApp {
 
     pub(super) fn apply_appearance(&mut self, ctx: &egui::Context) {
         ctx.options_mut(|options| options.zoom_with_keyboard = false);
-        let p = self.control_state.settings.operator().clone();
-        let dark = p.theme_mode.is_dark(ctx.system_theme() == Some(egui::Theme::Dark), p.dark_mode);
-        self.control_state.settings.operator_mut().dark_mode = dark;
-        let target_theme_id = if p.interface_theme_id == "midnight" {
-            "darker_pro"
+        let settings = if self.control_state.settings_ui.open {
+            self.control_state
+                .settings_ui
+                .draft
+                .as_ref()
+                .unwrap_or(&self.control_state.settings)
         } else {
-            p.interface_theme_id.as_str()
+            &self.control_state.settings
         };
-        let definition = self.control_state.settings.interface_themes.iter()
-            .find(|theme| theme.id == target_theme_id)
-            .cloned().or_else(|| crate::core::interface_theme::resolve_builtin(target_theme_id))
-            .or_else(|| self.control_state.settings.plugins.iter().filter(|plugin| plugin.enabled)
-                .flat_map(|plugin| &plugin.package.interface_themes).find(|theme| theme.id == target_theme_id).cloned())
-            .unwrap_or_default();
-        let resolved = AppTheme::from_definition(&definition, dark);
+        let p = settings.operator().clone();
+        let (resolved, dark) = AppTheme::resolve(settings, ctx);
+        if !self.control_state.settings_ui.open {
+            self.control_state.settings.operator_mut().dark_mode = dark;
+        }
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(
             self.control_state
                 .settings
@@ -99,7 +111,11 @@ impl PresentationApp {
         let appearance = (dark, p.scale, p.reduce_motion);
         ctx.set_theme(if p.theme_mode == crate::core::interface_theme::ThemeMode::System {
             egui::ThemePreference::System
-        } else if dark { egui::ThemePreference::Dark } else { egui::ThemePreference::Light });
+        } else if dark {
+            egui::ThemePreference::Dark
+        } else {
+            egui::ThemePreference::Light
+        });
         if self.applied_appearance == Some(appearance) && self.control_state.theme == resolved {
             return;
         }

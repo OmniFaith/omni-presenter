@@ -41,6 +41,7 @@ pub(super) fn render(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppThem
                     if mode != ThemeMode::System {
                         operator.dark_mode = mode == ThemeMode::Dark;
                     }
+                    ui.ctx().request_repaint();
                 }
             }
         });
@@ -78,13 +79,19 @@ pub(super) fn render(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppThem
                             theme,
                         ) {
                             choice = definition.id.clone();
+                            ui.ctx().request_repaint();
                         }
                     });
                 }
             });
             ui.add_space(gap);
         }
-        draft.operator_mut().interface_theme_id = choice.clone();
+        if choice != selected {
+            draft.operator_mut().interface_theme_id = choice.clone();
+            ui.ctx().request_repaint();
+        } else {
+            draft.operator_mut().interface_theme_id = choice.clone();
+        }
         let definition = catalogue
             .iter()
             .find(|theme| theme.id == choice)

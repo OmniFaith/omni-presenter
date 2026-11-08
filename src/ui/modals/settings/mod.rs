@@ -49,8 +49,9 @@ pub fn render_settings_modal(
     }
     let frame = ctx.cumulative_frame_nr();
     let opened = ctx.data_mut(|d| *d.get_temp_mut_or_insert_with(id, || frame));
-    let theme = state.theme.clone();
     let mut draft = state.settings_ui.draft.take().unwrap();
+    let (theme, _) = crate::ui::AppTheme::resolve(&draft, ctx);
+    state.theme = theme.clone();
     let mut close = state.settings_ui.shortcut_capture.command.is_none()
         && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
     let language = draft.language;
@@ -523,7 +524,19 @@ pub fn render_settings_modal(
         state.settings_ui.error.clear();
         ctx.data_mut(|d| d.remove_temp::<u64>(id));
         ctx.animate_bool_with_time(id.with("enter"), false, 0.0);
+        let (saved_theme, saved_dark) = crate::ui::AppTheme::resolve(&state.settings, ctx);
+        state.theme = saved_theme;
+        let mut visuals = if saved_dark {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        };
+        state.theme.apply_to_visuals(&mut visuals);
+        ctx.set_visuals(visuals);
+        ctx.request_repaint();
     } else {
+        let (preview_theme, _) = crate::ui::AppTheme::resolve(&draft, ctx);
+        state.theme = preview_theme;
         state.settings_ui.draft = Some(draft);
     }
 }

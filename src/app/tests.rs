@@ -175,3 +175,42 @@ fn test_song_editor_with_conditional_breaks_and_ratio_toggle() {
     );
     assert!(!job.text.is_empty());
 }
+
+#[test]
+fn test_theme_live_preview_in_settings_reverts_if_not_saved() {
+    let mut app = PresentationApp::with_db(AppDb::open_in_memory().unwrap());
+    let ctx = egui::Context::default();
+
+    // Initial appearance
+    app.apply_appearance(&ctx);
+    let initial_theme = app.control_state.theme.clone();
+
+    // Open settings modal and preview a different theme in the draft
+    app.control_state.settings_ui.open = true;
+    let mut draft = app.control_state.settings.clone();
+    draft.operator_mut().interface_theme_id = "forest".into();
+    app.control_state.settings_ui.draft = Some(draft.clone());
+
+    // apply_appearance should live-preview the theme from draft
+    app.apply_appearance(&ctx);
+    let preview_theme = app.control_state.theme.clone();
+    assert_ne!(preview_theme, initial_theme);
+
+    // Cancel / close settings without saving (draft is cleared, open = false)
+    app.control_state.settings_ui.open = false;
+    app.control_state.settings_ui.draft = None;
+    app.apply_appearance(&ctx);
+    assert_eq!(app.control_state.theme, initial_theme);
+
+    // Now open and save draft
+    app.control_state.settings_ui.open = true;
+    draft.operator_mut().interface_theme_id = "violet".into();
+    app.control_state.settings_ui.draft = Some(draft);
+    app.control_state.settings_ui.save_requested = true;
+    app.save_settings_draft();
+
+    app.apply_appearance(&ctx);
+    assert_eq!(app.control_state.settings.operator().interface_theme_id, "violet");
+    let (saved_theme, _) = ui::theme::AppTheme::resolve(&app.control_state.settings, &ctx);
+    assert_eq!(app.control_state.theme, saved_theme);
+}
