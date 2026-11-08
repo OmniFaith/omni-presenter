@@ -188,13 +188,16 @@ fn test_theme_live_preview_in_settings_reverts_if_not_saved() {
     // Open settings modal and preview a different theme in the draft
     app.control_state.settings_ui.open = true;
     let mut draft = app.control_state.settings.clone();
+    let initial_scale = app.control_state.settings.operator().scale;
     draft.operator_mut().interface_theme_id = "forest".into();
+    draft.operator_mut().scale = 140;
     app.control_state.settings_ui.draft = Some(draft.clone());
 
-    // apply_appearance should live-preview the theme from draft
+    // apply_appearance should live-preview the theme from draft, but keep saved scale
     app.apply_appearance(&ctx);
     let preview_theme = app.control_state.theme.clone();
     assert_ne!(preview_theme, initial_theme);
+    assert_eq!(ctx.zoom_factor(), initial_scale as f32 / 100.0);
 
     // Cancel / close settings without saving (draft is cleared, open = false)
     app.control_state.settings_ui.open = false;

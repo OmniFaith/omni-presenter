@@ -4,14 +4,14 @@ The `.github/workflows/release.yml` workflow builds portable packages and create
 
 ## Platforms
 
-| Operating system | Architecture | Rust target | Packages |
-| --- | --- | --- | --- |
-| Linux (glibc) | x86-64 | `x86_64-unknown-linux-gnu` | `.tar.gz`, `.AppImage`, `.flatpak` |
-| Linux (glibc) | ARM64 | `aarch64-unknown-linux-gnu` | `.tar.gz`, `.AppImage`, `.flatpak` |
-| Windows | x86-64 | `x86_64-pc-windows-msvc` | `.zip`, `-setup.exe` installer |
-| Windows | ARM64 | `aarch64-pc-windows-msvc` | `.zip`, `-setup.exe` installer |
-| macOS | Intel | `x86_64-apple-darwin` | `.tar.gz` |
-| macOS | Apple Silicon | `aarch64-apple-darwin` | `.tar.gz` |
+| Operating system | Architecture  | Rust target                 | Packages                           |
+| ---------------- | ------------- | --------------------------- | ---------------------------------- |
+| Linux (glibc)    | x86-64        | `x86_64-unknown-linux-gnu`  | `.tar.gz`, `.AppImage`, `.flatpak` |
+| Linux (glibc)    | ARM64         | `aarch64-unknown-linux-gnu` | `.tar.gz`, `.AppImage`, `.flatpak` |
+| Windows          | x86-64        | `x86_64-pc-windows-msvc`    | `.zip`, `-setup.exe` installer     |
+| Windows          | ARM64         | `aarch64-pc-windows-msvc`   | `.zip`, `-setup.exe` installer     |
+| macOS            | Intel         | `x86_64-apple-darwin`       | `.tar.gz`                          |
+| macOS            | Apple Silicon | `aarch64-apple-darwin`      | `.tar.gz`                          |
 
 GitHub ARM runners must be available to the repository. Linux binaries and AppImages use the Ubuntu 24.04 glibc baseline and may not work on older distributions. Windows and macOS packages are not signed or notarized and may trigger operating-system warnings. `ffmpeg`, `ffprobe`, and `yt-dlp` are external dependencies for the features described in [operations.md](operations.md). Host-installed programs are not automatically available inside the Flatpak sandbox, so these video features are not guaranteed there.
 
@@ -25,13 +25,11 @@ Install the Flatpak with `flatpak install --user ./package-name.flatpak` and lau
 2. Review the automatically prepared `release-notes/vX.Y.Z.md` (or, for example, `release-notes/vX.Y.Z-alpha.1.md`) and edit its user-facing highlights and known issues. If no file exists for the chosen version, copy `release-notes/TEMPLATE.md`. Keep previous files as release history. See the [versioning guide](versioning.md) for how upcoming notes are generated.
 3. Commit and push these changes, including the workflow, to GitHub. Install the [GitHub CLI](https://cli.github.com/) and authenticate with `gh auth login`. Then run:
 
-   ```sh
-   python3 tools/release.py build
-   ```
+```sh
+python3 tools/release.py build
+```
 
-   The command reads the version from `Cargo.toml`, validates the notes, creates and pushes the tag to `origin`, waits for GitHub Actions, and downloads the twelve packages and checksum manifest to `dist/`. It verifies their hashes and replaces files with the same names. The other platforms are built on GitHub runners, not locally; internet access, repository access, and runner availability are required. On Windows, use `python`. The Git working tree must be clean. An existing tag may be reused only if it points to the current commit. Otherwise, choose a new version and add its release notes. Use `--remote name` for another remote pointing to the repository selected by `gh`. If a tag push fails, the local tag is kept for manual recovery.
-4. Follow **Actions → Build and draft release**. The workflow verifies the tag, version, and notes, builds the six targets, and creates a draft only when all builds succeed. Tags with suffixes, such as `v1.2.3-alpha.1`, are marked as prereleases.
-5. Review the notes and thirteen attachments (twelve packages and `SHA256SUMS.txt`) in GitHub Releases. Test the packages as appropriate, then publish the draft.
+The command reads the version from `Cargo.toml`, validates the notes, creates and pushes the tag to `origin`, waits for GitHub Actions, and downloads the twelve packages and checksum manifest to `dist/`. It verifies their hashes and replaces files with the same names. The other platforms are built on GitHub runners, not locally; internet access, repository access, and runner availability are required. On Windows, use `python`. The Git working tree must be clean. An existing tag may be reused only if it points to the current commit. Otherwise, choose a new version and add its release notes. Use `--remote name` for another remote pointing to the repository selected by `gh`. If a tag push fails, the local tag is kept for manual recovery. 4. Follow **Actions → Build and draft release**. The workflow verifies the tag, version, and notes, builds the six targets, and creates a draft only when all builds succeed. Tags with suffixes, such as `v1.2.3-alpha.1`, are marked as prereleases. 5. Review the notes and thirteen attachments (twelve packages and `SHA256SUMS.txt`) in GitHub Releases. Test the packages as appropriate, then publish the draft.
 
 To start a release without waiting for or downloading the results, use `python3 tools/release.py publish`.
 

@@ -86,20 +86,24 @@ impl PresentationApp {
 
     pub(super) fn apply_appearance(&mut self, ctx: &egui::Context) {
         ctx.options_mut(|options| options.zoom_with_keyboard = false);
-        let settings = if self.control_state.settings_ui.open {
-            self.control_state
+        let saved_operator = self.control_state.settings.operator().clone();
+
+        // Theme and appearance mode are previewed from draft if settings modal is open;
+        // scale and reduce_motion remain strictly from saved settings so adjusting the slider doesn't resize the UI live.
+        let (resolved, dark) = if self.control_state.settings_ui.open {
+            let draft = self
+                .control_state
                 .settings_ui
                 .draft
                 .as_ref()
-                .unwrap_or(&self.control_state.settings)
+                .unwrap_or(&self.control_state.settings);
+            AppTheme::resolve(draft, ctx)
         } else {
-            &self.control_state.settings
-        };
-        let p = settings.operator().clone();
-        let (resolved, dark) = AppTheme::resolve(settings, ctx);
-        if !self.control_state.settings_ui.open {
+            let (theme, dark) = AppTheme::resolve(&self.control_state.settings, ctx);
             self.control_state.settings.operator_mut().dark_mode = dark;
-        }
+            (theme, dark)
+        };
+
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(
             self.control_state
                 .settings
@@ -107,9 +111,19 @@ impl PresentationApp {
                 .text("app-title")
                 .into(),
         ));
-        ctx.set_zoom_factor(p.scale as f32 / 100.0);
-        let appearance = (dark, p.scale, p.reduce_motion);
-        ctx.set_theme(if p.theme_mode == crate::core::interface_theme::ThemeMode::System {
+        ctx.set_zoom_factor(saved_operator.scale as f32 / 100.0);
+        let appearance = (dark, saved_operator.scale, saved_operator.reduce_motion);
+        let theme_mode = if self.control_state.settings_ui.open {
+            self.control_state
+                .settings_ui
+                .draft
+                .as_ref()
+                .map(|d| d.operator().theme_mode)
+                .unwrap_or(saved_operator.theme_mode)
+        } else {
+            saved_operator.theme_mode
+        };
+        ctx.set_theme(if theme_mode == crate::core::interface_theme::ThemeMode::System {
             egui::ThemePreference::System
         } else if dark {
             egui::ThemePreference::Dark
@@ -133,9 +147,9 @@ impl PresentationApp {
             egui::Theme::Light
         };
         ctx.set_visuals(visuals);
-        ctx.set_zoom_factor(p.scale as f32 / 100.0);
+        ctx.set_zoom_factor(saved_operator.scale as f32 / 100.0);
         ctx.style_mut_of(selected_theme, |style| {
-            style.animation_time = if p.reduce_motion { 0.0 } else { 0.14 };
+            style.animation_time = if saved_operator.reduce_motion { 0.0 } else { 0.14 };
             style.interaction.selectable_labels = false;
             style.spacing.button_padding = egui::vec2(10.0, 6.0);
             style.spacing.item_spacing = egui::vec2(8.0, 7.0);
