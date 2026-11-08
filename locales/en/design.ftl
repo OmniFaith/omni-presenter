@@ -205,6 +205,10 @@ design-effect = Effect
 
 design-effects = Effects
 
+design-show-song-effects = Song effects and commands
+
+design-show-song-effects-desc = Shows custom effects, colors, fonts, and sizes defined in song lyrics (//color:, [t:], etc.)
+
 design-ellipse = Ellipse
 
 design-empty-folder = Empty folder

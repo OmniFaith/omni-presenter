@@ -65,11 +65,19 @@ pub(super) fn preview(
         2 => "settings-to-him-be-the-glory-forever-amen",
         _ => "settings-though-i-may-weep-joy-will-come-in-the-morning",
     };
+    let display_text = if state.theme_editor.sample_index == 0
+        && let Some(custom) = &state.theme_editor.preview_text_override
+    {
+        custom.as_str()
+    } else {
+        state.settings.language.text(sample_lyric)
+    };
+
     crate::services::effects::render(
         ui.painter(),
         canvas_rect,
         &state.theme_editor.editing,
-        state.settings.language.text(sample_lyric),
+        display_text,
         egui::Id::unique("theme_editor_transition"),
         !state.settings.operator().reduce_motion,
     );

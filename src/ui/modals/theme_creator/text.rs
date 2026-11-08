@@ -122,6 +122,18 @@ pub(super) fn text_tab(
     ) {
         push_snapshot = true;
     }
+    ui.add_space(2.0);
+
+    if ui
+        .checkbox(
+            &mut state.theme_editor.editing.options.show_song_effects,
+            RichText::new(crate::ui::i18n::text(ui, "design-show-song-effects")).size(11.5),
+        )
+        .on_hover_text(crate::ui::i18n::text(ui, "design-show-song-effects-desc"))
+        .changed()
+    {
+        push_snapshot = true;
+    }
 
     // --- 3. CONTORNO E SOMBRA ---
     ui.add_space(6.0);

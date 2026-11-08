@@ -86,6 +86,7 @@ pub struct ThemeEditorState {
     pub show_shadow_picker: bool,
     pub sidebar_tab: usize,
     pub is_text_selected: bool,
+    pub preview_text_override: Option<String>,
 }
 
 impl Default for ThemeEditorState {
@@ -105,6 +106,7 @@ impl Default for ThemeEditorState {
             show_shadow_picker: false,
             sidebar_tab: 0,
             is_text_selected: false,
+            preview_text_override: None,
         }
     }
 }

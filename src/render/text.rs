@@ -64,7 +64,11 @@ pub fn layout(
     available: Vec2,
 ) -> TextLayout {
     let ctx = painter.ctx();
-    let directives = crate::core::markup::parse_slide_directives(text);
+    let directives = if theme.options.show_song_effects {
+        crate::core::markup::parse_slide_directives(text)
+    } else {
+        crate::core::markup::SlideDirectives::default()
+    };
     let active_family_name = directives.font_family.as_deref().unwrap_or(&theme.font_family);
     let line_spacing = directives.line_spacing.unwrap_or(theme.line_spacing);
     let letter_spacing = directives.letter_spacing.unwrap_or(theme.letter_spacing);
@@ -120,7 +124,9 @@ pub fn layout(
         for run in &styled {
             let is_emphasis = run.style.emphasis;
             let italic = theme.font_italic || run.style.italic;
-            let run_family = if let Some(custom_font) = &run.style.font_family {
+            let run_family = if theme.options.show_song_effects
+                && let Some(custom_font) = &run.style.font_family
+            {
                 crate::core::models::ensure_font_loaded_with_style(
                     ctx,
                     custom_font,
@@ -138,21 +144,27 @@ pub fn layout(
             } else {
                 family.clone()
             };
-            let color = if let Some(custom_color) = run.style.color {
+            let color = if theme.options.show_song_effects
+                && let Some(custom_color) = run.style.color
+            {
                 custom_color.linear_multiply(opacity)
             } else if is_emphasis {
                 emphasis_color
             } else {
                 base_color
             };
-            let underline_color = if let Some(custom_color) = run.style.color {
+            let underline_color = if theme.options.show_song_effects
+                && let Some(custom_color) = run.style.color
+            {
                 custom_color.linear_multiply(opacity)
             } else if is_emphasis {
                 emphasis_color
             } else {
                 base_color
             };
-            let run_font_size = if let Some(custom_sz) = run.style.font_size {
+            let run_font_size = if theme.options.show_song_effects
+                && let Some(custom_sz) = run.style.font_size
+            {
                 96.0 * (custom_sz / requested.max(1.0))
             } else {
                 96.0
@@ -283,7 +295,11 @@ pub fn render_with_override_color(
     let view_box = Rect::from_min_size(to_view(box_rect.min), box_rect.size() * view_scale);
     let mut clipped =
         painter.with_clip_rect(painter.clip_rect().intersect(rect).intersect(view_box));
-    let directives = crate::core::markup::parse_slide_directives(text);
+    let directives = if theme.options.show_song_effects {
+        crate::core::markup::parse_slide_directives(text)
+    } else {
+        crate::core::markup::SlideDirectives::default()
+    };
     let align_h = directives.align.as_deref().unwrap_or(theme.align_h.as_str());
     let x = match align_h {
         "center" => inner.center().x,
@@ -613,5 +629,30 @@ mod tests {
         });
         output.textures_delta.clear();
         assert!(!output.shapes.is_empty());
+    }
+
+    #[test]
+    fn test_show_song_effects_toggle() {
+        let ctx = egui::Context::default();
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            let mut theme = PresentationTheme::default();
+            theme.text_color = Color32::WHITE;
+            theme.font_size = 40.0;
+            theme.options.auto_fit = false;
+            let text = "//t: 80\n//c: #FF0000\nHello [c: #00FF00]World[/c]";
+
+            // With song effects enabled:
+            theme.options.show_song_effects = true;
+            let layout_with = layout(ui.painter(), &theme, text, egui::vec2(1200.0, 700.0));
+
+            // With song effects disabled:
+            theme.options.show_song_effects = false;
+            let layout_without = layout(ui.painter(), &theme, text, egui::vec2(1200.0, 700.0));
+
+            // When song effects are disabled, requested size is theme font_size (40.0), not directive size (80.0)
+            assert_eq!(layout_without.font_size, 40.0);
+            assert_eq!(layout_with.font_size, 80.0);
+        });
+        output.textures_delta.clear();
     }
 }

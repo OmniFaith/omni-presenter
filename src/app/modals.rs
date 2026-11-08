@@ -58,6 +58,17 @@ impl PresentationApp {
         );
 
         // Custom Theme Creator Modal Dialog
+        if self.control_state.theme_editor.open {
+            let cur = self.slide_deck.current_slide_text();
+            let prev = self.slide_deck.preview_slide_text();
+            self.control_state.theme_editor.preview_text_override = if !cur.trim().is_empty() {
+                Some(cur.to_string())
+            } else if !prev.trim().is_empty() {
+                Some(prev.to_string())
+            } else {
+                None
+            };
+        }
         crate::ui::render_theme_creator_modal(ctx, &mut self.control_state, Some(&self.db));
 
         // Preview Carousel Modal Dialog (if opened via button)

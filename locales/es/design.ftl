@@ -205,6 +205,10 @@ design-effect = Efecto
 
 design-effects = Efectos
 
+design-show-song-effects = Efectos y comandos de la canción
+
+design-show-song-effects-desc = Muestra efectos personalizados, colores, fuentes y tamaños definidos en la letra de la canción (//color:, [t:], etc.)
+
 design-ellipse = Elipse
 
 design-empty-folder = Carpeta vacía
