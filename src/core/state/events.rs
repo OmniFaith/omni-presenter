@@ -137,6 +137,13 @@ impl ControlPanelState {
 
             self.settings.services.push(new_profile);
             self.switch_service(&new_id);
+            if !draft.theme_id.is_empty() {
+                if let Some(idx) = self.themes.iter().position(|t| t.id == draft.theme_id) {
+                    self.selected_theme_index = idx;
+                    self.live_theme_index = idx;
+                    self.live_theme_id = draft.theme_id.clone();
+                }
+            }
             let msg = self.settings.language.format(
                 "workspace-event-created",
                 &[("name", &trimmed_name)],

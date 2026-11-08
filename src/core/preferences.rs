@@ -550,6 +550,12 @@ pub struct AppSettings {
     pub last_bible_verse: usize,
     pub last_bible_verse_end: usize,
     pub first_run_completed: bool,
+    #[serde(default = "default_true")]
+    pub show_profile_picker_on_startup: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for AppSettings {
@@ -586,6 +592,7 @@ impl Default for AppSettings {
             last_bible_verse: 1,
             last_bible_verse_end: 1,
             first_run_completed: false,
+            show_profile_picker_on_startup: true,
         }
     }
 }

@@ -46,7 +46,7 @@ tiny_http = { version = "0.12.0", features = ["ssl-rustls"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 tiny_http = { version = "0.12.0", features = ["ssl-openssl"] }
-openssl = { version = "0.10", features = ["vendored"] }
+openssl = { version = "0.10.82", features = ["vendored"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 x11rb = "0.14.0"

@@ -6,7 +6,7 @@ use egui_phosphor::regular::{
 };
 
 use super::components::{
-    card, profile_card, section, styled_button, text_input, ButtonTone,
+    card, profile_card, section, setting_toggle, styled_button, text_input, ButtonTone,
 };
 
 pub(super) fn profiles(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppTheme) {
@@ -270,6 +270,17 @@ pub(super) fn profiles(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppTh
                 });
             }
         });
+    });
+
+    ui.add_space(8.0);
+    card(ui, theme, |ui| {
+        setting_toggle(
+            ui,
+            &mut draft.show_profile_picker_on_startup,
+            language.text("settings-show-profile-picker-on-startup"),
+            language.text("settings-show-profile-picker-on-startup-desc"),
+            theme,
+        );
     });
 
     ui.add_space(10.0);

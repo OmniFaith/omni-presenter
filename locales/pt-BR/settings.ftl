@@ -362,6 +362,10 @@ settings-operator-name = Nome do operador
 
 settings-operator-profiles-and-saved-service-schedules = Perfis de operador e programações de culto salvas.
 
+settings-show-profile-picker-on-startup = Escolher perfil ao iniciar o programa
+
+settings-show-profile-picker-on-startup-desc = Mostra a tela de boas-vindas para selecionar quem está operando quando houver mais de um perfil cadastrado.
+
 settings-orientation = Orientação
 
 settings-our-goal = Nossa meta

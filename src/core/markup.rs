@@ -95,7 +95,7 @@ pub fn is_directive_command(trimmed: &str) -> bool {
         "tamanho:", "size:", "t:", "s:", "t ", "s ", "tamanho ", "size ",
         "sombra:", "shadow:", "fundo:", "box:", "b:", "b ", "box ", "sombra ", "shadow ", "fundo ",
         "alinhar:", "align:", "a:", "a ", "alinhar ", "align ",
-        "linha:", "line:", "l:", "l ", "linha ", "line ",
+        "linha:", "line:", "l:",
         "letra:", "letter:", "ls:", "ls ", "letra ", "letter ",
     ] {
         if after_slash.len() >= prefix.len()
@@ -114,6 +114,21 @@ fn strip_command_prefix<'a>(trimmed: &'a str, cmd: &str) -> Option<&'a str> {
         format!("//{cmd} "),
         format!("// {cmd}:"),
         format!("// {cmd} "),
+    ] {
+        if trimmed.len() >= prefix.len()
+            && trimmed.is_char_boundary(prefix.len())
+            && trimmed[..prefix.len()].eq_ignore_ascii_case(prefix)
+        {
+            return Some(trimmed[prefix.len()..].trim());
+        }
+    }
+    None
+}
+
+fn strip_command_prefix_with_colon<'a>(trimmed: &'a str, cmd: &str) -> Option<&'a str> {
+    for prefix in &[
+        format!("//{cmd}:"),
+        format!("// {cmd}:"),
     ] {
         if trimmed.len() >= prefix.len()
             && trimmed.is_char_boundary(prefix.len())
@@ -180,9 +195,9 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
             };
             dirs.align = Some(norm.to_string());
         }
-        if let Some(line_str) = strip_command_prefix(trimmed, "linha")
-            .or_else(|| strip_command_prefix(trimmed, "line"))
-            .or_else(|| strip_command_prefix(trimmed, "l"))
+        if let Some(line_str) = strip_command_prefix_with_colon(trimmed, "linha")
+            .or_else(|| strip_command_prefix_with_colon(trimmed, "line"))
+            .or_else(|| strip_command_prefix_with_colon(trimmed, "l"))
         {
             if let Ok(val) = line_str.trim().parse::<f32>() {
                 if val > 0.0 {

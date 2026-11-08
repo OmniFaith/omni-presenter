@@ -127,6 +127,10 @@ impl PresentationApp {
                 control_state.setup_wizard.wrap_text = theme.options.wrap_text;
                 control_state.setup_wizard.auto_fit = theme.options.auto_fit;
             }
+        } else if control_state.settings.show_profile_picker_on_startup
+            && control_state.settings.operators.len() > 1
+        {
+            control_state.show_profile_picker_modal = true;
         }
         let last_saved_settings =
             serde_json::to_string(&control_state.settings).unwrap_or_default();

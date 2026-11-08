@@ -12,6 +12,7 @@ pub mod theme_creator;
 pub mod verse_saver;
 pub mod web_lyrics;
 pub mod web_media;
+pub mod welcome_profile;
 
 pub use editor::render_editor_modal;
 pub use event_editor::render_event_editor_modal;
@@ -27,3 +28,4 @@ pub use theme_creator::render_theme_creator_modal;
 pub use verse_saver::render_verse_saver_modal;
 pub use web_lyrics::render_web_lyrics_modal;
 pub use web_media::render_web_media_modal;
+pub use welcome_profile::render_welcome_profile_modal;

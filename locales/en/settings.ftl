@@ -362,6 +362,10 @@ settings-operator-name = Operator name
 
 settings-operator-profiles-and-saved-service-schedules = Operator profiles and saved service schedules.
 
+settings-show-profile-picker-on-startup = Choose profile on app startup
+
+settings-show-profile-picker-on-startup-desc = Shows the welcome screen to select who is operating when multiple profiles are registered.
+
 settings-orientation = Orientation
 
 settings-our-goal = Our goal

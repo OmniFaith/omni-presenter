@@ -217,6 +217,7 @@ pub struct ControlPanelState {
     pub show_presentation_dock: bool,
     pub show_presentation_settings_modal: bool,
     pub show_setup_wizard: bool,
+    pub show_profile_picker_modal: bool,
     pub setup_wizard: SetupWizardState,
     pub presentation_started_at: Option<std::time::Instant>,
     pub presentation_timer_seconds_mode: bool,
@@ -344,6 +345,7 @@ impl Default for ControlPanelState {
             show_presentation_dock: true,
             show_presentation_settings_modal: false,
             show_setup_wizard: false,
+            show_profile_picker_modal: false,
             setup_wizard: SetupWizardState::default(),
             presentation_started_at: None,
             presentation_timer_seconds_mode: false,
@@ -599,13 +601,11 @@ impl ControlPanelState {
             .position(|&name| name == self.bible_book)
             .unwrap_or(0);
         self.bible.expanded_book = Some(book_index);
-        if !service.theme_id.is_empty()
-            && let Some(idx) = self.themes.iter().position(|t| t.id == service.theme_id)
-        {
-            self.selected_theme_index = idx;
-            self.live_theme_index = idx;
-            self.live_theme_id = service.theme_id.clone();
-        }
+        self.selected_theme_index = self
+            .themes
+            .iter()
+            .position(|t| t.id == service.theme_id)
+            .unwrap_or(0);
         if (!self.settings.bible_enabled && self.active_sidebar_page == SidebarPage::Bible)
             || (!self.settings.chat_enabled && self.active_sidebar_page == SidebarPage::Chat)
         {
