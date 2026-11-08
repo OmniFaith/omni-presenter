@@ -1,5 +1,6 @@
 use super::widgets::{
     color_row_rgb, color_row_srgba, property_slider, property_slider_pct, section_title,
+    toggle_switch_row,
 };
 use crate::core::state::ControlPanelState;
 use eframe::egui::{self, Color32, RichText, Vec2};
@@ -124,14 +125,12 @@ pub(super) fn text_tab(
     }
     ui.add_space(2.0);
 
-    if ui
-        .checkbox(
-            &mut state.theme_editor.editing.options.show_song_effects,
-            RichText::new(crate::ui::i18n::text(ui, "design-show-song-effects")).size(11.5),
-        )
-        .on_hover_text(crate::ui::i18n::text(ui, "design-show-song-effects-desc"))
-        .changed()
-    {
+    if toggle_switch_row(
+        ui,
+        "design-show-song-effects",
+        &mut state.theme_editor.editing.options.show_song_effects,
+        &state.theme,
+    ) {
         push_snapshot = true;
     }
 

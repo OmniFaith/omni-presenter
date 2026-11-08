@@ -122,8 +122,8 @@ pub fn layout(
         let scale = size / 96.0;
         let mut job = egui::text::LayoutJob::default();
         for run in &styled {
-            let is_emphasis = run.style.emphasis;
-            let italic = theme.font_italic || run.style.italic;
+            let is_emphasis = theme.options.show_song_effects && run.style.emphasis;
+            let italic = theme.font_italic || (theme.options.show_song_effects && run.style.italic);
             let run_family = if theme.options.show_song_effects
                 && let Some(custom_font) = &run.style.font_family
             {
@@ -174,12 +174,16 @@ pub fn layout(
                 color,
                 extra_letter_spacing: letter_spacing / scale,
                 line_height: Some(run_font_size * line_spacing.max(0.5)),
-                underline: if theme.font_underline || run.style.underline {
+                underline: if theme.font_underline
+                    || (theme.options.show_song_effects && run.style.underline)
+                {
                     Stroke::new(2.0, underline_color)
                 } else {
                     Stroke::NONE
                 },
-                strikethrough: if theme.font_strikethrough || run.style.strikethrough {
+                strikethrough: if theme.font_strikethrough
+                    || (theme.options.show_song_effects && run.style.strikethrough)
+                {
                     Stroke::new(2.0, underline_color)
                 } else {
                     Stroke::NONE
@@ -639,7 +643,7 @@ mod tests {
             theme.text_color = Color32::WHITE;
             theme.font_size = 40.0;
             theme.options.auto_fit = false;
-            let text = "//t: 80\n//c: #FF0000\nHello [c: #00FF00]World[/c]";
+            let text = "//t: 80\n//c: #FF0000\nHello [c: #00FF00]World[/c] and **holy**";
 
             // With song effects enabled:
             theme.options.show_song_effects = true;
@@ -652,6 +656,7 @@ mod tests {
             // When song effects are disabled, requested size is theme font_size (40.0), not directive size (80.0)
             assert_eq!(layout_without.font_size, 40.0);
             assert_eq!(layout_with.font_size, 80.0);
+            assert!(!layout_without.galley.rows.is_empty());
         });
         output.textures_delta.clear();
     }

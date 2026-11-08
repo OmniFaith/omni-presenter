@@ -145,6 +145,62 @@ pub(super) fn collapsible_section_title(
     is_open
 }
 
+pub(super) fn toggle_switch_row(
+    ui: &mut egui::Ui,
+    label_key: &str,
+    val: &mut bool,
+    theme: &AppTheme,
+) -> bool {
+    let desired_size = egui::vec2(ui.available_width(), 24.0);
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    if response.clicked() {
+        *val = !*val;
+        response.mark_changed();
+    }
+    response.widget_info(|| {
+        egui::WidgetInfo::selected(egui::Role::Switch, ui.is_enabled(), *val, crate::ui::i18n::text(ui, label_key))
+    });
+
+    let hover = ui.ctx().animate_bool(response.id.with("hover"), response.hovered());
+    let active = ui.ctx().animate_bool(response.id.with("active"), *val);
+
+    if response.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+
+    if hover > 0.0 {
+        ui.painter().rect_filled(
+            rect,
+            4.0,
+            theme.bg_card_hover.linear_multiply(hover * 0.4),
+        );
+    }
+
+    ui.painter().text(
+        egui::pos2(rect.min.x + 2.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        crate::ui::i18n::text(ui, label_key),
+        egui::FontId::proportional(11.5),
+        if *val { theme.text_primary } else { theme.text_secondary },
+    );
+
+    let switch_rect = egui::Rect::from_center_size(
+        egui::pos2(rect.max.x - 18.0, rect.center().y),
+        egui::vec2(28.0, 16.0),
+    );
+    let bg_color = theme.border_default.lerp_to_gamma(theme.accent, active);
+    ui.painter().rect_filled(switch_rect, 8.0, bg_color);
+
+    let dot_x = switch_rect.left() + 8.0 + (switch_rect.width() - 16.0) * active;
+    ui.painter().circle_filled(
+        egui::pos2(dot_x, switch_rect.center().y),
+        5.5,
+        Color32::WHITE,
+    );
+
+    response.changed()
+}
+
 pub(super) fn geo_field(
     ui: &mut egui::Ui,
     label: &str,
