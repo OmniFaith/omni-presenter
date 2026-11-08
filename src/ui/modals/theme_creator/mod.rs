@@ -244,6 +244,7 @@ pub fn render_theme_creator_modal(
                     .id_salt("theme_editor_sidebar_scroll")
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
+                        ui.set_max_width(ui.available_width());
                         ui.spacing_mut().item_spacing.y = 5.0;
                         let changed = match state.theme_editor.sidebar_tab {
                             0 => background::background_tab(ui, state),

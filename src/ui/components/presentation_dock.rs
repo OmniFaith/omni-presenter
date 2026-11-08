@@ -191,7 +191,7 @@ pub(crate) fn live_theme_control(
 ) {
     let current_theme = state.live_theme();
     let current_id = current_theme.id.clone();
-    let localized_name = language.text(&current_theme.name);
+    let localized_name = current_theme.display_name(language);
     let label = format!("{}: {}", language.text("control-live-theme"), localized_name);
 
     let popup_id = ui.make_persistent_id("dock_live_theme_popup");
@@ -218,7 +218,7 @@ pub(crate) fn live_theme_control(
                 .show(ui, |ui| {
                     for (idx, theme) in state.themes.iter().enumerate() {
                         let is_selected = theme.id == current_id;
-                        let theme_name = language.text(&theme.name);
+                        let theme_name = theme.display_name(language);
                         let text = if is_selected {
                             format!("{} {}", CHECK, theme_name)
                         } else {

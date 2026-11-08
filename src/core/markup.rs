@@ -90,11 +90,18 @@ pub fn is_directive_command(trimmed: &str) -> bool {
         return false;
     };
     for prefix in &[
-        "fonte:", "font:", "cor:", "color:", "tamanho:", "size:",
-        "sombra:", "shadow:", "fundo:", "alinhar:", "align:",
-        "linha:", "line:", "letra:", "letter:",
+        "fonte:", "font:", "f:", "f ", "fonte ", "font ",
+        "cor:", "color:", "c:", "c ", "cor ", "color ",
+        "tamanho:", "size:", "t:", "s:", "t ", "s ", "tamanho ", "size ",
+        "sombra:", "shadow:", "fundo:", "box:", "b:", "b ", "box ", "sombra ", "shadow ", "fundo ",
+        "alinhar:", "align:", "a:", "a ", "alinhar ", "align ",
+        "linha:", "line:", "l:", "l ", "linha ", "line ",
+        "letra:", "letter:", "ls:", "ls ", "letra ", "letter ",
     ] {
-        if after_slash.starts_with(prefix) {
+        if after_slash.len() >= prefix.len()
+            && after_slash.is_char_boundary(prefix.len())
+            && after_slash[..prefix.len()].eq_ignore_ascii_case(prefix)
+        {
             return true;
         }
     }
@@ -102,39 +109,47 @@ pub fn is_directive_command(trimmed: &str) -> bool {
 }
 
 fn strip_command_prefix<'a>(trimmed: &'a str, cmd: &str) -> Option<&'a str> {
-    let prefix1 = format!("//{cmd}:");
-    let prefix2 = format!("//{cmd} ");
-    let prefix3 = format!("// {cmd}:");
-    let prefix4 = format!("// {cmd} ");
-
-    if let Some(rest) = trimmed.strip_prefix(&prefix1) {
-        Some(rest.trim())
-    } else if let Some(rest) = trimmed.strip_prefix(&prefix2) {
-        Some(rest.trim())
-    } else if let Some(rest) = trimmed.strip_prefix(&prefix3) {
-        Some(rest.trim())
-    } else if let Some(rest) = trimmed.strip_prefix(&prefix4) {
-        Some(rest.trim())
-    } else {
-        None
+    for prefix in &[
+        format!("//{cmd}:"),
+        format!("//{cmd} "),
+        format!("// {cmd}:"),
+        format!("// {cmd} "),
+    ] {
+        if trimmed.len() >= prefix.len()
+            && trimmed.is_char_boundary(prefix.len())
+            && trimmed[..prefix.len()].eq_ignore_ascii_case(prefix)
+        {
+            return Some(trimmed[prefix.len()..].trim());
+        }
     }
+    None
 }
 
 pub fn parse_slide_directives(text: &str) -> SlideDirectives {
     let mut dirs = SlideDirectives::default();
     for line in text.split('\n') {
         let trimmed = line.trim();
-        if let Some(font) = strip_command_prefix(trimmed, "fonte").or_else(|| strip_command_prefix(trimmed, "font")) {
+        if let Some(font) = strip_command_prefix(trimmed, "fonte")
+            .or_else(|| strip_command_prefix(trimmed, "font"))
+            .or_else(|| strip_command_prefix(trimmed, "f"))
+        {
             if !font.is_empty() {
                 dirs.font_family = Some(font.to_string());
             }
         }
-        if let Some(color_str) = strip_command_prefix(trimmed, "cor").or_else(|| strip_command_prefix(trimmed, "color")) {
+        if let Some(color_str) = strip_command_prefix(trimmed, "cor")
+            .or_else(|| strip_command_prefix(trimmed, "color"))
+            .or_else(|| strip_command_prefix(trimmed, "c"))
+        {
             if let Some(c) = parse_hex_color(color_str) {
                 dirs.color = Some(c);
             }
         }
-        if let Some(size_str) = strip_command_prefix(trimmed, "tamanho").or_else(|| strip_command_prefix(trimmed, "size")) {
+        if let Some(size_str) = strip_command_prefix(trimmed, "t")
+            .or_else(|| strip_command_prefix(trimmed, "tamanho"))
+            .or_else(|| strip_command_prefix(trimmed, "size"))
+            .or_else(|| strip_command_prefix(trimmed, "s"))
+        {
             if let Ok(val) = size_str.trim().parse::<f32>() {
                 if val > 0.0 {
                     dirs.font_size = Some(val);
@@ -144,30 +159,41 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
         if let Some(shadow_str) = strip_command_prefix(trimmed, "sombra")
             .or_else(|| strip_command_prefix(trimmed, "shadow"))
             .or_else(|| strip_command_prefix(trimmed, "fundo"))
+            .or_else(|| strip_command_prefix(trimmed, "box"))
+            .or_else(|| strip_command_prefix(trimmed, "b"))
         {
             if let Some(c) = parse_hex_color(shadow_str) {
                 dirs.shadow_color = Some(c);
             }
         }
-        if let Some(align_str) = strip_command_prefix(trimmed, "alinhar").or_else(|| strip_command_prefix(trimmed, "align")) {
+        if let Some(align_str) = strip_command_prefix(trimmed, "alinhar")
+            .or_else(|| strip_command_prefix(trimmed, "align"))
+            .or_else(|| strip_command_prefix(trimmed, "a"))
+        {
             let lower = align_str.to_lowercase();
             let norm = match lower.as_str() {
-                "centro" | "center" => "center",
-                "direita" | "right" => "right",
-                "justificado" | "justify" => "justify",
-                "esquerda" | "left" => "left",
+                "centro" | "center" | "c" => "center",
+                "direita" | "right" | "r" | "d" => "right",
+                "justificado" | "justify" | "j" => "justify",
+                "esquerda" | "left" | "l" | "e" => "left",
                 _ => align_str.trim(),
             };
             dirs.align = Some(norm.to_string());
         }
-        if let Some(line_str) = strip_command_prefix(trimmed, "linha").or_else(|| strip_command_prefix(trimmed, "line")) {
+        if let Some(line_str) = strip_command_prefix(trimmed, "linha")
+            .or_else(|| strip_command_prefix(trimmed, "line"))
+            .or_else(|| strip_command_prefix(trimmed, "l"))
+        {
             if let Ok(val) = line_str.trim().parse::<f32>() {
                 if val > 0.0 {
                     dirs.line_spacing = Some(val);
                 }
             }
         }
-        if let Some(letter_str) = strip_command_prefix(trimmed, "letra").or_else(|| strip_command_prefix(trimmed, "letter")) {
+        if let Some(letter_str) = strip_command_prefix(trimmed, "letra")
+            .or_else(|| strip_command_prefix(trimmed, "letter"))
+            .or_else(|| strip_command_prefix(trimmed, "ls"))
+        {
             if let Ok(val) = letter_str.trim().parse::<f32>() {
                 dirs.letter_spacing = Some(val);
             }
@@ -238,38 +264,38 @@ fn parse_line_runs<'a>(
     let mut rest = line;
 
     while !rest.is_empty() {
-        // 1. Tag [fonte: Nome] or [font: Nome]
-        if let Some((tag_len, font_name)) = match_open_tag(rest, &["fonte:", "font:"]) {
+        // 1. Tag [fonte: Nome], [font: Nome] or [f: Nome]
+        if let Some((tag_len, font_name)) = match_open_tag(rest, &["fonte:", "font:", "f:"]) {
             font_stack.push(font_name.to_string());
             rest = &rest[tag_len..];
             continue;
         }
-        // 2. Tag [/fonte] or [/font]
-        if let Some(tag_len) = match_close_tag(rest, &["/fonte", "/font"]) {
+        // 2. Tag [/fonte], [/font] or [/f]
+        if let Some(tag_len) = match_close_tag(rest, &["/fonte", "/font", "/f"]) {
             if font_stack.len() > usize::from(default_font.is_some()) {
                 font_stack.pop();
             }
             rest = &rest[tag_len..];
             continue;
         }
-        // 3. Tag [cor: #HEX] or [color: #HEX]
-        if let Some((tag_len, color_str)) = match_open_tag(rest, &["cor:", "color:"]) {
+        // 3. Tag [cor: #HEX], [color: #HEX] or [c: #HEX]
+        if let Some((tag_len, color_str)) = match_open_tag(rest, &["cor:", "color:", "c:"]) {
             if let Some(c) = parse_hex_color(color_str) {
                 color_stack.push(c);
             }
             rest = &rest[tag_len..];
             continue;
         }
-        // 4. Tag [/cor] or [/color]
-        if let Some(tag_len) = match_close_tag(rest, &["/cor", "/color"]) {
+        // 4. Tag [/cor], [/color] or [/c]
+        if let Some(tag_len) = match_close_tag(rest, &["/cor", "/color", "/c"]) {
             if color_stack.len() > usize::from(default_color.is_some()) {
                 color_stack.pop();
             }
             rest = &rest[tag_len..];
             continue;
         }
-        // 5. Tag [tamanho: N] or [size: N]
-        if let Some((tag_len, size_str)) = match_open_tag(rest, &["tamanho:", "size:"]) {
+        // 5. Tag [tamanho: N], [size: N], [t: N] or [s: N]
+        if let Some((tag_len, size_str)) = match_open_tag(rest, &["tamanho:", "size:", "t:", "s:"]) {
             if let Ok(val) = size_str.parse::<f32>() {
                 if val > 0.0 {
                     size_stack.push(val);
@@ -278,24 +304,24 @@ fn parse_line_runs<'a>(
             rest = &rest[tag_len..];
             continue;
         }
-        // 6. Tag [/tamanho] or [/size]
-        if let Some(tag_len) = match_close_tag(rest, &["/tamanho", "/size"]) {
+        // 6. Tag [/tamanho], [/size], [/t] or [/s]
+        if let Some(tag_len) = match_close_tag(rest, &["/tamanho", "/size", "/t", "/s"]) {
             if size_stack.len() > usize::from(default_size.is_some()) {
                 size_stack.pop();
             }
             rest = &rest[tag_len..];
             continue;
         }
-        // 7. Tag [sombra: #HEX] or [shadow: #HEX]
-        if let Some((tag_len, shadow_str)) = match_open_tag(rest, &["sombra:", "shadow:", "fundo:"]) {
+        // 7. Tag [sombra: #HEX], [shadow: #HEX], [box: #HEX] or [b: #HEX]
+        if let Some((tag_len, shadow_str)) = match_open_tag(rest, &["sombra:", "shadow:", "fundo:", "box:", "b:"]) {
             if let Some(c) = parse_hex_color(shadow_str) {
                 shadow_stack.push(c);
             }
             rest = &rest[tag_len..];
             continue;
         }
-        // 8. Tag [/sombra] or [/shadow]
-        if let Some(tag_len) = match_close_tag(rest, &["/sombra", "/shadow", "/fundo"]) {
+        // 8. Tag [/sombra], [/shadow], [/fundo], [/box] or [/b]
+        if let Some(tag_len) = match_close_tag(rest, &["/sombra", "/shadow", "/fundo", "/box", "/b"]) {
             if shadow_stack.len() > usize::from(default_shadow.is_some()) {
                 shadow_stack.pop();
             }
@@ -353,8 +379,12 @@ fn match_open_tag<'a>(text: &'a str, prefixes: &[&str]) -> Option<(usize, &'a st
     let close = text.find(']')?;
     let inside = text[1..close].trim();
     for prefix in prefixes {
-        if let Some(val) = inside.strip_prefix(prefix) {
-            return Some((close + 1, val.trim()));
+        let prefix_len = prefix.len();
+        if inside.len() >= prefix_len
+            && inside.is_char_boundary(prefix_len)
+            && inside[..prefix_len].eq_ignore_ascii_case(prefix)
+        {
+            return Some((close + 1, inside[prefix_len..].trim()));
         }
     }
     None
@@ -418,7 +448,7 @@ pub fn apply_font_to_selection(
     end: usize,
     font_name: &str,
 ) -> (String, usize, usize) {
-    apply_generic_tag_to_selection(text, start, end, "fonte", font_name)
+    apply_generic_tag_to_selection_with_aliases(text, start, end, "f", &["f", "fonte", "font"], font_name)
 }
 
 /// Applies (or removes) custom color around a character selection.
@@ -428,7 +458,7 @@ pub fn apply_color_to_selection(
     end: usize,
     hex: &str,
 ) -> (String, usize, usize) {
-    apply_generic_tag_to_selection(text, start, end, "cor", hex)
+    apply_generic_tag_to_selection_with_aliases(text, start, end, "c", &["c", "cor", "color"], hex)
 }
 
 /// Applies (or removes) custom size tag around a character selection.
@@ -438,7 +468,7 @@ pub fn apply_size_to_selection(
     end: usize,
     size_str: &str,
 ) -> (String, usize, usize) {
-    apply_generic_tag_to_selection(text, start, end, "tamanho", size_str)
+    apply_generic_tag_to_selection_with_aliases(text, start, end, "t", &["t", "tamanho", "size", "s"], size_str)
 }
 
 /// Applies (or removes) custom shadow tag around a character selection.
@@ -448,14 +478,15 @@ pub fn apply_shadow_to_selection(
     end: usize,
     hex: &str,
 ) -> (String, usize, usize) {
-    apply_generic_tag_to_selection(text, start, end, "sombra", hex)
+    apply_generic_tag_to_selection_with_aliases(text, start, end, "b", &["b", "sombra", "shadow", "fundo", "box"], hex)
 }
 
-fn apply_generic_tag_to_selection(
+fn apply_generic_tag_to_selection_with_aliases(
     text: &str,
     start: usize,
     end: usize,
-    tag_name: &str,
+    canonical_tag: &str,
+    aliases: &[&str],
     val: &str,
 ) -> (String, usize, usize) {
     if start == end {
@@ -471,16 +502,30 @@ fn apply_generic_tag_to_selection(
     let selected = &text[byte_start..byte_end];
 
     let val = val.trim();
-    let open_prefix = format!("[{tag_name}:");
-    let close_tag = format!("[/{tag_name}]");
+    let close_tag = format!("[/{canonical_tag}]");
 
-    if selected.starts_with(&open_prefix) && selected.ends_with(&close_tag) {
-        let inner = if let Some(open_end) = selected.find(']') {
-            let close_start = selected.rfind(&close_tag).unwrap_or(selected.len());
-            &selected[open_end + 1..close_start]
-        } else {
-            selected
-        };
+    let mut existing_tag_info = None;
+    for &alias in aliases {
+        let prefix = format!("[{alias}:");
+        if selected.starts_with(&prefix) {
+            for &close_alias in aliases {
+                let close = format!("[/{close_alias}]");
+                if selected.ends_with(&close) {
+                    if let Some(open_end) = selected.find(']') {
+                        let close_start = selected.rfind(&close).unwrap_or(selected.len());
+                        existing_tag_info = Some((open_end, close_start));
+                        break;
+                    }
+                }
+            }
+            if existing_tag_info.is_some() {
+                break;
+            }
+        }
+    }
+
+    if let Some((open_end, close_start)) = existing_tag_info {
+        let inner = &selected[open_end + 1..close_start];
 
         if val.is_empty() {
             // Remove tag
@@ -491,8 +536,8 @@ fn apply_generic_tag_to_selection(
             let removed_len = selected.chars().count() - inner.chars().count();
             return (updated, start, end.saturating_sub(removed_len));
         } else {
-            // Replace tag value
-            let new_tag = format!("[{tag_name}: {val}]{inner}{close_tag}");
+            // Replace tag value with canonical tag
+            let new_tag = format!("[{canonical_tag}: {val}]{inner}{close_tag}");
             let mut updated = String::with_capacity(text.len() + new_tag.len());
             updated.push_str(&text[..byte_start]);
             updated.push_str(&new_tag);
@@ -506,7 +551,7 @@ fn apply_generic_tag_to_selection(
         return (text.to_string(), start, end);
     }
 
-    let wrapped = format!("[{tag_name}: {val}]{selected}{close_tag}");
+    let wrapped = format!("[{canonical_tag}: {val}]{selected}{close_tag}");
     let mut updated = String::with_capacity(text.len() + wrapped.len());
     updated.push_str(&text[..byte_start]);
     updated.push_str(&wrapped);
@@ -537,11 +582,23 @@ pub fn clear_selection_formatting(
     let mut clean = String::with_capacity(selected.len());
     let mut rest = selected;
     while !rest.is_empty() {
-        if let Some((len, _)) = match_open_tag(rest, &["fonte:", "font:", "cor:", "color:", "tamanho:", "size:", "sombra:", "shadow:", "alinhar:", "align:"]) {
+        if let Some((len, _)) = match_open_tag(rest, &[
+            "fonte:", "font:", "f:",
+            "cor:", "color:", "c:",
+            "tamanho:", "size:", "t:", "s:",
+            "sombra:", "shadow:", "fundo:", "box:", "b:",
+            "alinhar:", "align:", "a:",
+        ]) {
             rest = &rest[len..];
             continue;
         }
-        if let Some(len) = match_close_tag(rest, &["/fonte", "/font", "/cor", "/color", "/tamanho", "/size", "/sombra", "/shadow", "/alinhar", "/align"]) {
+        if let Some(len) = match_close_tag(rest, &[
+            "/fonte", "/font", "/f",
+            "/cor", "/color", "/c",
+            "/tamanho", "/size", "/t", "/s",
+            "/sombra", "/shadow", "/fundo", "/box", "/b",
+            "/alinhar", "/align", "/a",
+        ]) {
             rest = &rest[len..];
             continue;
         }
@@ -667,10 +724,26 @@ mod tests {
     fn applies_font_and_color_to_selection() {
         let text = "Diante do trono Senhor";
         let (updated, _, _) = apply_font_to_selection(text, 16, 22, "Inter");
-        assert_eq!(updated, "Diante do trono [fonte: Inter]Senhor[/fonte]");
+        assert_eq!(updated, "Diante do trono [f: Inter]Senhor[/f]");
 
-        let (updated_color, _, _) = apply_color_to_selection(&updated, 30, 36, "#FF5500");
-        assert_eq!(updated_color, "Diante do trono [fonte: Inter][cor: #FF5500]Senhor[/cor][/fonte]");
+        let (updated_color, _, _) = apply_color_to_selection(&updated, 26, 32, "#FF5500");
+        assert_eq!(updated_color, "Diante do trono [f: Inter][c: #FF5500]Senhor[/c][/f]");
+    }
+
+    #[test]
+    fn parses_case_insensitive_and_uppercase_tags() {
+        let text = "Bless the Lord, oh my [COR: #EF4444]SOUL[/COR]";
+        let runs_out = runs(text);
+        assert!(!runs_out.iter().any(|r| r.text.contains("[COR:")));
+        let soul = runs_out.iter().find(|r| r.text == "SOUL").unwrap();
+        assert_eq!(soul.style.color, Some(Color32::from_rgb(239, 68, 68)));
+
+        // Unclosed tag applies to remainder of line
+        let text_unclosed = "Bless the Lord, oh my [C: #EF4444]SOUL";
+        let runs_unclosed = runs(text_unclosed);
+        assert!(!runs_unclosed.iter().any(|r| r.text.contains("[C:")));
+        let soul_unclosed = runs_unclosed.iter().find(|r| r.text == "SOUL").unwrap();
+        assert_eq!(soul_unclosed.style.color, Some(Color32::from_rgb(239, 68, 68)));
     }
 
     #[test]
@@ -679,5 +752,29 @@ mod tests {
             strip("**forte** *itálico* __linha__ ~~risco~~ ==marca== [cor: #FFF]cor[/cor] [fonte: Arial]fonte[/fonte]"),
             "forte itálico linha risco marca cor fonte"
         );
+    }
+
+    #[test]
+    fn parses_short_and_universal_commands_and_tags() {
+        let text = "//f: Inter\n//c: #FF00FF\n//t: 46\n//a: c\n//l: 1.5\n//ls: 2.0\nPalavra viva [t: 60]grande[/t] [c: #FFFFFF]clara[/c]";
+        let dirs = parse_slide_directives(text);
+        assert_eq!(dirs.font_family.as_deref(), Some("Inter"));
+        assert_eq!(dirs.color, Some(Color32::from_rgb(255, 0, 255)));
+        assert_eq!(dirs.font_size, Some(46.0));
+        assert_eq!(dirs.align.as_deref(), Some("center"));
+        assert_eq!(dirs.line_spacing, Some(1.5));
+        assert_eq!(dirs.letter_spacing, Some(2.0));
+
+        let parsed = runs(text);
+        let grande = parsed.iter().find(|r| r.text == "grande").unwrap();
+        assert_eq!(grande.style.font_size, Some(60.0));
+
+        // Test applying short size tag
+        let (applied, _, _) = apply_size_to_selection("Texto teste", 0, 5, "32");
+        assert_eq!(applied, "[t: 32]Texto[/t] teste");
+
+        // Test updating existing [tamanho: 28] with [t: 38]
+        let (updated, _, _) = apply_size_to_selection("[tamanho: 28]Texto[/tamanho] teste", 0, 28, "38");
+        assert_eq!(updated, "[t: 38]Texto[/t] teste");
     }
 }

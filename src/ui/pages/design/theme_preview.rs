@@ -212,7 +212,7 @@ pub fn show_dropdown(
                                 ui.painter().text(
                                     name_bar.center(),
                                     egui::Align2::CENTER_CENTER,
-                                    crate::ui::i18n::text(ui, &item.name),
+                                    item.display_name(crate::ui::i18n::language(ui.ctx())),
                                     egui::FontId::proportional(9.5),
                                     Color32::WHITE,
                                 );

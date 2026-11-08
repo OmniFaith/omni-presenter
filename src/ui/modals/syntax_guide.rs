@@ -37,17 +37,17 @@ pub fn render_syntax_guide_modal(
                 .max_height(360.0)
                 .show(ui, |ui| {
                     guide_section(ui, "Comandos de Estilo na Projeção", tokens);
-                    guide_item(ui, "//fonte: Nome", "Comando de Fonte", "Define a tipografia da estrofe ou slide.", state, "\n//fonte: Montserrat\n", tokens);
-                    guide_item(ui, "//cor: #HEX", "Comando de Cor", "Define a cor do texto da estrofe ou slide.", state, "\n//cor: #FFD700\n", tokens);
-                    guide_item(ui, "//tamanho: N", "Comando de Tamanho", "Define o tamanho da fonte do slide.", state, "\n//tamanho: 46\n", tokens);
-                    guide_item(ui, "//sombra: #HEX", "Comando de Sombra", "Define a sombra do texto no slide.", state, "\n//sombra: #00000082\n", tokens);
-                    guide_item(ui, "//alinhar: centro", "Comando de Alinhamento", "Define alinhamento (centro, esquerda, direita, justificado).", state, "\n//alinhar: centro\n", tokens);
-                    guide_item(ui, "//linha: 1.38", "Comando de Espaçamento", "Define espaçamento entre linhas do slide.", state, "\n//linha: 1.38\n", tokens);
-                    guide_item(ui, "//letra: 1.8", "Espaçamento de Letras", "Define espaçamento entre caracteres.", state, "\n//letra: 1.8\n", tokens);
-                    guide_item(ui, "[fonte: Nome]...[/fonte]", "Fonte da Seleção", "Altera a fonte apenas do trecho selecionado.", state, "[fonte: Montserrat]texto[/fonte]", tokens);
-                    guide_item(ui, "[cor: #HEX]...[/cor]", "Cor da Seleção", "Altera a cor apenas do trecho selecionado.", state, "[cor: #FFD700]texto[/cor]", tokens);
-                    guide_item(ui, "[tamanho: N]...[/tamanho]", "Tamanho da Seleção", "Altera tamanho apenas do trecho selecionado.", state, "[tamanho: 46]texto[/tamanho]", tokens);
-                    guide_item(ui, "[sombra: #HEX]...[/sombra]", "Sombra da Seleção", "Altera sombra apenas do trecho selecionado.", state, "[sombra: #00000082]texto[/sombra]", tokens);
+                    guide_item(ui, "//t: N (ou //tamanho:, //s:)", "Comando de Tamanho", "Define o tamanho da fonte do slide.", state, "\n//t: 46\n", tokens);
+                    guide_item(ui, "//f: Nome (ou //fonte:)", "Comando de Fonte", "Define a tipografia da estrofe ou slide.", state, "\n//f: Montserrat\n", tokens);
+                    guide_item(ui, "//c: #HEX (ou //cor:)", "Comando de Cor", "Define a cor do texto da estrofe ou slide.", state, "\n//c: #FFD700\n", tokens);
+                    guide_item(ui, "//b: #HEX (ou //sombra:)", "Comando de Sombra / Box", "Define a sombra do texto no slide.", state, "\n//b: #00000082\n", tokens);
+                    guide_item(ui, "//a: c|l|r|j (ou //alinhar:)", "Comando de Alinhamento", "Define alinhamento (centro, esquerda, direita, justificado).", state, "\n//a: c\n", tokens);
+                    guide_item(ui, "//l: 1.38 (ou //linha:)", "Comando de Espaçamento", "Define espaçamento entre linhas do slide.", state, "\n//l: 1.38\n", tokens);
+                    guide_item(ui, "//ls: 1.8 (ou //letra:)", "Espaçamento de Letras", "Define espaçamento entre caracteres.", state, "\n//ls: 1.8\n", tokens);
+                    guide_item(ui, "[t: N]...[/t]", "Tamanho da Seleção", "Altera tamanho apenas do trecho selecionado (também [tamanho:] ou [s:]).", state, "[t: 46]texto[/t]", tokens);
+                    guide_item(ui, "[f: Nome]...[/f]", "Fonte da Seleção", "Altera a fonte apenas do trecho selecionado.", state, "[f: Montserrat]texto[/f]", tokens);
+                    guide_item(ui, "[c: #HEX]...[/c]", "Cor da Seleção", "Altera a cor apenas do trecho selecionado.", state, "[c: #FFD700]texto[/c]", tokens);
+                    guide_item(ui, "[b: #HEX]...[/b]", "Sombra da Seleção", "Altera sombra apenas do trecho selecionado.", state, "[b: #00000082]texto[/b]", tokens);
 
                     ui.add_space(4.0);
                     guide_section(ui, "Quebras de Linha & Divisão de Slide", tokens);

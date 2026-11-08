@@ -94,8 +94,7 @@ pub fn layout(
         theme.font_weight.max(700),
         true,
     );
-    let transformed = theme.transform_text(text);
-    let styled = markup::runs(&transformed);
+    let styled = markup::runs(text);
     let opacity = theme.options.text_opacity.clamp(0.0, 1.0);
     let base_color = if let Some(dir_col) = directives.color {
         dir_col.linear_multiply(opacity)
@@ -175,7 +174,8 @@ pub fn layout(
                 },
                 ..Default::default()
             };
-            job.append(run.text, 0.0, format);
+            let run_text = theme.transform_text(run.text);
+            job.append(&run_text, 0.0, format);
         }
         job.wrap.max_width = if theme.options.wrap_text {
             available.x.max(1.0) / scale

@@ -6,7 +6,7 @@ fn color(value: eframe::egui::Color32) -> String {
     format!("#{:02x}{:02x}{:02x}", value.r(), value.g(), value.b())
 }
 fn theme(value: &crate::core::models::PresentationTheme, language: crate::core::i18n::Language) -> Value {
-    let name = language.text(&value.name);
+    let name = value.display_name(language);
     json!({"id":value.id,"name":name,"top":color(value.bg_top),"bottom":color(value.bg_bottom),"color":color(value.text_color),"font":value.font_family,"weight":value.font_weight,"align":value.align_h,"case":value.text_case,"image":value.bg_type=="image"})
 }
 

@@ -298,17 +298,19 @@ pub(super) fn render(
                     }
                     PhysicalBackground::Theme { id } => {
                         let default_label = crate::ui::i18n::text(ui, "settings-choose-a-theme");
+                        let lang = crate::ui::i18n::language(ui.ctx());
                         let selected = themes
                             .iter()
                             .find(|item| item.id == *id)
-                            .map(|item| item.name.as_str())
-                            .unwrap_or(default_label);
+                            .map(|item| item.display_name(lang))
+                            .unwrap_or_else(|| default_label.to_string());
                         egui::ComboBox::from_id_salt("physical_wallpaper_theme")
                             .width(ui.available_width())
-                            .selected_text(RichText::new(selected).size(12.0))
+                            .selected_text(RichText::new(&selected).size(12.0))
                             .show_ui(ui, |ui| {
                                 for item in themes {
-                                    ui.selectable_value(id, item.id.clone(), &item.name);
+                                    let label = item.display_name(lang);
+                                    ui.selectable_value(id, item.id.clone(), label);
                                 }
                             });
                         detail(ui, crate::ui::i18n::text(ui, "settings-use-only-this-theme-s-background-while-on-standby"), theme);
@@ -851,17 +853,19 @@ pub(super) fn render_virtual_screen_appearance(
                     }
                     PhysicalBackground::Theme { id } => {
                         let default_label = crate::ui::i18n::text(ui, "settings-choose-a-theme");
+                        let lang = crate::ui::i18n::language(ui.ctx());
                         let selected = themes
                             .iter()
                             .find(|item| item.id == *id)
-                            .map(|item| item.name.as_str())
-                            .unwrap_or(default_label);
+                            .map(|item| item.display_name(lang))
+                            .unwrap_or_else(|| default_label.to_string());
                         egui::ComboBox::from_id_salt(format!("virtual_wp_theme_{}", screen.id))
                             .width(ui.available_width())
-                            .selected_text(RichText::new(selected).size(12.0))
+                            .selected_text(RichText::new(&selected).size(12.0))
                             .show_ui(ui, |ui| {
                                 for item in themes {
-                                    ui.selectable_value(id, item.id.clone(), &item.name);
+                                    let label = item.display_name(lang);
+                                    ui.selectable_value(id, item.id.clone(), label);
                                 }
                             });
                         detail(ui, crate::ui::i18n::text(ui, "settings-use-only-this-theme-s-background-while-on-standby"), theme);
@@ -925,6 +929,7 @@ pub(super) fn render_virtual_screen_appearance(
                                 screen.custom_theme_id = None;
                             }
                             ui.separator();
+                            let lang = crate::ui::i18n::language(ui.ctx());
                             for t in themes {
                                 let is_sel = screen.custom_theme_id.as_deref() == Some(&t.id);
                                 ui.horizontal(|ui| {
@@ -933,7 +938,8 @@ pub(super) fn render_virtual_screen_appearance(
                                         egui::Sense::hover(),
                                     );
                                     crate::render::paint_theme_bg(ui.painter(), p_rect, t, 3.0);
-                                    if ui.selectable_label(is_sel, &t.name).clicked() {
+                                    let label = t.display_name(lang);
+                                    if ui.selectable_label(is_sel, label).clicked() {
                                         screen.custom_theme_id = Some(t.id.clone());
                                     }
                                 });

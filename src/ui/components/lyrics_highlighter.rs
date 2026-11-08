@@ -99,7 +99,11 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//fonte:") || trimmed_start.starts_with("//font:") {
+            } else if trimmed_start.starts_with("//fonte:")
+                || trimmed_start.starts_with("//font:")
+                || trimmed_start.starts_with("//f:")
+                || trimmed_start.starts_with("//f ")
+            {
                 job.append(
                     line,
                     0.0,
@@ -109,7 +113,11 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//cor:") || trimmed_start.starts_with("//color:") {
+            } else if trimmed_start.starts_with("//cor:")
+                || trimmed_start.starts_with("//color:")
+                || trimmed_start.starts_with("//c:")
+                || trimmed_start.starts_with("//c ")
+            {
                 let color_val = if let Some(hex) = trimmed_start.split(':').nth(1) {
                     crate::core::markup::parse_hex_color(hex).unwrap_or(Color32::from_rgb(251, 146, 60))
                 } else {
@@ -124,7 +132,13 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//tamanho:") || trimmed_start.starts_with("//size:") {
+            } else if trimmed_start.starts_with("//tamanho:")
+                || trimmed_start.starts_with("//size:")
+                || trimmed_start.starts_with("//t:")
+                || trimmed_start.starts_with("//s:")
+                || trimmed_start.starts_with("//t ")
+                || trimmed_start.starts_with("//s ")
+            {
                 job.append(
                     line,
                     0.0,
@@ -134,7 +148,13 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//sombra:") || trimmed_start.starts_with("//shadow:") || trimmed_start.starts_with("//fundo:") {
+            } else if trimmed_start.starts_with("//sombra:")
+                || trimmed_start.starts_with("//shadow:")
+                || trimmed_start.starts_with("//fundo:")
+                || trimmed_start.starts_with("//box:")
+                || trimmed_start.starts_with("//b:")
+                || trimmed_start.starts_with("//b ")
+            {
                 let color_val = if let Some(hex) = trimmed_start.split(':').nth(1) {
                     crate::core::markup::parse_hex_color(hex).unwrap_or(Color32::from_rgb(148, 163, 184))
                 } else {
@@ -149,7 +169,11 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//alinhar:") || trimmed_start.starts_with("//align:") {
+            } else if trimmed_start.starts_with("//alinhar:")
+                || trimmed_start.starts_with("//align:")
+                || trimmed_start.starts_with("//a:")
+                || trimmed_start.starts_with("//a ")
+            {
                 job.append(
                     line,
                     0.0,
@@ -159,7 +183,15 @@ pub fn highlight_lyrics_job(
                         ..Default::default()
                     },
                 );
-            } else if trimmed_start.starts_with("//linha:") || trimmed_start.starts_with("//line:") || trimmed_start.starts_with("//letra:") || trimmed_start.starts_with("//letter:") {
+            } else if trimmed_start.starts_with("//linha:")
+                || trimmed_start.starts_with("//line:")
+                || trimmed_start.starts_with("//l:")
+                || trimmed_start.starts_with("//l ")
+                || trimmed_start.starts_with("//letra:")
+                || trimmed_start.starts_with("//letter:")
+                || trimmed_start.starts_with("//ls:")
+                || trimmed_start.starts_with("//ls ")
+            {
                 job.append(
                     line,
                     0.0,
@@ -439,15 +471,15 @@ enum MarkupType {
 fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupType)> {
     let mut best: Option<(usize, usize, usize, usize, MarkupType)> = None;
 
-    // 1. Check custom font tag: [fonte: Nome]...[/fonte] or [font: Nome]...[/font]
-    for prefix in &["[fonte:", "[font:"] {
+    // 1. Check custom font tag: [f: Nome]...[/f] or [fonte: Nome]...[/fonte] or [font: Nome]...[/font]
+    for prefix in &["[fonte:", "[font:", "[f:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
                 let open_tag_len = open_close + 1;
                 let font_name = after[prefix.len()..open_close].trim().to_string();
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/fonte]", "[/font]"] {
+                for close_tag in &["[/fonte]", "[/font]", "[/f]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {
@@ -459,8 +491,8 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
         }
     }
 
-    // 2. Check custom color tag: [cor: #Hex]...[/cor] or [color: #Hex]...[/color]
-    for prefix in &["[cor:", "[color:"] {
+    // 2. Check custom color tag: [c: #Hex]...[/c] or [cor: #Hex]...[/cor] or [color: #Hex]...[/color]
+    for prefix in &["[cor:", "[color:", "[c:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
@@ -469,7 +501,7 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
                 let color = crate::core::markup::parse_hex_color(color_str)
                     .unwrap_or(Color32::from_rgb(251, 146, 60));
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/cor]", "[/color]"] {
+                for close_tag in &["[/cor]", "[/color]", "[/c]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {
@@ -481,15 +513,15 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
         }
     }
 
-    // 3. Check custom size tag: [tamanho: N]...[/tamanho] or [size: N]...[/size]
-    for prefix in &["[tamanho:", "[size:"] {
+    // 3. Check custom size tag: [t: N]...[/t] or [tamanho: N]...[/tamanho] or [size: N]...[/size] or [s: N]...[/s]
+    for prefix in &["[tamanho:", "[size:", "[t:", "[s:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
                 let open_tag_len = open_close + 1;
                 let sz = after[prefix.len()..open_close].trim().parse::<f32>().unwrap_or(46.0);
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/tamanho]", "[/size]"] {
+                for close_tag in &["[/tamanho]", "[/size]", "[/t]", "[/s]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {
@@ -501,8 +533,8 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
         }
     }
 
-    // 4. Check custom shadow tag: [sombra: #Hex]...[/sombra] or [shadow: #Hex]...[/shadow]
-    for prefix in &["[sombra:", "[shadow:", "[fundo:"] {
+    // 4. Check custom shadow tag: [b: #Hex]...[/b] or [sombra: #Hex]...[/sombra] or [shadow: #Hex]...[/shadow]
+    for prefix in &["[sombra:", "[shadow:", "[fundo:", "[box:", "[b:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
@@ -511,7 +543,7 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
                 let color = crate::core::markup::parse_hex_color(color_str)
                     .unwrap_or(Color32::from_rgb(148, 163, 184));
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/sombra]", "[/shadow]", "[/fundo]"] {
+                for close_tag in &["[/sombra]", "[/shadow]", "[/fundo]", "[/box]", "[/b]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {

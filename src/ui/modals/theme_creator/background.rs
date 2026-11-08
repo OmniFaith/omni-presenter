@@ -173,61 +173,71 @@ pub(super) fn background_tab(ui: &mut egui::Ui, state: &mut ControlPanelState) -
                         push_snapshot = true;
                     }
 
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let presets = [
-                            (
-                                "settings-obsidian",
-                                Color32::from_rgb(11, 15, 23),
-                                Color32::from_rgb(3, 4, 7),
-                            ),
-                            (
-                                "settings-midnight",
-                                Color32::from_rgb(11, 27, 54),
-                                Color32::from_rgb(2, 7, 18),
-                            ),
-                            (
-                                "settings-ember",
-                                Color32::from_rgb(33, 20, 14),
-                                Color32::from_rgb(10, 5, 3),
-                            ),
-                            (
-                                "settings-emerald",
-                                Color32::from_rgb(10, 35, 24),
-                                Color32::from_rgb(3, 12, 7),
-                            ),
-                            (
-                                "settings-amethyst",
-                                Color32::from_rgb(29, 16, 48),
-                                Color32::from_rgb(8, 4, 15),
-                            ),
-                            (
-                                "settings-charcoal",
-                                Color32::from_rgb(31, 41, 55),
-                                Color32::from_rgb(17, 24, 39),
-                            ),
-                        ];
-                        for (name, top, bot) in presets.into_iter().rev() {
-                            let p_btn = egui::Button::new(
-                                RichText::new(crate::ui::i18n::text(ui, name))
-                                    .size(10.5)
-                                    .color(state.theme.text_secondary),
-                            )
-                            .fill(state.theme.bg_pill)
-                            .stroke(Stroke::new(1.0, state.theme.border_default))
-                            .corner_radius(5.0)
-                            .min_size(Vec2::new(0.0, 22.0));
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new(crate::ui::i18n::text(ui, "settings-palette"))
+                            .size(11.0)
+                            .color(state.theme.text_secondary),
+                    );
+                });
 
-                            if ui
-                                .add(p_btn)
-                                .on_hover_cursor(egui::CursorIcon::PointingHand)
-                                .clicked()
-                            {
-                                state.theme_editor.editing.bg_top = top;
-                                state.theme_editor.editing.bg_bottom = bot;
-                                push_snapshot = true;
-                            }
+                ui.add_space(3.0);
+
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing = Vec2::new(4.0, 4.0);
+                    let presets = [
+                        (
+                            "settings-obsidian",
+                            Color32::from_rgb(11, 15, 23),
+                            Color32::from_rgb(3, 4, 7),
+                        ),
+                        (
+                            "settings-midnight",
+                            Color32::from_rgb(11, 27, 54),
+                            Color32::from_rgb(2, 7, 18),
+                        ),
+                        (
+                            "settings-ember",
+                            Color32::from_rgb(33, 20, 14),
+                            Color32::from_rgb(10, 5, 3),
+                        ),
+                        (
+                            "settings-emerald",
+                            Color32::from_rgb(10, 35, 24),
+                            Color32::from_rgb(3, 12, 7),
+                        ),
+                        (
+                            "settings-amethyst",
+                            Color32::from_rgb(29, 16, 48),
+                            Color32::from_rgb(8, 4, 15),
+                        ),
+                        (
+                            "settings-charcoal",
+                            Color32::from_rgb(31, 41, 55),
+                            Color32::from_rgb(17, 24, 39),
+                        ),
+                    ];
+                    for (name, top, bot) in presets {
+                        let p_btn = egui::Button::new(
+                            RichText::new(crate::ui::i18n::text(ui, name))
+                                .size(10.5)
+                                .color(state.theme.text_secondary),
+                        )
+                        .fill(state.theme.bg_pill)
+                        .stroke(Stroke::new(1.0, state.theme.border_default))
+                        .corner_radius(5.0)
+                        .min_size(Vec2::new(0.0, 22.0));
+
+                        if ui
+                            .add(p_btn)
+                            .on_hover_cursor(egui::CursorIcon::PointingHand)
+                            .clicked()
+                        {
+                            state.theme_editor.editing.bg_top = top;
+                            state.theme_editor.editing.bg_bottom = bot;
+                            push_snapshot = true;
                         }
-                    });
+                    }
                 });
             } else {
                 if color_row_solid(

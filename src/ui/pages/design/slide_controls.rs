@@ -151,12 +151,13 @@ pub(super) fn render(
                     egui::UiBuilder::new().max_rect(label.shrink2(egui::vec2(9.0, 4.0))),
                 );
                 child.horizontal(|ui| {
+                    let lang = crate::ui::i18n::language(ui.ctx());
                     ui.add(
                         egui::Label::new(
                             RichText::new(
                                 selected.map_or(
-                                    crate::ui::i18n::text(ui, "design-choose-theme"),
-                                    |theme| crate::ui::i18n::text(ui, &theme.name),
+                                    crate::ui::i18n::text(ui, "design-choose-theme").to_string(),
+                                    |theme| theme.display_name(lang),
                                 ),
                             )
                             .size(11.0)
@@ -180,11 +181,12 @@ pub(super) fn render(
                     egui::ScrollArea::vertical()
                         .max_height(270.0)
                         .show(ui, |ui| {
+                            let lang = crate::ui::i18n::language(ui.ctx());
                             for item in themes {
                                 if ui
                                     .selectable_label(
                                         Some(&item.id) == scene.theme_id.as_ref(),
-                                        &item.name,
+                                        item.display_name(lang),
                                     )
                                     .clicked()
                                 {

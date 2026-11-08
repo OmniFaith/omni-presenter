@@ -246,7 +246,7 @@ pub fn render_themes_column(
                             ui.painter().text(
                                 name_rect.center(),
                                 egui::Align2::CENTER_CENTER,
-                                crate::ui::i18n::text(ui, &theme.name),
+                                theme.display_name(state.settings.language),
                                 egui::FontId::proportional((name_bar_h * 0.55).clamp(8.0, 11.0)),
                                 Color32::WHITE,
                             );

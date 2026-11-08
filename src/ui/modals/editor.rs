@@ -711,12 +711,29 @@ fn save_song(state: &mut ControlPanelState, slide_deck: &mut SlideDeck, db: Opti
             let _ = app_db.set_song_versions(id, &state.song_editor.linked_versions);
         }
         slide_deck.reload_from_db(app_db);
+        if let Some(idx) = slide_deck.library().iter().position(|s| s.title == title) {
+            let is_live = slide_deck.is_previewing_live_song();
+            let cur_preview_idx = slide_deck.preview_slide_index();
+            slide_deck.select_song(idx);
+            if cur_preview_idx < slide_deck.slides().len() {
+                slide_deck.select_preview_slide(cur_preview_idx);
+            }
+            if is_live {
+                slide_deck.project_preview();
+            }
+        }
     } else {
         slide_deck.add_or_update_song(
             title.clone(),
             artist.clone(),
             state.song_editor.text.clone(),
         );
+    }
+
+    for item in &mut state.playlist {
+        if item.kind == crate::core::models::PlaylistItemKind::Song && item.title == title {
+            item.subtitle = artist.clone();
+        }
     }
 
     if state.song_editor.theme_dirty

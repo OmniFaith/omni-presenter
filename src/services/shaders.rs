@@ -282,8 +282,8 @@ pub fn default_themes() -> Vec<PresentationTheme> {
         .map(|(index, (kind, name, _))| {
             let mut theme = PresentationTheme::default();
             theme.id = format!("shader_{kind}");
-            let translated = crate::core::i18n::Language::Portuguese.text(name);
-            theme.name = crate::core::i18n::Language::Portuguese
+            let translated = crate::core::i18n::Language::English.text(name);
+            theme.name = crate::core::i18n::Language::English
                 .format("services-animated", &[("name", translated)]);
             theme.bg_type = "shader".into();
             theme.transition = "blur".into();

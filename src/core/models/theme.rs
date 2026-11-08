@@ -69,7 +69,7 @@ impl Default for PresentationTheme {
     fn default() -> Self {
         Self {
             id: "default_theme".to_owned(),
-            name: "Novo Tema".to_owned(),
+            name: "services-new-theme".to_owned(),
             bg_type: "gradient".to_owned(),
             bg_top: Color32::from_rgb(17, 24, 39),
             bg_bottom: Color32::from_rgb(3, 7, 18),
@@ -653,6 +653,119 @@ impl PresentationTheme {
             _ => text.to_string(),
         }
     }
+
+    /// Retorna o nome internacionalizado do tema de acordo com o idioma fornecido
+    pub fn display_name(&self, language: crate::core::i18n::Language) -> String {
+        // 1. Shaders / temas animados
+        let shader_kind = self
+            .id
+            .strip_prefix("shader_")
+            .or_else(|| {
+                if self.bg_type == "shader" && !self.options.shader.kind.is_empty() {
+                    Some(self.options.shader.kind.as_str())
+                } else {
+                    None
+                }
+            })
+            .or_else(|| match self.name.as_str() {
+                "Aurora · Dinâmico" | "Aurora · Animated" | "Aurora · Animado" => Some("aurora"),
+                "Nebulosa · Dinâmico" | "Nebula · Animated" | "Nebulosa · Animado" => Some("nebula"),
+                "Ondas · Dinâmico" | "Waves · Animated" | "Olas · Animado" => Some("waves"),
+                "Seda · Dinâmico" | "Silk · Animated" | "Seda · Animado" => Some("silk"),
+                "Partículas · Dinâmico" | "Particles · Animated" | "Partículas · Animado" => Some("particles"),
+                "Anéis · Dinâmico" | "Rings · Animated" | "Anillos · Animado" => Some("rings"),
+                "Fluido · Dinâmico" | "Fluid · Animated" | "Fluido · Animado" => Some("fluid"),
+                "Grade de Luz · Dinâmico" | "Grade de luz · Dinâmico" | "Light grid · Animated" | "Light Grid · Animated" | "Cuadrícula de luz · Animado" => Some("grid"),
+                "Bokeh · Dinâmico" | "Bokeh · Animated" | "Bokeh · Animado" => Some("bokeh"),
+                "Prisma · Dinâmico" | "Prism · Animated" | "Prisma · Animado" => Some("prism"),
+                _ => None,
+            });
+
+        if let Some(kind) = shader_kind {
+            let name_key = match kind {
+                "aurora" => Some("settings-aurora"),
+                "nebula" => Some("settings-nebula"),
+                "waves" => Some("settings-waves"),
+                "silk" => Some("settings-silk"),
+                "particles" => Some("settings-particles"),
+                "rings" => Some("settings-rings"),
+                "fluid" => Some("settings-fluid"),
+                "grid" => Some("settings-light-grid"),
+                "bokeh" => Some("settings-bokeh"),
+                "prism" => Some("settings-prism"),
+                _ => None,
+            };
+            if let Some(key) = name_key {
+                let translated = language.text(key);
+                return language.format("services-animated", &[("name", translated)]);
+            }
+        }
+
+        // 2. Temas padrão estáticos por ID
+        match self.id.as_str() {
+            "obsidian_pro" => return language.text("theme-obsidian-pro").to_string(),
+            "midnight_sapphire" => return language.text("theme-midnight-sapphire").to_string(),
+            "warm_ember" => return language.text("theme-warm-ember").to_string(),
+            "deep_emerald" => return language.text("theme-deep-emerald").to_string(),
+            "scripture_serif" => return language.text("theme-scripture-serif").to_string(),
+            "celestial_violet" => return language.text("theme-celestial-violet").to_string(),
+            "bold_anthem" => return language.text("theme-bold-anthem").to_string(),
+            "clean_alabaster" => return language.text("theme-clean-alabaster").to_string(),
+            "broadcast_lower_third" => return language.text("theme-broadcast-lower-third").to_string(),
+            "frosted_glass_card" => return language.text("theme-frosted-glass-card").to_string(),
+            "default_theme" => return language.text("services-new-theme").to_string(),
+            _ => {}
+        }
+
+        // 3. Compatibilidade com nomes legados armazenados em banco
+        match self.name.as_str() {
+            "Obsidian Minimalista" | "Obsidian Minimalist" | "Obsidiana Minimalista" => {
+                return language.text("theme-obsidian-pro").to_string();
+            }
+            "Safira da Meia-Noite" | "Midnight Sapphire" | "Zafiro de Medianoche" => {
+                return language.text("theme-midnight-sapphire").to_string();
+            }
+            "Brasas & Bronze" | "Warm Ember" | "Brasas y Bronce" => {
+                return language.text("theme-warm-ember").to_string();
+            }
+            "Esmeralda Profunda" | "Deep Emerald" => {
+                return language.text("theme-deep-emerald").to_string();
+            }
+            "Escrituras & Liturgia" | "Scripture & Liturgy" | "Escrituras y Liturgia" => {
+                return language.text("theme-scripture-serif").to_string();
+            }
+            "Ametista & Crepúsculo" | "Celestial Amethyst" | "Amatista Celestial" => {
+                return language.text("theme-celestial-violet").to_string();
+            }
+            "Louvor Vibrante" | "Bold Anthem" | "Alabanza Vibrante" => {
+                return language.text("theme-bold-anthem").to_string();
+            }
+            "Alabastro Editorial" | "Clean Alabaster" => {
+                return language.text("theme-clean-alabaster").to_string();
+            }
+            "Tarja para Transmissão" | "Broadcast Lower Third" | "Cintillo de Transmisión" => {
+                return language.text("theme-broadcast-lower-third").to_string();
+            }
+            "Vidro Fumê Card" | "Frosted Glass Card" | "Tarjeta de Vidrio Esmerilado" => {
+                return language.text("theme-frosted-glass-card").to_string();
+            }
+            "Novo Tema" | "New theme" | "Nuevo tema" => {
+                return language.text("services-new-theme").to_string();
+            }
+            _ => {}
+        }
+
+        // 4. Se o nome for uma chave Fluent válida
+        if self.name.starts_with("theme-") || self.name.starts_with("services-") {
+            return language.text(&self.name).to_string();
+        }
+        if let Some(text) = language.lookup(&self.name) {
+            return text.to_string();
+        }
+
+        // 5. Fallback para nome personalizado existente
+        self.name.clone()
+    }
 }
 
 // ==========================================
@@ -710,5 +823,43 @@ mod tests {
         assert_eq!(parsed.r(), color.r());
         assert_eq!(parsed.g(), color.g());
         assert_eq!(parsed.b(), color.b());
+    }
+
+    #[test]
+    fn test_theme_display_name_internationalization() {
+        use crate::core::i18n::Language;
+
+        // Static theme by ID
+        let mut theme = PresentationTheme::default();
+        theme.id = "obsidian_pro".into();
+        theme.name = "theme-obsidian-pro".into();
+        assert_eq!(theme.display_name(Language::English), "Obsidian Minimalist");
+        assert_eq!(theme.display_name(Language::Portuguese), "Obsidian Minimalista");
+        assert_eq!(theme.display_name(Language::Spanish), "Obsidiana Minimalista");
+
+        // Shader theme by ID
+        let mut shader = PresentationTheme::default();
+        shader.id = "shader_aurora".into();
+        shader.name = "Aurora · Dinâmico".into();
+        shader.bg_type = "shader".into();
+        assert_eq!(shader.display_name(Language::English), "Aurora · Animated");
+        assert_eq!(shader.display_name(Language::Portuguese), "Aurora · Dinâmico");
+        assert_eq!(shader.display_name(Language::Spanish), "Aurora · Animado");
+
+        // Legacy stored name
+        let mut legacy = PresentationTheme::default();
+        legacy.id = "custom_123".into();
+        legacy.name = "Safira da Meia-Noite".into();
+        assert_eq!(legacy.display_name(Language::English), "Midnight Sapphire");
+        assert_eq!(legacy.display_name(Language::Portuguese), "Safira da Meia-Noite");
+        assert_eq!(legacy.display_name(Language::Spanish), "Zafiro de Medianoche");
+
+        // Custom user-defined name
+        let mut custom = PresentationTheme::default();
+        custom.id = "my_custom_theme".into();
+        custom.name = "Culto de Domingo".into();
+        assert_eq!(custom.display_name(Language::English), "Culto de Domingo");
+        assert_eq!(custom.display_name(Language::Portuguese), "Culto de Domingo");
+        assert_eq!(custom.display_name(Language::Spanish), "Culto de Domingo");
     }
 }

@@ -424,6 +424,18 @@ pub fn apply_or_update_slide_directive(
     directive: &str,
     value: &str,
 ) -> bool {
+    let single_alias = [directive];
+    let aliases: &[&str] = match directive {
+        "t" | "tamanho" | "size" | "s" => &["t", "tamanho", "size", "s"],
+        "f" | "fonte" | "font" => &["f", "fonte", "font"],
+        "c" | "cor" | "color" => &["c", "cor", "color"],
+        "a" | "alinhar" | "align" => &["a", "alinhar", "align"],
+        "l" | "linha" | "line" => &["l", "linha", "line"],
+        "ls" | "letra" | "letter" => &["ls", "letra", "letter"],
+        "sombra" | "shadow" | "fundo" | "box" | "b" => &["sombra", "shadow", "fundo", "box", "b"],
+        _ => &single_alias,
+    };
+
     let text = &state.song_editor.text;
     if text.is_empty() {
         state.song_editor.text = format!("//{directive}: {value}\n\n");
@@ -448,15 +460,21 @@ pub fn apply_or_update_slide_directive(
     let stanza_text = &text[stanza_start_byte..stanza_end_byte];
     let suffix_text = &text[stanza_end_byte..];
 
-    let target_prefix = format!("//{directive}:");
-    let target_prefix_space = format!("// {directive}:");
     let new_line = format!("//{directive}: {value}");
 
     let mut found = false;
     let mut updated_lines = Vec::new();
     for line in stanza_text.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with(&target_prefix) || trimmed.starts_with(&target_prefix_space) {
+        let matches_alias = aliases.iter().any(|alias| {
+            let p1 = format!("//{alias}:");
+            let p2 = format!("// {alias}:");
+            let p3 = format!("//{alias} ");
+            let p4 = format!("// {alias} ");
+            trimmed.starts_with(&p1) || trimmed.starts_with(&p2) || trimmed.starts_with(&p3) || trimmed.starts_with(&p4)
+        });
+
+        if matches_alias {
             updated_lines.push(new_line.clone());
             found = true;
         } else {

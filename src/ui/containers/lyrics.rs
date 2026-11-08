@@ -373,17 +373,18 @@ pub fn render_lyrics_column(
                                                     if run.style.emphasis {
                                                         font_id.family = egui::FontFamily::Name("inter_bold".into());
                                                     }
+                                                    let run_color = run.style.color.unwrap_or(text_color);
                                                     let format = egui::TextFormat {
                                                         font_id,
-                                                        color: text_color,
+                                                        color: run_color,
                                                         italics: run.style.italic,
                                                         underline: if run.style.underline {
-                                                            Stroke::new(1.0, text_color)
+                                                            Stroke::new(1.0, run_color)
                                                         } else {
                                                             Stroke::NONE
                                                         },
                                                         strikethrough: if run.style.strikethrough {
-                                                            Stroke::new(1.0, text_color)
+                                                            Stroke::new(1.0, run_color)
                                                         } else {
                                                             Stroke::NONE
                                                         },

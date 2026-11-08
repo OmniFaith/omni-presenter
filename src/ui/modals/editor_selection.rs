@@ -417,9 +417,9 @@ pub fn render_editor_tools(
         Some(CARET_DOWN),
         false,
         if has_selection {
-            "Mudar Fonte da Seleção ([fonte: Nome]...[/fonte])"
+            "Mudar Fonte da Seleção ([f: Nome]...[/f])"
         } else {
-            "Definir Fonte do Slide (//fonte: Nome)"
+            "Definir Fonte do Slide (//f: Nome)"
         },
         tokens,
     );
@@ -435,9 +435,9 @@ pub fn render_editor_tools(
         Some(CARET_DOWN),
         false,
         if has_selection {
-            "Mudar Tamanho da Seleção ([tamanho: N]...[/tamanho])"
+            "Mudar Tamanho da Seleção ([t: N]...[/t])"
         } else {
-            "Definir Tamanho do Slide (//tamanho: N)"
+            "Definir Tamanho do Slide (//t: N)"
         },
         tokens,
     );
@@ -451,9 +451,9 @@ pub fn render_editor_tools(
         Color32::WHITE,
         "#FFFFFF",
         if has_selection {
-            "Mudar Cor da Seleção ([cor: #HEX]...[/cor])"
+            "Mudar Cor da Seleção ([c: #HEX]...[/c])"
         } else {
-            "Definir Cor do Slide (//cor: #HEX)"
+            "Definir Cor do Slide (//c: #HEX)"
         },
         tokens,
     );
@@ -467,9 +467,9 @@ pub fn render_editor_tools(
         Color32::from_black_alpha(130),
         "#00000082",
         if has_selection {
-            "Mudar Sombra da Seleção ([sombra: #HEX]...[/sombra])"
+            "Mudar Sombra da Seleção ([b: #HEX]...[/b])"
         } else {
-            "Definir Sombra do Slide (//sombra: #HEX)"
+            "Definir Sombra do Slide (//b: #HEX)"
         },
         tokens,
     );
@@ -526,20 +526,20 @@ pub fn render_editor_tools(
     selection_separator(ui, tokens);
 
     let al_left_id = ui.make_persistent_id("btn_align_left");
-    if component_tool_button(ui, al_left_id, TEXT_ALIGN_LEFT, false, "Alinhar à Esquerda (//alinhar: esquerda)", tokens).clicked() {
-        changed |= apply_or_update_slide_directive(state, "alinhar", "esquerda");
+    if component_tool_button(ui, al_left_id, TEXT_ALIGN_LEFT, false, "Alinhar à Esquerda (//a: l)", tokens).clicked() {
+        changed |= apply_or_update_slide_directive(state, "a", "l");
     }
     let al_center_id = ui.make_persistent_id("btn_align_center");
-    if component_tool_button(ui, al_center_id, TEXT_ALIGN_CENTER, false, "Centralizar (//alinhar: centro)", tokens).clicked() {
-        changed |= apply_or_update_slide_directive(state, "alinhar", "centro");
+    if component_tool_button(ui, al_center_id, TEXT_ALIGN_CENTER, false, "Centralizar (//a: c)", tokens).clicked() {
+        changed |= apply_or_update_slide_directive(state, "a", "c");
     }
     let al_right_id = ui.make_persistent_id("btn_align_right");
-    if component_tool_button(ui, al_right_id, TEXT_ALIGN_RIGHT, false, "Alinhar à Direita (//alinhar: direita)", tokens).clicked() {
-        changed |= apply_or_update_slide_directive(state, "alinhar", "direita");
+    if component_tool_button(ui, al_right_id, TEXT_ALIGN_RIGHT, false, "Alinhar à Direita (//a: r)", tokens).clicked() {
+        changed |= apply_or_update_slide_directive(state, "a", "r");
     }
     let al_just_id = ui.make_persistent_id("btn_align_justify");
-    if component_tool_button(ui, al_just_id, TEXT_ALIGN_JUSTIFY, false, "Justificar (//alinhar: justificado)", tokens).clicked() {
-        changed |= apply_or_update_slide_directive(state, "alinhar", "justificado");
+    if component_tool_button(ui, al_just_id, TEXT_ALIGN_JUSTIFY, false, "Justificar (//a: j)", tokens).clicked() {
+        changed |= apply_or_update_slide_directive(state, "a", "j");
     }
 
     // ==========================================
@@ -640,16 +640,16 @@ fn render_font_picker_menu(
     egui::Popup::menu(resp).show(|ui| {
         ui.set_min_width(220.0);
         let title = if has_selection {
-            "Fonte da Seleção ([fonte: ...])"
+            "Fonte da Seleção ([f: Nome])"
         } else {
-            "Fonte do Slide (//fonte: ...)"
+            "Fonte do Slide (//f: Nome)"
         };
         super::menu::menu_section_title(ui, title, tokens);
         if super::menu::menu_item(ui, "Ø", "Padrão do Tema (Remover)", tokens).clicked() {
             if has_selection {
                 changed |= apply_font_selection(state, "");
             } else {
-                changed |= apply_or_update_slide_directive(state, "fonte", "Padrao");
+                changed |= apply_or_update_slide_directive(state, "f", "Padrao");
             }
             ui.close();
         }
@@ -667,15 +667,15 @@ fn render_font_picker_menu(
             "Oswald",
         ] {
             let desc = if has_selection {
-                format!("Aplicar [fonte: {font}]")
+                format!("Aplicar [f: {font}]")
             } else {
-                format!("Aplicar //fonte: {font}")
+                format!("Aplicar //f: {font}")
             };
             if super::menu::menu_item(ui, font, &desc, tokens).clicked() {
                 if has_selection {
                     changed |= apply_font_selection(state, font);
                 } else {
-                    changed |= apply_or_update_slide_directive(state, "fonte", font);
+                    changed |= apply_or_update_slide_directive(state, "f", font);
                 }
                 ui.close();
             }
@@ -692,11 +692,11 @@ fn render_size_picker_menu(
 ) -> bool {
     let mut changed = false;
     egui::Popup::menu(resp).show(|ui| {
-        ui.set_min_width(210.0);
+        ui.set_min_width(190.0);
         let title = if has_selection {
-            "Tamanho da Seleção ([tamanho: N])"
+            "Tamanho da Seleção ([t: N])"
         } else {
-            "Tamanho do Slide (//tamanho: N)"
+            "Tamanho do Slide (//t: N)"
         };
         super::menu::menu_section_title(ui, title, tokens);
         if super::menu::menu_item(ui, "Ø", "Padrão do Tema (Remover)", tokens).clicked() {
@@ -708,15 +708,15 @@ fn render_size_picker_menu(
         ui.separator();
         for sz in &["28", "32", "38", "46", "52", "60", "72", "84", "96"] {
             let desc = if has_selection {
-                format!("Aplicar [tamanho: {sz}]")
+                format!("Aplicar [t: {sz}]")
             } else {
-                format!("Aplicar //tamanho: {sz}")
+                format!("Aplicar //t: {sz}")
             };
             if super::menu::menu_item(ui, sz, &desc, tokens).clicked() {
                 if has_selection {
                     changed |= apply_size_selection(state, sz);
                 } else {
-                    changed |= apply_or_update_slide_directive(state, "tamanho", sz);
+                    changed |= apply_or_update_slide_directive(state, "t", sz);
                 }
                 ui.close();
             }
@@ -735,9 +735,9 @@ fn render_color_picker_menu(
     egui::Popup::menu(resp).show(|ui| {
         ui.set_width(260.0);
         let title = if has_selection {
-            "Cor da Seleção ([cor: #HEX])"
+            "Cor da Seleção ([c: #HEX])"
         } else {
-            "Cor do Slide (//cor: #HEX)"
+            "Cor do Slide (//c: #HEX)"
         };
         super::menu::menu_section_title(ui, title, tokens);
         if super::menu::menu_item(ui, "Ø", "Padrão do Tema (Remover)", tokens).clicked() {
@@ -764,7 +764,7 @@ fn render_color_picker_menu(
                 if has_selection {
                     changed |= apply_color_selection(state, hex);
                 } else {
-                    changed |= apply_or_update_slide_directive(state, "cor", hex);
+                    changed |= apply_or_update_slide_directive(state, "c", hex);
                 }
                 ui.close();
             }
@@ -783,9 +783,9 @@ fn render_shadow_picker_menu(
     egui::Popup::menu(resp).show(|ui| {
         ui.set_width(260.0);
         let title = if has_selection {
-            "Sombra da Seleção ([sombra: #HEX])"
+            "Sombra da Seleção ([b: #HEX])"
         } else {
-            "Sombra do Slide (//sombra: #HEX)"
+            "Sombra do Slide (//b: #HEX)"
         };
         super::menu::menu_section_title(ui, title, tokens);
         if super::menu::menu_item(ui, "Ø", "Sem Sombra (Remover)", tokens).clicked() {
@@ -809,7 +809,7 @@ fn render_shadow_picker_menu(
                 if has_selection {
                     changed |= apply_shadow_selection(state, hex);
                 } else {
-                    changed |= apply_or_update_slide_directive(state, "sombra", hex);
+                    changed |= apply_or_update_slide_directive(state, "b", hex);
                 }
                 ui.close();
             }
@@ -852,10 +852,10 @@ fn render_line_spacing_menu(
     let mut changed = false;
     egui::Popup::menu(resp).show(|ui| {
         ui.set_min_width(220.0);
-        super::menu::menu_section_title(ui, "Espaçamento Entre Linhas (//linha:)", tokens);
+        super::menu::menu_section_title(ui, "Espaçamento Entre Linhas (//l:)", tokens);
         for val in &["1.0", "1.15", "1.25", "1.38", "1.50", "1.75", "2.0"] {
-            if super::menu::menu_item(ui, val, &format!("Aplicar //linha: {val}"), tokens).clicked() {
-                changed |= apply_or_update_slide_directive(state, "linha", val);
+            if super::menu::menu_item(ui, val, &format!("Aplicar //l: {val}"), tokens).clicked() {
+                changed |= apply_or_update_slide_directive(state, "l", val);
                 ui.close();
             }
         }
@@ -871,10 +871,10 @@ fn render_letter_spacing_menu(
     let mut changed = false;
     egui::Popup::menu(resp).show(|ui| {
         ui.set_min_width(220.0);
-        super::menu::menu_section_title(ui, "Espaçamento Entre Letras (//letra:)", tokens);
+        super::menu::menu_section_title(ui, "Espaçamento Entre Letras (//ls:)", tokens);
         for val in &["0.0", "0.6", "1.0", "1.8", "2.5", "4.0"] {
-            if super::menu::menu_item(ui, val, &format!("Aplicar //letra: {val}"), tokens).clicked() {
-                changed |= apply_or_update_slide_directive(state, "letra", val);
+            if super::menu::menu_item(ui, val, &format!("Aplicar //ls: {val}"), tokens).clicked() {
+                changed |= apply_or_update_slide_directive(state, "ls", val);
                 ui.close();
             }
         }

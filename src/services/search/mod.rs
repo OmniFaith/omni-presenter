@@ -136,7 +136,7 @@ impl SearchSnapshot {
         }
         for theme in &state.themes {
             add(
-                theme.name.clone(),
+                theme.display_name(state.settings.language),
                 String::new(),
                 theme.bg_type.clone(),
                 "search-themes",
