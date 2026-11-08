@@ -34,7 +34,7 @@ pub fn render_event_editor_modal(
         "event_editor_modal",
         title_key,
         "workspace-event-settings-desc",
-        420.0,
+        440.0,
         &theme,
         |ui| {
             ui.spacing_mut().item_spacing = egui::vec2(8.0, 10.0);
@@ -203,6 +203,52 @@ pub fn render_event_editor_modal(
                 }
             }
 
+            ui.add_space(4.0);
+            ui.separator();
+            ui.add_space(4.0);
+
+            // Tema padrão e Papel de parede padrão do evento (opcionais)
+            let language = state.settings.language;
+            let themes = &state.themes;
+
+            ui.horizontal(|ui| {
+                let col_w = (ui.available_width() - 8.0) * 0.5;
+
+                // Coluna 1: Tema Padrão
+                ui.allocate_ui_with_layout(
+                    egui::vec2(col_w, 0.0),
+                    egui::Layout::top_down(egui::Align::Min),
+                    |ui| {
+                        render_theme_selector(
+                            ui,
+                            "event_default_theme_combo",
+                            "workspace-event-default-theme",
+                            &mut draft.theme_id,
+                            themes,
+                            language,
+                            &theme,
+                        );
+                    },
+                );
+
+                // Coluna 2: Papel de Parede Padrão
+                ui.allocate_ui_with_layout(
+                    egui::vec2(col_w, 0.0),
+                    egui::Layout::top_down(egui::Align::Min),
+                    |ui| {
+                        render_theme_selector(
+                            ui,
+                            "event_default_wallpaper_combo",
+                            "workspace-event-default-wallpaper",
+                            &mut draft.idle_theme_id,
+                            themes,
+                            language,
+                            &theme,
+                        );
+                    },
+                );
+            });
+
             // Se for novo evento, opção de copiar itens da lista atual
             if !is_editing {
                 ui.add_space(4.0);
@@ -303,5 +349,50 @@ fn render_time_picker(ui: &mut egui::Ui, time: &mut String, theme: &AppTheme) {
             }
         }
     });
+}
+
+fn render_theme_selector(
+    ui: &mut egui::Ui,
+    id_salt: &str,
+    label_key: &str,
+    selected_id: &mut String,
+    themes: &[crate::core::models::PresentationTheme],
+    language: crate::core::i18n::Language,
+    theme: &AppTheme,
+) {
+    ui.label(
+        RichText::new(language.text(label_key))
+            .size(11.5)
+            .strong()
+            .color(theme.text_secondary),
+    );
+    ui.add_space(2.0);
+
+    let current_label = if selected_id.is_empty() {
+        language.text("workspace-none-keep-current").to_string()
+    } else if let Some(t) = themes.iter().find(|t| t.id == *selected_id) {
+        t.display_name(language)
+    } else {
+        selected_id.clone()
+    };
+
+    egui::ComboBox::from_id_salt(id_salt)
+        .selected_text(RichText::new(current_label).size(11.5))
+        .width(ui.available_width())
+        .show_ui(ui, |ui| {
+            if ui
+                .selectable_value(
+                    selected_id,
+                    String::new(),
+                    language.text("workspace-none-keep-current"),
+                )
+                .clicked()
+            {}
+            ui.separator();
+            for t in themes {
+                let name = t.display_name(language);
+                ui.selectable_value(selected_id, t.id.clone(), name);
+            }
+        });
 }
 

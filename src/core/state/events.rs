@@ -9,6 +9,8 @@ pub struct EventEditorDraft {
     pub time: String,
     pub date: String,
     pub copy_current_playlist: bool,
+    pub theme_id: String,
+    pub idle_theme_id: String,
 }
 
 impl Default for EventEditorDraft {
@@ -21,6 +23,8 @@ impl Default for EventEditorDraft {
             time: "19:00".to_string(),
             date: String::new(),
             copy_current_playlist: false,
+            theme_id: String::new(),
+            idle_theme_id: String::new(),
         }
     }
 }
@@ -53,6 +57,8 @@ impl ControlPanelState {
                 },
                 date: service.event_date.clone().unwrap_or_default(),
                 copy_current_playlist: false,
+                theme_id: service.theme_id.clone(),
+                idle_theme_id: service.idle_theme_id.clone(),
             });
             self.show_event_editor_modal = true;
         }
@@ -90,6 +96,15 @@ impl ControlPanelState {
                 service.name = trimmed_name.clone();
                 service.recurrence = recurrence;
                 service.event_date = event_date;
+                service.theme_id = draft.theme_id.clone();
+                service.idle_theme_id = draft.idle_theme_id.clone();
+            }
+            if self.settings.active_service == id && !draft.theme_id.is_empty() {
+                if let Some(idx) = self.themes.iter().position(|t| t.id == draft.theme_id) {
+                    self.selected_theme_index = idx;
+                    self.live_theme_index = idx;
+                    self.live_theme_id = draft.theme_id.clone();
+                }
             }
             let msg = self.settings.language.format(
                 "workspace-event-updated",
@@ -112,6 +127,8 @@ impl ControlPanelState {
             let new_profile = crate::core::preferences::ServiceProfile {
                 id: new_id.clone(),
                 name: trimmed_name.clone(),
+                theme_id: draft.theme_id.clone(),
+                idle_theme_id: draft.idle_theme_id.clone(),
                 playlist,
                 event_date,
                 recurrence,
@@ -625,6 +642,7 @@ pub mod tests {
             time: "20:00".into(),
             date: String::new(),
             copy_current_playlist: false,
+            ..Default::default()
         });
         state.save_event_from_draft();
 
@@ -798,6 +816,7 @@ pub mod tests {
             time: "19:00".into(),
             date: String::new(),
             copy_current_playlist: false,
+            ..Default::default()
         });
         state.save_event_from_draft();
 
@@ -847,5 +866,31 @@ pub mod tests {
         state.switch_service(&noturno_id);
         assert_eq!(state.playlist.len(), 1);
         assert_eq!(state.playlist[0].title, "Música Noite");
+    }
+
+    #[test]
+    fn test_event_default_theme_and_wallpaper_switching() {
+        let mut state = ControlPanelState::default();
+        let custom_theme = crate::core::models::PresentationTheme {
+            id: "theme_youth".into(),
+            name: "Tema Jovens".into(),
+            ..Default::default()
+        };
+        state.themes.push(custom_theme);
+
+        // Criar evento com tema e wallpaper padrão
+        state.event_editor_draft = Some(EventEditorDraft {
+            id: None,
+            name: "Culto de Jovens".into(),
+            theme_id: "theme_youth".into(),
+            idle_theme_id: "obsidian_pro".into(),
+            ..Default::default()
+        });
+        state.save_event_from_draft();
+
+        assert_eq!(state.settings.service().name, "Culto de Jovens");
+        assert_eq!(state.settings.service().theme_id, "theme_youth");
+        assert_eq!(state.settings.service().idle_theme_id, "obsidian_pro");
+        assert_eq!(state.live_theme_id, "theme_youth");
     }
 }

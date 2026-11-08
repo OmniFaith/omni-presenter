@@ -599,11 +599,13 @@ impl ControlPanelState {
             .position(|&name| name == self.bible_book)
             .unwrap_or(0);
         self.bible.expanded_book = Some(book_index);
-        self.selected_theme_index = self
-            .themes
-            .iter()
-            .position(|t| t.id == service.theme_id)
-            .unwrap_or(0);
+        if !service.theme_id.is_empty()
+            && let Some(idx) = self.themes.iter().position(|t| t.id == service.theme_id)
+        {
+            self.selected_theme_index = idx;
+            self.live_theme_index = idx;
+            self.live_theme_id = service.theme_id.clone();
+        }
         if (!self.settings.bible_enabled && self.active_sidebar_page == SidebarPage::Bible)
             || (!self.settings.chat_enabled && self.active_sidebar_page == SidebarPage::Chat)
         {
