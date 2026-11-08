@@ -341,8 +341,8 @@ fn highlight_line_markup(
                 MarkupType::Color(c) => {
                     format.color = c;
                 }
-                MarkupType::Size(sz) => {
-                    format.font_id.size = sz.clamp(8.0, 72.0);
+                MarkupType::Size(_) => {
+                    // Do not change font size in the text editor input field to keep typing area uniform
                 }
                 MarkupType::Shadow(c) => {
                     format.color = c;
@@ -607,5 +607,23 @@ mod tests {
         println!("Galley hidden rect: {:?}", galley_hidden.rect);
         println!("Galley plain rect: {:?}", galley_plain.rect);
         assert!((galley_hidden.rect.width() - galley_plain.rect.width()).abs() < 10.0);
+    }
+
+    #[test]
+    fn test_size_markup_keeps_editor_font_size() {
+        let theme = AppTheme::default();
+        let text = "Bless the [t: 60]Lord[/t], oh my soul";
+        let job = highlight_lyrics_job(text, &[], &theme, 14.0, 500.0, false);
+        let mut found = false;
+        for section in &job.sections {
+            let start = usize::from(section.byte_range.start);
+            let end = usize::from(section.byte_range.end);
+            let slice = &text[start..end];
+            if slice == "Lord" {
+                assert_eq!(section.format.font_id.size, 14.0);
+                found = true;
+            }
+        }
+        assert!(found, "Should find section for 'Lord'");
     }
 }
