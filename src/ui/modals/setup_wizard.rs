@@ -8,8 +8,8 @@ use crate::ui::modals::settings::screen_card::{render_screen_card, ScreenCardAct
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, RichText, Stroke};
 use egui_phosphor::regular::{
-    ARROW_LEFT, ARROW_RIGHT, CHECK, CHECK_CIRCLE, DESKTOP, GLOBE, MONITOR, PAINT_BRUSH,
-    SPARKLE, TEXT_AA,
+    ARROW_LEFT, ARROW_RIGHT, CHECK, CHECK_CIRCLE, DESKTOP, GLOBE, HAND_WAVING, MONITOR,
+    PAINT_BRUSH, TEXT_AA,
 };
 
 pub fn render_setup_wizard_modal(
@@ -82,7 +82,7 @@ fn render_stepper_header(
     language: Language,
 ) {
     let steps = [
-        (0, SPARKLE, language.text("settings-wizard-step-welcome")),
+        (0, HAND_WAVING, language.text("settings-wizard-step-welcome")),
         (1, PAINT_BRUSH, language.text("settings-wizard-step-appearance")),
         (2, DESKTOP, language.text("settings-wizard-step-monitors")),
         (3, TEXT_AA, language.text("settings-wizard-step-breaks")),
@@ -116,9 +116,9 @@ fn render_stepper_header(
             let is_past = *step_idx < current;
 
             let (bg_color, text_color, border_color) = if is_active {
-                (tokens.accent, Color32::WHITE, tokens.accent)
+                (tokens.accent, tokens.text_on_accent, tokens.accent)
             } else if is_past {
-                (tokens.accent_soft, tokens.accent, tokens.accent.linear_multiply(0.4))
+                (tokens.accent_soft, tokens.text_secondary, tokens.border_default)
             } else {
                 (tokens.bg_pill, tokens.text_muted, tokens.border_default)
             };
@@ -168,7 +168,7 @@ fn render_step_welcome(
         ui.painter().text(
             icon_rect.center(),
             egui::Align2::CENTER_CENTER,
-            SPARKLE,
+            HAND_WAVING,
             egui::FontId::proportional(30.0),
             tokens.accent,
         );
@@ -516,14 +516,26 @@ fn render_step_screens(
 
         #[derive(Clone, Copy, PartialEq)]
         enum AspectOption {
+            Monitor,
             Wide16_9,
             Wide16_10,
             Standard4_3,
             Ultra21_9,
         }
 
+        let detected_monitor = monitors
+            .iter()
+            .find(|m| state.settings.physical_monitor_enabled(&m.name))
+            .or_else(|| monitors.iter().find(|m| m.name == state.settings.monitor_name))
+            .or_else(|| monitors.first());
+        let detected_ratio = detected_monitor
+            .map(|m| if m.resolution.0 > 0 && m.resolution.1 > 0 { m.resolution.0 as f32 / m.resolution.1 as f32 } else { 16.0 / 9.0 })
+            .unwrap_or(16.0 / 9.0);
+
         let current_aspect = state.setup_wizard.presentation_aspect_ratio;
-        let selected_opt = if (current_aspect - 16.0 / 9.0).abs() < 0.05 {
+        let selected_opt = if current_aspect <= 0.05 {
+            AspectOption::Monitor
+        } else if (current_aspect - 16.0 / 9.0).abs() < 0.05 {
             AspectOption::Wide16_9
         } else if (current_aspect - 16.0 / 10.0).abs() < 0.05 {
             AspectOption::Wide16_10
@@ -532,8 +544,35 @@ fn render_step_screens(
         } else if (current_aspect - 21.0 / 9.0).abs() < 0.05 {
             AspectOption::Ultra21_9
         } else {
-            AspectOption::Wide16_9
+            AspectOption::Monitor
         };
+
+        let draw_btn = |ui: &mut egui::Ui, w: f32, h: f32, is_sel: bool, text: &str| -> egui::Response {
+            let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), egui::Sense::click());
+            if resp.hovered() { ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand); }
+            let fill = if is_sel { tokens.accent_soft } else if resp.hovered() { tokens.bg_card_hover } else { tokens.bg_pill };
+            let stroke = Stroke::new(if is_sel { 1.5 } else { 1.0 }, if is_sel { tokens.accent } else { tokens.border_default });
+            ui.painter().rect(rect, 8.0, fill, stroke, egui::StrokeKind::Inside);
+            ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, text, egui::FontId::proportional(11.5), if is_sel { tokens.accent } else { tokens.text_primary });
+            resp
+        };
+
+        let monitor_label = if let Some(m) = detected_monitor {
+            if m.resolution.0 > 0 && m.resolution.1 > 0 {
+                format!("{MONITOR}  {} ({}×{})", language.text("settings-aspect-monitor"), m.resolution.0, m.resolution.1)
+            } else {
+                format!("{MONITOR}  {}", language.text("settings-aspect-monitor"))
+            }
+        } else {
+            format!("{MONITOR}  {}", language.text("settings-aspect-monitor"))
+        };
+        if draw_btn(ui, ui.available_width(), 36.0, selected_opt == AspectOption::Monitor, &monitor_label).clicked() {
+            state.setup_wizard.presentation_aspect_ratio = 0.0;
+            state.presentation_aspect_ratio = detected_ratio;
+            state.settings.service_mut().aspect_ratio = 0.0;
+        }
+
+        ui.add_space(6.0);
 
         let aspect_list = [
             (AspectOption::Wide16_9, "16:9 Widescreen", 16.0 / 9.0),
@@ -548,39 +587,11 @@ fn render_step_screens(
 
         ui.horizontal(|ui| {
             for (idx, (opt, label, ratio_val)) in aspect_list.iter().enumerate() {
-                let is_sel = selected_opt == *opt;
-                let (rect, response) = ui.allocate_exact_size(egui::vec2(btn_w, 36.0), egui::Sense::click());
-                if response.hovered() {
-                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-                }
-                if response.clicked() {
+                if draw_btn(ui, btn_w, 36.0, selected_opt == *opt, label).clicked() {
                     state.setup_wizard.presentation_aspect_ratio = *ratio_val;
                     state.presentation_aspect_ratio = *ratio_val;
+                    state.settings.service_mut().aspect_ratio = *ratio_val;
                 }
-
-                let fill = if is_sel {
-                    tokens.accent_soft
-                } else if response.hovered() {
-                    tokens.bg_card_hover
-                } else {
-                    tokens.bg_pill
-                };
-
-                let stroke = if is_sel {
-                    Stroke::new(1.5, tokens.accent)
-                } else {
-                    Stroke::new(1.0, tokens.border_default)
-                };
-
-                ui.painter().rect(rect, 8.0, fill, stroke, egui::StrokeKind::Inside);
-                ui.painter().text(
-                    rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    *label,
-                    egui::FontId::proportional(11.5),
-                    if is_sel { tokens.accent } else { tokens.text_primary },
-                );
-
                 if idx + 1 < aspect_list.len() {
                     ui.add_space(gap);
                 }
@@ -645,53 +656,6 @@ fn render_step_breaks(
             tokens,
         );
     });
-
-    ui.add_space(8.0);
-
-    // Centered guide for smart breaks syntax
-    card(ui, tokens, |ui| {
-        ui.horizontal(|ui| {
-            ui.label(
-                RichText::new("Quebras Inteligentes & Comentários no Editor")
-                    .size(12.5)
-                    .strong()
-                    .color(tokens.text_primary),
-            );
-        });
-        ui.add_space(6.0);
-
-        let guide_items = [
-            ("|", "Quebra Suave", "Quebra equilibrada no verso"),
-            ("|16:9| / |4:3|", "Quebra por Formato", "Apenas na tela correspondente"),
-            ("// nota", "Comentário", "Oculto na projeção"),
-            ("---", "Novo Slide", "Divide em novo slide"),
-        ];
-
-        let gap = 8.0;
-        let total_avail = ui.available_width();
-        let col_w = ((total_avail - gap * (guide_items.len() - 1) as f32) / guide_items.len() as f32).max(70.0);
-
-        ui.horizontal(|ui| {
-            for (idx, (syntax, title, desc)) in guide_items.iter().enumerate() {
-                egui::Frame::new()
-                    .fill(tokens.bg_pill)
-                    .corner_radius(8.0)
-                    .inner_margin(egui::vec2(8.0, 8.0))
-                    .show(ui, |ui| {
-                        ui.set_width(col_w - 16.0);
-                        ui.vertical(|ui| {
-                            ui.label(RichText::new(*syntax).strong().size(12.0).color(tokens.accent));
-                            ui.label(RichText::new(*title).strong().size(10.5).color(tokens.text_primary));
-                            ui.label(RichText::new(*desc).size(9.5).color(tokens.text_secondary));
-                        });
-                    });
-
-                if idx + 1 < guide_items.len() {
-                    ui.add_space(gap);
-                }
-            }
-        });
-    });
 }
 
 fn render_step_ready(
@@ -744,7 +708,9 @@ fn render_step_ready(
             "Projeção em Janela".to_string()
         };
 
-        let aspect_name = if (state.setup_wizard.presentation_aspect_ratio - 16.0 / 9.0).abs() < 0.05 {
+        let aspect_name = if state.setup_wizard.presentation_aspect_ratio <= 0.05 {
+            language.text("settings-aspect-monitor")
+        } else if (state.setup_wizard.presentation_aspect_ratio - 16.0 / 9.0).abs() < 0.05 {
             "16:9 Widescreen"
         } else if (state.setup_wizard.presentation_aspect_ratio - 16.0 / 10.0).abs() < 0.05 {
             "16:10"
@@ -868,7 +834,10 @@ fn finish_wizard(
 ) -> Option<usize> {
     state.settings.first_run_completed = true;
     state.show_setup_wizard = false;
-    state.presentation_aspect_ratio = state.setup_wizard.presentation_aspect_ratio;
+    state.settings.service_mut().aspect_ratio = state.setup_wizard.presentation_aspect_ratio;
+    if state.setup_wizard.presentation_aspect_ratio > 0.0 {
+        state.presentation_aspect_ratio = state.setup_wizard.presentation_aspect_ratio;
+    }
     state.dock_preview_bg = state.setup_wizard.dock_preview_bg;
 
     // Apply wrap_text and auto_fit to all presentation themes
@@ -949,6 +918,7 @@ mod tests {
 
         assert!(state.settings.first_run_completed);
         assert!(!state.show_setup_wizard);
+        assert_eq!(state.settings.service().aspect_ratio, 0.0);
         for theme in &state.themes {
             assert!(theme.options.wrap_text);
             assert!(theme.options.auto_fit);

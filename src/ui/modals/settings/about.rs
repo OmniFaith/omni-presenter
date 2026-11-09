@@ -1,7 +1,7 @@
 use crate::core::state::ControlPanelState;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, RichText};
-use egui_phosphor::regular::SPARKLE;
+use egui_phosphor::regular::{HAND_WAVING, PROJECTOR_SCREEN};
 
 use super::components::{card, section, styled_button, ButtonTone};
 
@@ -21,7 +21,7 @@ pub(super) fn about(ui: &mut egui::Ui, state: &mut ControlPanelState, theme: &Ap
             ui.painter().text(
                 icon_rect.center(),
                 egui::Align2::CENTER_CENTER,
-                SPARKLE,
+                PROJECTOR_SCREEN,
                 egui::FontId::proportional(22.0),
                 theme.accent,
             );
@@ -92,7 +92,7 @@ pub(super) fn about(ui: &mut egui::Ui, state: &mut ControlPanelState, theme: &Ap
         ui.add_space(6.0);
         if styled_button(
             ui,
-            Some(SPARKLE),
+            Some(HAND_WAVING),
             "settings-wizard-reopen",
             ButtonTone::Secondary,
             theme,

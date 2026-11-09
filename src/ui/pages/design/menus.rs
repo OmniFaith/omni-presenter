@@ -172,7 +172,7 @@ pub(super) fn new_design_menu(ui: &mut egui::Ui, theme: &AppTheme) -> Option<usi
     }
     context_menu_submenu(ui, STACK, "design-create-from-template", theme, |ui| {
         for (value, glyph, label) in [
-            (1, SPARKLE, "design-welcome-label"),
+            (1, HAND_WAVING, "design-welcome-label"),
             (2, TIMER, "design-countdown"),
             (3, QUESTION, "design-questions-and-answers"),
         ] {

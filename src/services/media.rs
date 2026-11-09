@@ -96,6 +96,7 @@ pub fn preview_theme(
         && deck.preview_media.as_ref().map(|m| &m.path) == Some(&media.path)
     {
         theme.options.video.paused = !media.is_playing;
+        theme.options.video.fit = media.video_fit.clone();
     }
     theme
 }
@@ -110,6 +111,7 @@ pub fn live_theme(
         && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
     {
         theme.options.video.paused = !media.is_playing;
+        theme.options.video.fit = media.video_fit.clone();
     }
     theme
 }

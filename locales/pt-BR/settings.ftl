@@ -476,6 +476,8 @@ settings-screen-and-aspect-ratio = { $icon }  Tela e Proporção
 
 settings-screen-aspect-ratio = Proporção do Telão (Aspect Ratio):
 
+settings-aspect-monitor = Proporção do monitor selecionado
+
 settings-screens-and-preview = { $icon }  Telas e Prévia
 
 settings-search-shaders = Buscar shader...

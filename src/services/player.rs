@@ -33,6 +33,7 @@ impl ControlPanelState {
             is_projecting: project,
             video_start_time: std::time::Instant::now(),
             video_paused_at: None,
+            video_fit: "contain".into(),
         });
         self.notify(message);
     }

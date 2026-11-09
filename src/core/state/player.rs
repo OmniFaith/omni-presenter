@@ -14,9 +14,17 @@ pub struct ActivePlayerMedia {
     pub is_projecting: bool,
     pub video_start_time: std::time::Instant,
     pub video_paused_at: Option<f32>,
+    pub video_fit: String,
 }
 
 impl ActivePlayerMedia {
+    pub fn cycle_video_fit(&mut self) {
+        self.video_fit = match self.video_fit.as_str() {
+            "contain" => "cover".into(),
+            "cover" => "stretch".into(),
+            _ => "contain".into(),
+        };
+    }
     pub fn video_position(&self) -> f32 {
         let position = self.video_paused_at.unwrap_or_else(|| {
             if self.is_playing {

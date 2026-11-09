@@ -8,7 +8,7 @@ use crate::ui::components::{
     context_menu_item, context_menu_separator, render_header_bar, toolbar_icon_button,
 };
 use crate::ui::AppTheme;
-use eframe::egui::{self, Color32, RichText, Vec2};
+use eframe::egui::{self, RichText, Vec2};
 use egui_phosphor::regular::{
     ARROW_DOWN, ARROW_UP, BOOK_OPEN, CHECK_CIRCLE, CHURCH, CIRCLE, COPY_SIMPLE, EYE, FILE_TEXT, HEART, LIST, MUSIC_NOTE,
     PENCIL_SIMPLE, PLAY, PUSH_PIN, TRASH, VIDEO,
@@ -186,9 +186,9 @@ pub fn render_playlist_column(
                 }
 
                 let (c_icon, c_color) = if item.played {
-                    (CHECK_CIRCLE, Color32::from_rgb(148, 163, 184))
+                    (CHECK_CIRCLE, theme.accent)
                 } else {
-                    (CIRCLE, Color32::from_rgb(209, 213, 219))
+                    (CIRCLE, theme.text_muted)
                 };
                 let circle_galley = ui.painter().layout_no_wrap(
                     c_icon.to_string(),
@@ -223,45 +223,44 @@ pub fn render_playlist_column(
                 });
                 if let Some((payload, after)) = crate::ui::components::drag_drop::reorder_target(ui, resp.rect, &theme, false, |source| matches!(source, crate::ui::components::drag_drop::DragSource::Playlist(ids) if !ids.contains(&item.id)))
                     && let crate::ui::components::drag_drop::DragSource::Playlist(ids) = &payload.source { reorder = Some((ids.clone(), item.id.clone(), after)); }
+                let title_x = rect.min.x + 26.0;
+                let max_text_x = rect.max.x - 30.0;
+                let avail_w = (max_text_x - title_x).max(10.0);
+                let text_clip = egui::Rect::from_min_max(
+                    rect.min,
+                    egui::pos2(max_text_x, rect.max.y),
+                );
+                let painter = ui.painter().with_clip_rect(text_clip);
                 let text_y = rect.center().y;
-                let icon_galley = ui.painter().layout_no_wrap(
+                let icon_galley = painter.layout_no_wrap(
                     kind_icon.to_string(),
                     egui::FontId::proportional(13.0),
                     theme.icon_default,
                 );
-                ui.painter().galley(
+                painter.galley(
                     egui::pos2(rect.min.x + 8.0, text_y - icon_galley.size().y / 2.0),
                     icon_galley,
                     theme.icon_default,
                 );
 
-                let title_galley = ui.painter().layout_no_wrap(
-                    item.title.clone(),
+                crate::ui::components::interaction::render_item_title_and_subtitle(
+                    ui,
+                    &painter,
+                    &item.title,
+                    &item.subtitle,
                     egui::FontId::proportional(12.0),
+                    egui::FontId::proportional(11.0),
                     theme.text_primary,
-                );
-                let title_w = title_galley.size().x;
-                ui.painter().galley(
-                    egui::pos2(rect.min.x + 26.0, text_y - title_galley.size().y / 2.0),
-                    title_galley,
-                    theme.text_primary,
+                    theme.text_muted,
+                    egui::pos2(title_x, text_y),
+                    avail_w,
                 );
 
-                if !item.subtitle.is_empty() {
-                    let sub_galley = ui.painter().layout_no_wrap(
-                        item.subtitle.clone(),
-                        egui::FontId::proportional(11.0),
-                        theme.text_muted,
-                    );
-                    ui.painter().galley(
-                        egui::pos2(
-                            rect.min.x + 26.0 + title_w + 8.0,
-                            text_y - sub_galley.size().y / 2.0,
-                        ),
-                        sub_galley,
-                        theme.text_muted,
-                    );
-                }
+                let resp = if item.subtitle.is_empty() {
+                    resp.on_hover_text(&item.title)
+                } else {
+                    resp.on_hover_text(format!("{}\n{}", item.title, item.subtitle))
+                };
 
                 if resp.hovered() && !circle_resp.hovered() {
                     ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);

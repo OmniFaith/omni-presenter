@@ -4,11 +4,10 @@ use egui_phosphor::regular::{CHECK_CIRCLE, CIRCLE};
 
 /// Renders the status indicator circle (played vs pending)
 pub fn render_status_circle(ui: &mut egui::Ui, played: bool, theme: &AppTheme) -> egui::Response {
-    let _ = theme;
     let (icon, color) = if played {
-        (CHECK_CIRCLE, Color32::from_rgb(148, 163, 184))
+        (CHECK_CIRCLE, theme.accent)
     } else {
-        (CIRCLE, Color32::from_rgb(209, 213, 219))
+        (CIRCLE, theme.text_muted)
     };
 
     let btn = egui::Button::new(egui::RichText::new(icon).size(16.0).color(color))

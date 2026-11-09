@@ -654,7 +654,7 @@ fn row(
         ui.allocate_exact_size(egui::vec2(ui.available_width(), 28.0), egui::Sense::hover());
     let response = ui.interact(rect, id, egui::Sense::click_and_drag());
     let visual = crate::ui::components::interaction::row_emphasis(ui, &response, is_active, &theme);
-    let hover = visual.hover;
+    let _hover = visual.hover;
     let down = visual.press;
     let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
 
@@ -707,41 +707,27 @@ fn row(
     let title_x = start_x + icon_w + 6.0;
     let title_color = if is_active || is_pressed {
         theme.accent
-    } else if hover > 0.5 {
-        theme.text_primary
     } else {
         theme.text_primary
     };
-    let title_galley = painter.layout_no_wrap(
-        item.title.clone(),
+    let author_color = if is_active || is_pressed {
+        theme.text_secondary
+    } else {
+        theme.text_muted
+    };
+    let avail_w = (draw_rect.max.x - 8.0 - title_x).max(10.0);
+    crate::ui::components::interaction::render_item_title_and_subtitle(
+        ui,
+        &painter,
+        &item.title,
+        &item.subtitle,
         egui::FontId::proportional(12.5),
+        egui::FontId::proportional(11.0),
         title_color,
+        author_color,
+        egui::pos2(title_x, text_y),
+        avail_w,
     );
-    let title_w = title_galley.size().x;
-    painter.galley(
-        egui::pos2(title_x, text_y - title_galley.size().y / 2.0),
-        title_galley,
-        title_color,
-    );
-
-    if !item.subtitle.trim().is_empty() {
-        let author_x = title_x + title_w + 8.0;
-        let author_color = if is_active || is_pressed {
-            theme.text_secondary
-        } else {
-            theme.text_muted
-        };
-        let author_galley = painter.layout_no_wrap(
-            item.subtitle.clone(),
-            egui::FontId::proportional(11.0),
-            author_color,
-        );
-        painter.galley(
-            egui::pos2(author_x, text_y - author_galley.size().y / 2.0),
-            author_galley,
-            author_color,
-        );
-    }
 
     let response = if item.subtitle.is_empty() {
         response.on_hover_text(&item.title)

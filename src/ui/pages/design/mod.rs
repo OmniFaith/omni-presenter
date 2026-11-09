@@ -761,7 +761,7 @@ impl DesignEditor {
         ui.add_space(2.0);
         for (kind, label, description, icon, (r, g, b), tag) in [
             (0, "design-blank", "design-start-from-scratch", FILE_TEXT, (148, 163, 184), "SLIDE"),
-            (1, "design-welcome-label", "design-title-and-message", SPARKLE, (251, 191, 36), "SLIDE"),
+            (1, "design-welcome-label", "design-title-and-message", HAND_WAVING, (251, 191, 36), "SLIDE"),
             (2, "design-countdown", "design-service-countdown", TIMER, (56, 189, 248), "TIMER"),
             (3, "design-questions-and-answers", "design-interactive-activity", QUESTION, (52, 211, 153), "QUIZ"),
             (4, "design-clock-overlay-label", "design-clock-overlay", CLOCK, (167, 139, 250), "EXTRA"),

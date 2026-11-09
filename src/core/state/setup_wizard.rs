@@ -13,7 +13,7 @@ impl Default for SetupWizardState {
             step: 0,
             wrap_text: true,
             auto_fit: true,
-            presentation_aspect_ratio: 16.0 / 9.0,
+            presentation_aspect_ratio: 0.0,
             dock_preview_bg: false,
         }
     }

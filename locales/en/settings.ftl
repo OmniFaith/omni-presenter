@@ -476,6 +476,8 @@ settings-screen-and-aspect-ratio = { $icon }  Screen and aspect ratio
 
 settings-screen-aspect-ratio = Screen aspect ratio:
 
+settings-aspect-monitor = Selected monitor aspect ratio
+
 settings-screens-and-preview = { $icon }  Screens and preview
 
 settings-search-shaders = Search shaders…

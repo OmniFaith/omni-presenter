@@ -322,7 +322,7 @@ pub fn context_menu_submenu<R>(
     ui.painter().galley(text_pos, text_galley, text_color);
 
     // Right Chevron (neatly positioned at rect.max.x - 14.0)
-    let chevron_color = Color32::from_rgb(148, 163, 184);
+    let chevron_color = theme.icon_muted;
     let chevron_galley = ui.painter().layout_no_wrap(
         CARET_RIGHT.to_string(),
         egui::FontId::proportional(11.0),

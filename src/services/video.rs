@@ -50,6 +50,7 @@ fn key(path: &str, options: &VideoOptions) -> String {
     let mut options = options.clone();
     options.path.clear();
     options.paused = false;
+    options.fit.clear();
     format!(
         "{path}:{}",
         serde_json::to_string(&options).unwrap_or_default()
@@ -449,6 +450,19 @@ pub fn resume(ctx: &egui::Context, path: &str) {
 
 pub fn seek(ctx: &egui::Context, path: &str, _position: f32) {
     stop(ctx, path);
+}
+
+pub fn is_finished(ctx: &egui::Context, path: &str) -> bool {
+    let cache = cache(ctx);
+    let cache = cache.lock().unwrap();
+    cache
+        .iter()
+        .find(|(k, _)| path.is_empty() || k.starts_with(path))
+        .map(|(_, entry)| {
+            entry.shared.finished.load(Ordering::Relaxed)
+                && !entry.shared.expired.load(Ordering::Relaxed)
+        })
+        .unwrap_or(false)
 }
 
 #[cfg(test)]

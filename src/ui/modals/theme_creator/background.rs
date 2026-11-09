@@ -606,7 +606,7 @@ pub(super) fn background_tab(ui: &mut egui::Ui, state: &mut ControlPanelState) -
         ("split", ARROWS_OUT, "settings-reveal"),
         ("flip", ARROWS_CLOCKWISE, "settings-rotate"),
         ("cube", CUBE, "settings-3d-cube"),
-        ("pop", SPARKLE, "settings-bounce"),
+        ("pop", PULSE, "settings-bounce"),
         ("cut", SCISSORS, "settings-cut"),
     ];
 

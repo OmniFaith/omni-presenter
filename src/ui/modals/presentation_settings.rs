@@ -67,13 +67,16 @@ pub fn render_presentation_settings_modal(
 
                 #[derive(Clone, Copy, PartialEq)]
                 enum AspectOption {
+                    Monitor,
                     Wide16_9,
                     Wide16_10,
                     Standard4_3,
                     Ultra21_9,
                 }
 
-                let current_opt = if (state.presentation_aspect_ratio - 16.0 / 9.0).abs() < 0.05 {
+                let current_opt = if state.settings.service().aspect_ratio <= 0.05 {
+                    AspectOption::Monitor
+                } else if (state.presentation_aspect_ratio - 16.0 / 9.0).abs() < 0.05 {
                     AspectOption::Wide16_9
                 } else if (state.presentation_aspect_ratio - 16.0 / 10.0).abs() < 0.05 {
                     AspectOption::Wide16_10
@@ -82,7 +85,7 @@ pub fn render_presentation_settings_modal(
                 } else if (state.presentation_aspect_ratio - 21.0 / 9.0).abs() < 0.05 {
                     AspectOption::Ultra21_9
                 } else {
-                    AspectOption::Wide16_9
+                    AspectOption::Monitor
                 };
 
                 let mut selected_opt = current_opt;
@@ -90,6 +93,7 @@ pub fn render_presentation_settings_modal(
                     ui,
                     &mut selected_opt,
                     &[
+                        (AspectOption::Monitor, "Auto"),
                         (AspectOption::Wide16_9, "16:9"),
                         (AspectOption::Wide16_10, "16:10"),
                         (AspectOption::Standard4_3, "4:3"),
@@ -97,12 +101,17 @@ pub fn render_presentation_settings_modal(
                     ],
                     &tokens,
                 ) {
-                    state.presentation_aspect_ratio = match selected_opt {
+                    let ratio = match selected_opt {
+                        AspectOption::Monitor => 0.0,
                         AspectOption::Wide16_9 => 16.0 / 9.0,
                         AspectOption::Wide16_10 => 16.0 / 10.0,
                         AspectOption::Standard4_3 => 4.0 / 3.0,
                         AspectOption::Ultra21_9 => 21.0 / 9.0,
                     };
+                    state.settings.service_mut().aspect_ratio = ratio;
+                    if ratio > 0.0 {
+                        state.presentation_aspect_ratio = ratio;
+                    }
                 }
             });
 
