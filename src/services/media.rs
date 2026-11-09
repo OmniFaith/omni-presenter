@@ -91,6 +91,7 @@ pub fn preview_theme(
     deck: &SlideDeck,
 ) -> crate::core::models::PresentationTheme {
     let mut theme = output_theme(state.preview_theme(), deck.preview_media.as_ref());
+    theme.options.video.hwaccel = state.settings.hardware_acceleration;
     if let Some(media) = &state.active_player_media
         && media.kind == PlayerMediaKind::Video
         && deck.preview_media.as_ref().map(|m| &m.path) == Some(&media.path)
@@ -106,6 +107,7 @@ pub fn live_theme(
     deck: &SlideDeck,
 ) -> crate::core::models::PresentationTheme {
     let mut theme = output_theme(state.live_theme(), deck.live_media.as_ref());
+    theme.options.video.hwaccel = state.settings.hardware_acceleration;
     if let Some(media) = &state.active_player_media
         && media.kind == PlayerMediaKind::Video
         && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)

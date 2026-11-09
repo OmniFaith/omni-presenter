@@ -709,4 +709,7 @@ settings-wizard-ready-title = Tudo pronto para apresentar!
 settings-wizard-ready-desc = Sua configuração inicial foi salva. Você pode ajustar essas opções a qualquer momento nas Preferências.
 settings-wizard-reopen = Executar Assistente de Configuração Inicial
 
+settings-hardware-acceleration = Aceleração de hardware na decodificação de vídeo
+settings-hardware-acceleration-hint = Utiliza a GPU (VA-API, NVDEC, D3D11, VideoToolbox) para reproduzir vídeos de forma mais fluida e reduzir uso de CPU.
+
 

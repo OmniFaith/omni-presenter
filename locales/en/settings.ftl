@@ -709,4 +709,7 @@ settings-wizard-ready-title = All set to present!
 settings-wizard-ready-desc = Your initial setup is complete. You can always change these settings anytime in Preferences.
 settings-wizard-reopen = Run Initial Setup Wizard
 
+settings-hardware-acceleration = Hardware acceleration for video decoding
+settings-hardware-acceleration-hint = Uses GPU (VA-API, NVDEC, D3D11, VideoToolbox) for smoother video playback and lower CPU usage.
+
 

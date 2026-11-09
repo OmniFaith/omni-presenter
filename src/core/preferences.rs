@@ -606,6 +606,8 @@ pub struct AppSettings {
     pub show_song_info: bool,
     pub bible_enabled: bool,
     pub ask_media_conversion: bool,
+    #[serde(default = "default_true")]
+    pub hardware_acceleration: bool,
     pub chat_enabled: bool,
     pub last_bible_book: String,
     pub last_bible_chapter: usize,
@@ -648,6 +650,7 @@ impl Default for AppSettings {
             show_song_info: true,
             bible_enabled: true,
             ask_media_conversion: true,
+            hardware_acceleration: true,
             chat_enabled: true,
             last_bible_book: "Gênesis".into(),
             last_bible_chapter: 1,

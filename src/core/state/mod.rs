@@ -238,7 +238,9 @@ pub struct ControlPanelState {
     pub media_import_task: Option<(String, crate::services::tasks::BackgroundTask<Vec<std::path::PathBuf>>)>,
     pub media_conversion_prompt: Option<crate::services::media_conversion::Prompt>,
     pub media_conversion_retry: Option<crate::services::media_conversion::Prompt>,
+    pub media_conversion_progress: Option<std::sync::Arc<std::sync::Mutex<crate::services::media_conversion::ConversionProgress>>>,
     pub media_conversion_running: bool,
+    pub media_info_dialog: Option<crate::services::media_info::MediaDetails>,
     pub open_media_folders: std::collections::HashSet<String>,
     pub selected_media_ids: std::collections::HashSet<i64>,
     pub media_selection_anchor: Option<i64>,
@@ -361,7 +363,9 @@ impl Default for ControlPanelState {
             media_import_task: None,
             media_conversion_prompt: None,
             media_conversion_retry: None,
+            media_conversion_progress: None,
             media_conversion_running: false,
+            media_info_dialog: None,
             open_media_folders: std::collections::HashSet::new(),
             selected_media_ids: std::collections::HashSet::new(),
             media_selection_anchor: None,
@@ -485,6 +489,56 @@ impl ControlPanelState {
 
     pub fn notify(&mut self, message: impl Into<String>) {
         self.toast = Some((message.into(), std::time::Instant::now()));
+    }
+
+    pub fn is_item_converting(&self, item_path: &str) -> bool {
+        if !self.media_conversion_running {
+            return false;
+        }
+        if let Some(prog) = &self.media_conversion_progress {
+            if let Ok(g) = prog.lock() {
+                if g.current_path.to_string_lossy() == item_path {
+                    return true;
+                }
+            }
+        }
+        if let Some(prompt) = &self.media_conversion_retry {
+            return prompt.paths.iter().any(|p| p.to_string_lossy() == item_path);
+        }
+        false
+    }
+
+    pub fn media_conversion_percent(&self) -> f32 {
+        self.media_conversion_progress
+            .as_ref()
+            .and_then(|p| p.lock().ok())
+            .map(|g| g.percent)
+            .unwrap_or(0.0)
+    }
+
+    pub fn media_conversion_info_tooltip(&self) -> String {
+        let mut info = String::from("Convertendo mídia em segundo plano");
+        if let Some(prog) = &self.media_conversion_progress {
+            if let Ok(g) = prog.lock() {
+                if !g.current_filename.is_empty() {
+                    info.push_str(&format!("\n• Arquivo: {} ({}/{})", g.current_filename, g.current_file, g.total_files));
+                }
+                if let Some(d) = &g.details {
+                    if let Some(dim) = &d.dimensions_formatted {
+                        let ar = d.aspect_ratio.as_deref().unwrap_or("");
+                        info.push_str(&format!("\n• Resolução: {dim} ({ar})"));
+                    }
+                    if let Some(dur) = &d.duration_formatted {
+                        info.push_str(&format!("\n• Duração: {dur}"));
+                    }
+                    if let Some(codec) = &d.video_codec {
+                        info.push_str(&format!("\n• Codec: {codec}"));
+                    }
+                }
+                info.push_str(&format!("\n• Progresso: {:.0}%", (g.percent * 100.0).clamp(0.0, 100.0)));
+            }
+        }
+        info
     }
 
     pub fn capture_profiles(&mut self) {

@@ -124,10 +124,13 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                 "-v",
                 "error",
                 "-threads",
-                "2",
+                "0",
                 "-filter_threads",
-                "1",
+                "0",
             ]);
+            if options.hwaccel {
+                command.args(["-hwaccel", "auto"]);
+            }
             if options.repeat {
                 command.args(["-stream_loop", "-1"]);
             }
@@ -140,12 +143,21 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                     "-i",
                 ])
                 .arg(&stream_path);
-            let filter = format!(
-                "setpts=PTS/{speed},fps=30,scale={width}:{height},eq=contrast={}:saturation={}{}",
-                options.contrast,
-                options.saturation,
-                if options.mirror { ",hflip" } else { "" }
-            );
+            let mut filter_parts = vec![
+                format!("setpts=PTS/{speed}"),
+                "fps=30".to_string(),
+                format!("scale={width}:{height}"),
+            ];
+            if (options.contrast - 1.0).abs() > 0.01 || (options.saturation - 1.0).abs() > 0.01 {
+                filter_parts.push(format!(
+                    "eq=contrast={}:saturation={}",
+                    options.contrast, options.saturation
+                ));
+            }
+            if options.mirror {
+                filter_parts.push("hflip".to_string());
+            }
+            let filter = filter_parts.join(",");
             let mut child = command
                 .args([
                     "-an", "-sn", "-vf", &filter, "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1",
@@ -156,6 +168,7 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                 .map_err(|e| Language::system().format("services-could-not-start-ffmpeg", &[("e", &e.to_string())]))?;
             let mut stdout = child.stdout.take().unwrap();
             let mut sequence = 0;
+            let mut bytes = vec![0u8; width * height * 4];
             loop {
                 if worker.stop.load(Ordering::Relaxed)
                     || worker.used.lock().unwrap().elapsed() > Duration::from_secs(2)
@@ -167,7 +180,6 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                     std::thread::sleep(Duration::from_millis(30));
                     continue;
                 }
-                let mut bytes = vec![0; width * height * 4];
                 if stdout.read_exact(&mut bytes).is_err() {
                     break;
                 }

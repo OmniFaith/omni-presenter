@@ -11,6 +11,7 @@ pub mod images;
 pub(crate) mod i18n;
 pub mod media;
 pub mod media_conversion;
+pub mod media_info;
 pub mod lrclib;
 pub mod player;
 pub mod plugins;

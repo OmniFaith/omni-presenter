@@ -6,7 +6,7 @@ use crate::ui::components::render_header_bar;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, RichText, Vec2};
 use egui_phosphor::regular::{
-    ARROW_SQUARE_OUT, ARROWS_OUT_SIMPLE, MONITOR, MUSIC_NOTE, MUSIC_NOTES, PAUSE, PLAY, REPEAT,
+    ARROW_SQUARE_OUT, MONITOR, MUSIC_NOTE, MUSIC_NOTES, PAUSE, PLAY, REPEAT,
     SKIP_BACK, SKIP_FORWARD, SPEAKER_HIGH, SPEAKER_LOW, SPEAKER_SLASH, STOP, VIDEO, X,
 };
 
@@ -394,7 +394,14 @@ fn render_compact_video_showcase(
             theme.accent,
         );
 
-        ui.add(
+        let right_reserved = if media.path.starts_with("http://") || media.path.starts_with("https://") {
+            72.0
+        } else {
+            50.0
+        };
+        let title_w = (ui.available_width() - right_reserved).max(30.0);
+        ui.add_sized(
+            [title_w, 18.0],
             egui::Label::new(
                 RichText::new(&media.title)
                     .size(11.5)

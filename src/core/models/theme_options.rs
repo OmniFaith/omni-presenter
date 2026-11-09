@@ -48,6 +48,7 @@ pub struct VideoOptions {
     pub saturation: f32,
     pub contrast: f32,
     pub paused: bool,
+    pub hwaccel: bool,
 }
 
 impl Default for VideoOptions {
@@ -62,6 +63,7 @@ impl Default for VideoOptions {
             saturation: 1.0,
             contrast: 1.0,
             paused: false,
+            hwaccel: true,
         }
     }
 }

@@ -715,12 +715,18 @@ fn row(
     } else {
         theme.text_muted
     };
+    let is_converting = state.is_item_converting(&item.content);
+    let display_subtitle = if is_converting {
+        format!("{} • {:.0}%", item.subtitle, state.media_conversion_percent() * 100.0)
+    } else {
+        item.subtitle.clone()
+    };
     let avail_w = (draw_rect.max.x - 8.0 - title_x).max(10.0);
     crate::ui::components::interaction::render_item_title_and_subtitle(
         ui,
         &painter,
         &item.title,
-        &item.subtitle,
+        &display_subtitle,
         egui::FontId::proportional(12.5),
         egui::FontId::proportional(11.0),
         title_color,
@@ -729,7 +735,21 @@ fn row(
         avail_w,
     );
 
-    let response = if item.subtitle.is_empty() {
+    if is_converting {
+        let pct = state.media_conversion_percent().clamp(0.0, 1.0);
+        let bar_rect = egui::Rect::from_min_max(
+            egui::pos2(draw_rect.min.x + 8.0, draw_rect.max.y - 2.5),
+            egui::pos2(draw_rect.max.x - 8.0, draw_rect.max.y - 0.5),
+        );
+        ui.painter().rect_filled(bar_rect, 1.0, theme.bg_pill);
+        let fill_w = (bar_rect.width() * pct).max(2.0);
+        let fill_rect = egui::Rect::from_min_size(bar_rect.min, egui::vec2(fill_w, bar_rect.height()));
+        ui.painter().rect_filled(fill_rect, 1.0, theme.accent);
+    }
+
+    let response = if is_converting {
+        response.on_hover_text(state.media_conversion_info_tooltip())
+    } else if item.subtitle.is_empty() {
         response.on_hover_text(&item.title)
     } else {
         response.on_hover_text(format!("{}\n{}", item.title, item.subtitle))
@@ -817,6 +837,12 @@ fn row(
             && context_menu_item(ui, ARROWS_CLOCKWISE, language.text("library-convert-media"), &theme).clicked()
         {
             *action = Some(LibraryAction::Convert(item.id));
+            ui.close();
+        }
+        if kind == LibraryKind::Media
+            && context_menu_item(ui, INFO, language.text("library-media-info"), &theme).clicked()
+        {
+            *action = Some(LibraryAction::Info(item.id));
             ui.close();
         }
         if context_menu_item(ui, LIST_PLUS, language.text("common-add-playlist"), &theme).clicked()

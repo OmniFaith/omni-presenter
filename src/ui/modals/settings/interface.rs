@@ -74,6 +74,14 @@ pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppT
             language.text("library-conversion-setting-hint"),
             theme,
         );
+        ui.add_space(8.0);
+        setting_toggle(
+            ui,
+            &mut draft.hardware_acceleration,
+            language.text("settings-hardware-acceleration"),
+            language.text("settings-hardware-acceleration-hint"),
+            theme,
+        );
     });
 
     // --- Appearance & Theme Mode ---

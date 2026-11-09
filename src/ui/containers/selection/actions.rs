@@ -17,6 +17,7 @@ pub(super) enum LibraryAction {
     Playlist(Vec<i64>),
     Pin(Vec<i64>),
     Convert(i64),
+    Info(i64),
     DeleteFolder(String),
     Create(Option<String>),
 }
@@ -139,6 +140,7 @@ pub fn poll_media_import(
         Ok(paths) => paths,
         Err(error) => {
             if converting {
+                state.media_conversion_progress = None;
                 state.media_conversion_prompt = state.media_conversion_retry.take();
                 state.notify(state.settings.language.format("library-conversion-error", &[("error", &error)]));
             } else {
@@ -147,7 +149,10 @@ pub fn poll_media_import(
             return;
         }
     };
-    if converting { state.media_conversion_retry = None; }
+    if converting {
+        state.media_conversion_retry = None;
+        state.media_conversion_progress = None;
+    }
     if paths.is_empty() {
         return;
     }
@@ -318,6 +323,12 @@ fn execute_inner(
                 } else {
                     state.notify(state.settings.language.text("library-conversion-unsupported"));
                 }
+            }
+        }
+        LibraryAction::Info(id) => {
+            if let Some(item) = entries.iter().find(|item| item.id == id) {
+                let details = crate::services::media_info::probe_media_details(&item.content);
+                state.media_info_dialog = Some(details);
             }
         }
         LibraryAction::Delete(ids) => {
