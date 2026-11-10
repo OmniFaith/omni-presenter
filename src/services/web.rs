@@ -324,6 +324,9 @@ impl BrowserServer {
                 response.add_header(
                     tiny_http::Header::from_bytes("X-Content-Type-Options", "nosniff").unwrap(),
                 );
+                response.add_header(
+                    tiny_http::Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap(),
+                );
                 let _ = request.respond(response);
             }
         });
@@ -620,14 +623,12 @@ fn route(path: &str, data: &Published) -> (u16, &'static str, Vec<u8>) {
     {
         return (200, mime, bytes.clone());
     }
-    if !data.screens.is_empty() {
-        match path {
-            "/design.js" => return (200, "application/javascript; charset=utf-8", include_bytes!("../../assets/web/viewer/design.js").to_vec()),
-            "/viewer.js" => return (200, "application/javascript; charset=utf-8", include_bytes!("../../assets/web/viewer/viewer.js").to_vec()),
-            "/shader.glsl" => return (200, "text/plain; charset=utf-8", include_bytes!("../../assets/shaders/background.glsl").to_vec()),
-            "/font" if !data.font.is_empty() => return (200, "font/ttf", data.font.clone()),
-            _ => {}
-        }
+    match path {
+        "/design.js" => return (200, "application/javascript; charset=utf-8", include_bytes!("../../assets/web/viewer/design.js").to_vec()),
+        "/viewer.js" => return (200, "application/javascript; charset=utf-8", include_bytes!("../../assets/web/viewer/viewer.js").to_vec()),
+        "/shader.glsl" => return (200, "text/plain; charset=utf-8", include_bytes!("../../assets/shaders/background.glsl").to_vec()),
+        "/font" if !data.font.is_empty() => return (200, "font/ttf", data.font.clone()),
+        _ => {}
     }
     if let Some(id) = path.strip_prefix("/screen/") {
         let clean_id = id.trim_matches('/');

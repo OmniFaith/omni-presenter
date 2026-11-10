@@ -438,10 +438,10 @@ pub fn serve(mut request: tiny_http::Request, chat: &ChatService) {
                     body["password"].as_str().or_else(|| body["code"].as_str()).unwrap_or(""),
                 )?;
                 cookies.push(format!(
-                    "omni_chat={token}; Path=/; HttpOnly; SameSite=Strict"
+                    "omni_chat={token}; Path=/; HttpOnly; SameSite=Lax"
                 ));
                 cookies.push(format!(
-                    "omni_control={token}; Path=/; HttpOnly; SameSite=Strict"
+                    "omni_control={token}; Path=/; HttpOnly; SameSite=Lax"
                 ));
                 Ok(json!({"token":token,"profile_id":body["profile_id"]}))
             }
@@ -449,10 +449,10 @@ pub fn serve(mut request: tiny_http::Request, chat: &ChatService) {
                 // Exchange an existing bearer token for a browser cookie.
                 let profile_id = chat.session_profile(&session)?;
                 cookies.push(format!(
-                    "omni_chat={session}; Path=/; HttpOnly; SameSite=Strict"
+                    "omni_chat={session}; Path=/; HttpOnly; SameSite=Lax"
                 ));
                 cookies.push(format!(
-                    "omni_control={session}; Path=/; HttpOnly; SameSite=Strict"
+                    "omni_control={session}; Path=/; HttpOnly; SameSite=Lax"
                 ));
                 Ok(json!({"ok":true,"profile_id":profile_id}))
             }

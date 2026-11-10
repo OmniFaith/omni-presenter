@@ -80,7 +80,8 @@ pub fn render_welcome_profile_modal(
             ui.add_space(10.0);
 
             // Lista / Grid de Perfis de Operadores
-            let operators = state.settings.operators.clone();
+            let mut operators = state.settings.operators.clone();
+            operators.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
             let active_id = state.settings.active_operator.clone();
 
             let card_w = 150.0;

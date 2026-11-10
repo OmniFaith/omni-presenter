@@ -102,7 +102,9 @@ impl ChatService {
 
     pub fn profiles(&self) -> Vec<ProfileView> {
         let rt = self.runtime.lock().unwrap();
-        Self::profile_views(&rt)
+        let mut list = Self::profile_views(&rt);
+        list.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        list
     }
 
     pub(super) fn profile_views(rt: &Runtime) -> Vec<ProfileView> {

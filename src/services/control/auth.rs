@@ -71,10 +71,10 @@ pub(super) fn gate(
                 body["password"].as_str().unwrap_or(""),
             )?;
             cookies.push(format!(
-                "omni_control={token}; Path=/; HttpOnly; SameSite=Strict"
+                "omni_control={token}; Path=/; HttpOnly; SameSite=Lax"
             ));
             cookies.push(format!(
-                "omni_chat={token}; Path=/; HttpOnly; SameSite=Strict"
+                "omni_chat={token}; Path=/; HttpOnly; SameSite=Lax"
             ));
             Ok(json!({"ok":true,"token":token,"profile_id":profile_id}))
         })()),
@@ -82,8 +82,8 @@ pub(super) fn gate(
             if let Some(service) = &service {
                 service.logout(&token(&request));
             }
-            cookies.push("omni_control=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0".into());
-            cookies.push("omni_chat=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0".into());
+            cookies.push("omni_control=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0".into());
+            cookies.push("omni_chat=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0".into());
             Some(Ok(json!({"ok":true})))
         }
         _ => None,

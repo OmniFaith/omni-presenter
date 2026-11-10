@@ -82,6 +82,10 @@ pub(crate) fn render_slide_card(
     let badge_center = egui::pos2(card_rect.center().x, card_rect.bottom() + 9.0);
     let is_blank = slide_content.trim().is_empty();
     let tag_opt = crate::core::slides::extract_strophe_tag(slide_content);
+    let has_media = with_bg
+        || !live_theme.options.video.path.is_empty()
+        || live_theme.bg_type == "video"
+        || live_theme.bg_type == "image";
 
     let (badge_label, badge_color) = if let Some(tag) = &tag_opt {
         let color = match tag.to_lowercase().as_str() {
@@ -94,6 +98,15 @@ pub(crate) fn render_slide_card(
         let lang = crate::ui::i18n::language(ui.ctx());
         let display_tag = crate::core::preferences::StropheTagDefinition::localize_tag_name(tag, lang);
         (format!("{index} · {display_tag}"), color)
+    } else if has_media {
+        let label = if is_song && index == 0 && !is_blank {
+            "T".to_string()
+        } else if is_song && index > 0 {
+            index.to_string()
+        } else {
+            (index + 1).to_string()
+        };
+        (label, if is_active { tokens.accent } else { tokens.text_muted })
     } else if is_song {
         if index == 0 {
             ("T".to_string(), if is_active { tokens.accent } else { tokens.text_muted })

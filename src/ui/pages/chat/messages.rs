@@ -219,9 +219,15 @@ pub fn render_chat_messages(ui: &mut egui::Ui, state: &mut ControlPanelState) {
         let _ = service.react(&state.chat.token, id, &emoji);
     }
     if let Some((id, rect)) = actions.open_reactions {
-        state.chat.reacting_to = Some(id);
-        state.chat.emoji_anchor = Some(rect);
-        state.chat.emoji_opened_frame = ui.ctx().cumulative_frame_nr();
+        if state.chat.show_emoji && state.chat.reacting_to == Some(id) {
+            state.chat.show_emoji = false;
+            state.chat.reacting_to = None;
+        } else {
+            state.chat.show_emoji = true;
+            state.chat.reacting_to = Some(id);
+            state.chat.emoji_anchor = Some(rect);
+            state.chat.emoji_opened_frame = ui.ctx().cumulative_frame_nr();
+        }
     }
     if let Some(id) = actions.delete {
         let _ = service.delete_message(&state.chat.token, id);

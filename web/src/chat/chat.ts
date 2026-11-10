@@ -147,6 +147,7 @@ function enter() {
 async function loadProfiles() {
   try {
     const profiles = await api<ChatProfile[]>("/profiles");
+    profiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     state.profiles = profiles;
     $("profile").replaceChildren(
       ...profiles.map((p) => {
@@ -774,6 +775,7 @@ async function toggleReaction(id: string | number, emoji: string) {
     status(error.message);
   }
 }
+(window as unknown as { toggleReaction: typeof toggleReaction }).toggleReaction = toggleReaction;
 
 async function poll() {
   if (!state.authenticated || state.loading) return;

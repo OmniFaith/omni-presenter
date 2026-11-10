@@ -19,12 +19,19 @@ pub(super) fn emoji_picker(
         .chat
         .emoji_anchor
         .unwrap_or(egui::Rect::from_min_size(screen.center(), Vec2::ZERO));
+    let y = if anchor.top() - 365.0 >= screen.top() + 10.0 {
+        anchor.top() - 365.0
+    } else if anchor.bottom() + 365.0 <= screen.bottom() - 10.0 {
+        anchor.bottom() + 4.0
+    } else {
+        (anchor.top() - 365.0).max(screen.top() + 10.0)
+    };
     let position = egui::pos2(
         (anchor.right() - 350.0).clamp(
             screen.left() + 10.0,
             (screen.right() - 358.0).max(screen.left() + 10.0),
         ),
-        (anchor.top() - 365.0).max(screen.top() + 10.0),
+        y,
     );
     let id = egui::Id::unique("emoji_search_cache");
     let mut cache = ctx
@@ -188,6 +195,7 @@ pub(super) fn emoji_picker(
             }))
     {
         state.chat.show_emoji = false;
+        state.chat.reacting_to = None;
     }
 }
 

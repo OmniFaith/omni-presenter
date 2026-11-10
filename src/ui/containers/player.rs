@@ -137,6 +137,21 @@ fn render_active_player(
                 return;
             }
 
+            let next_playlist_idx = state.selected_playlist_index.and_then(|idx| {
+                if idx + 1 < state.playlist.len() {
+                    Some(idx + 1)
+                } else {
+                    None
+                }
+            });
+
+            if is_live_video && let Some(next_idx) = next_playlist_idx {
+                crate::services::video::stop(ui.ctx(), &media.path);
+                crate::ui::containers::playlist::activate_item(state, deck, is_presentation_open, next_idx, true);
+                ui.ctx().request_repaint();
+                return;
+            }
+
             is_closing = true;
             ui.ctx().data_mut(|d| d.insert_temp(close_anim_id, true));
             if is_live_video {

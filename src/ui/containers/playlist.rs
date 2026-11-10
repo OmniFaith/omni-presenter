@@ -793,7 +793,7 @@ pub fn activate_selected_playlist_items(
     }
 }
 
-fn activate_item(
+pub(crate) fn activate_item(
     state: &mut ControlPanelState,
     deck: &mut SlideDeck,
     presenting: &mut bool,

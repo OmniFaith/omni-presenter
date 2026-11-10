@@ -208,6 +208,7 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                 *worker.frame.lock().unwrap() = Some(Frame { sequence, image });
                 *worker.status.lock().unwrap() = Language::system().text("services-playing-muted-video").to_string();
                 ctx.request_repaint();
+                ctx.request_repaint_of(egui::ViewportId::ROOT);
             }
             let _ = child.kill();
             let _ = child.wait();
@@ -441,7 +442,7 @@ pub fn paint_video(
             Color32::GRAY,
         );
     }
-    if !options.paused && entry.texture.is_none() {
+    if entry.texture.is_none() {
         painter
             .ctx()
             .request_repaint_after(Duration::from_millis(33));

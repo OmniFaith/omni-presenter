@@ -28,7 +28,16 @@ class ChatChannelList {
     this.menu.className = "channel-context-menu";
     this.menu.setAttribute("role", "menu");
     this.menu.hidden = true;
-    document.body.append(this.menu);
+    const mountMenu = () => {
+      if (document.body && !this.menu.parentElement) {
+        document.body.append(this.menu);
+      }
+    };
+    if (document.body) {
+      mountMenu();
+    } else {
+      document.addEventListener("DOMContentLoaded", mountMenu);
+    }
     document.addEventListener("pointerdown", (event: PointerEvent) => {
       if (!this.menu.contains(event.target as Node)) this.menu.hidden = true;
     });

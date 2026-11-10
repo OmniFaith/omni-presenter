@@ -294,7 +294,7 @@ impl SlideDeck {
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
         self.sync_live_media();
-        if self.live_media.is_none() && self.preview_media.is_some() {
+        if self.live_media.is_none() && self.preview_media.is_some() && self.slides.len() <= 1 {
             self.live_media = self.preview_media.clone();
             self.live_slide_media = vec![self.preview_media.clone()];
         }
@@ -316,7 +316,7 @@ impl SlideDeck {
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
         self.sync_live_media();
-        if self.live_media.is_none() && self.preview_media.is_some() {
+        if self.live_media.is_none() && self.preview_media.is_some() && self.slides.len() <= 1 {
             self.live_media = self.preview_media.clone();
             self.live_slide_media = vec![self.preview_media.clone()];
         }
