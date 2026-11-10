@@ -188,19 +188,8 @@ fn draw_layer(
         }
         "blur" => {
             let blur = (1.0 - progress) * strength * rect.height() / 720.0;
-            if blur > 0.2 {
-                let taps = 12;
-                layer.multiply_opacity(1.0 / (taps as f32).sqrt());
-                // A multi-tap spatial convolution actually softens glyph edges.
-                // It is proportional to the design canvas, including thumbnails.
-                for index in 0..taps {
-                    let angle = index as f32 * 2.399963;
-                    let radius = ((index as f32 + 0.5) / taps as f32).sqrt() * blur;
-                    let offset = egui::vec2(angle.cos(), angle.sin()) * radius;
-                    render_theme_lyrics(&layer, rect.translate(offset), theme, text);
-                }
-                return;
-            }
+            crate::render::render_theme_lyrics_blurred(&layer, target, theme, text, blur);
+            return;
         }
         _ => {}
     }

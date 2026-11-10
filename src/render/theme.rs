@@ -147,7 +147,14 @@ fn paint_theme_bg_base(
         if let Some(tex) = tex_opt {
             painter.rect_filled(rect, corner_radius, Color32::BLACK);
             let uv = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
-            painter.image(tex.id(), rect, uv, Color32::WHITE);
+            paint_textured_rounded_rect(
+                painter,
+                rect,
+                uv,
+                tex.id(),
+                corner_radius,
+                Color32::WHITE,
+            );
             return;
         }
         let size = if rect.width() <= 360.0 && rect.height() <= 240.0 { 320 } else { 4096 };
@@ -320,6 +327,156 @@ pub fn paint_gradient_rect(
     }
 }
 
+/// Pinta uma textura com cantos arredondados sem serrilhado e mapeamento exato de UV
+pub fn paint_textured_rounded_rect(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    uv: egui::Rect,
+    texture_id: egui::TextureId,
+    corner_radius: f32,
+    tint: Color32,
+) {
+    let r = corner_radius.clamp(0.0, rect.width().min(rect.height()) * 0.5);
+    if r <= 0.5 {
+        painter.image(texture_id, rect, uv, tint);
+        return;
+    }
+
+    let mut perimeter: Vec<egui::Pos2> = Vec::with_capacity(32);
+    let arc_steps = 6;
+
+    // Topo-Direito (-PI/2 até 0)
+    let cx = rect.max.x - r;
+    let cy = rect.min.y + r;
+    for s in 0..=arc_steps {
+        let phi = -std::f32::consts::FRAC_PI_2
+            + (std::f32::consts::FRAC_PI_2 * (s as f32 / arc_steps as f32));
+        perimeter.push(egui::pos2(cx + r * phi.cos(), cy + r * phi.sin()));
+    }
+
+    // Base-Direito (0 até PI/2)
+    let cx = rect.max.x - r;
+    let cy = rect.max.y - r;
+    for s in 1..=arc_steps {
+        let phi = std::f32::consts::FRAC_PI_2 * (s as f32 / arc_steps as f32);
+        perimeter.push(egui::pos2(cx + r * phi.cos(), cy + r * phi.sin()));
+    }
+
+    // Base-Esquerdo (PI/2 até PI)
+    let cx = rect.min.x + r;
+    let cy = rect.max.y - r;
+    for s in 1..=arc_steps {
+        let phi = std::f32::consts::FRAC_PI_2
+            + (std::f32::consts::FRAC_PI_2 * (s as f32 / arc_steps as f32));
+        perimeter.push(egui::pos2(cx + r * phi.cos(), cy + r * phi.sin()));
+    }
+
+    // Topo-Esquerdo (PI até 3*PI/2)
+    let cx = rect.min.x + r;
+    let cy = rect.min.y + r;
+    for s in 1..=arc_steps {
+        let phi = std::f32::consts::PI
+            + (std::f32::consts::FRAC_PI_2 * (s as f32 / arc_steps as f32));
+        perimeter.push(egui::pos2(cx + r * phi.cos(), cy + r * phi.sin()));
+    }
+
+    let to_uv = |p: egui::Pos2| -> egui::Pos2 {
+        let tx = ((p.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+        let ty = ((p.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
+        egui::pos2(
+            uv.min.x + tx * uv.width(),
+            uv.min.y + ty * uv.height(),
+        )
+    };
+
+    let center = rect.center();
+    let mut mesh = egui::Mesh::with_texture(texture_id);
+    mesh.reserve_vertices(perimeter.len() + 1);
+    mesh.reserve_triangles(perimeter.len());
+
+    mesh.vertices.push(egui::epaint::Vertex {
+        pos: center,
+        uv: to_uv(center),
+        color: tint,
+    });
+
+    for &p in &perimeter {
+        mesh.vertices.push(egui::epaint::Vertex {
+            pos: p,
+            uv: to_uv(p),
+            color: tint,
+        });
+    }
+
+    let n = perimeter.len() as u32;
+    for i in 0..n {
+        let next = (i + 1) % n;
+        mesh.add_triangle(0, 1 + i, 1 + next);
+    }
+
+    painter.add(mesh);
+}
+
+/// Pinta máscara nos 4 cantos para impedir que qualquer conteúdo (vídeo, shader, imagem, design)
+/// vaze para fora dos cantos arredondados de um card de exibição
+pub fn paint_corner_mask(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    corner_radius: f32,
+    bg_color: Color32,
+) {
+    let r = corner_radius.clamp(0.0, rect.width().min(rect.height()) * 0.5);
+    if r <= 0.5 || bg_color == Color32::TRANSPARENT {
+        return;
+    }
+
+    let arc_steps = 6;
+    let mut mesh = egui::Mesh::default();
+
+    let mut add_corner = |corner_p: egui::Pos2, arc_c: egui::Pos2, start_angle: f32| {
+        let base_idx = mesh.vertices.len() as u32;
+        mesh.colored_vertex(corner_p, bg_color);
+        for s in 0..=arc_steps {
+            let phi = start_angle + (std::f32::consts::FRAC_PI_2 * (s as f32 / arc_steps as f32));
+            let pos = egui::pos2(arc_c.x + r * phi.cos(), arc_c.y + r * phi.sin());
+            mesh.colored_vertex(pos, bg_color);
+        }
+        for s in 0..arc_steps {
+            mesh.add_triangle(base_idx, base_idx + 1 + s as u32, base_idx + 2 + s as u32);
+        }
+    };
+
+    // 1. Topo-Esquerdo
+    add_corner(
+        rect.left_top(),
+        egui::pos2(rect.min.x + r, rect.min.y + r),
+        std::f32::consts::PI,
+    );
+
+    // 2. Topo-Direito
+    add_corner(
+        rect.right_top(),
+        egui::pos2(rect.max.x - r, rect.min.y + r),
+        -std::f32::consts::FRAC_PI_2,
+    );
+
+    // 3. Base-Direito
+    add_corner(
+        rect.right_bottom(),
+        egui::pos2(rect.max.x - r, rect.max.y - r),
+        0.0,
+    );
+
+    // 4. Base-Esquerdo
+    add_corner(
+        rect.left_bottom(),
+        egui::pos2(rect.min.x + r, rect.max.y - r),
+        std::f32::consts::FRAC_PI_2,
+    );
+
+    painter.add(mesh);
+}
+
 /// Renderiza as letras do slide formatadas com bounding box, alinhamentos e tipografia do tema
 /// com cálculo de auto-fit proporcional garantindo que a prévia seja uma réplica idêntica do telão.
 pub fn render_theme_lyrics(
@@ -329,6 +486,17 @@ pub fn render_theme_lyrics(
     raw_text: &str,
 ) {
     super::text::render(painter, slide_rect, theme, raw_text);
+}
+
+/// Renderiza as letras com desfoque óptico gaussiano durante transições
+pub fn render_theme_lyrics_blurred(
+    painter: &egui::Painter,
+    slide_rect: egui::Rect,
+    theme: &PresentationTheme,
+    raw_text: &str,
+    blur_radius: f32,
+) {
+    super::text::render_blurred(painter, slide_rect, theme, raw_text, blur_radius);
 }
 
 /// Versão de [`render_theme_lyrics`] que permite sobrepor a cor do texto (ex: para cartões sem background na UI).
@@ -438,5 +606,28 @@ mod tests {
             !out.shapes.is_empty(),
             "Meshes should have been painted for gradients"
         );
+    }
+
+    #[test]
+    fn test_paint_textured_rounded_rect_and_corner_mask() {
+        let ctx = egui::Context::default();
+        let rect = egui::Rect::from_min_size(egui::pos2(10.0, 10.0), egui::vec2(200.0, 100.0));
+        let uv = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
+        let tex = ctx.load_texture(
+            "test_tex",
+            egui::ColorImage::example(),
+            egui::TextureOptions::LINEAR,
+        );
+
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            // Sharp rect
+            paint_textured_rounded_rect(ui.painter(), rect, uv, tex.id(), 0.0, Color32::WHITE);
+            // Rounded rect
+            paint_textured_rounded_rect(ui.painter(), rect, uv, tex.id(), 10.0, Color32::WHITE);
+            // Corner mask
+            paint_corner_mask(ui.painter(), rect, 10.0, Color32::from_rgb(20, 20, 20));
+        });
+        out.textures_delta.clear();
+        assert!(out.shapes.len() >= 3);
     }
 }

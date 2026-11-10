@@ -425,9 +425,21 @@ pub fn paint_video(
                 }
             }
         }
-        painter
-            .with_clip_rect(painter.clip_rect().intersect(rect))
-            .image(texture.id(), target, uv, Color32::WHITE);
+        let video_radius = if (target.width() - rect.width()).abs() < 1.0
+            && (target.height() - rect.height()).abs() < 1.0
+        {
+            radius
+        } else {
+            0.0
+        };
+        crate::render::paint_textured_rounded_rect(
+            &painter.with_clip_rect(painter.clip_rect().intersect(rect)),
+            target,
+            uv,
+            texture.id(),
+            video_radius,
+            Color32::WHITE,
+        );
     } else {
         painter.text(
             rect.center(),

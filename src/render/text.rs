@@ -266,7 +266,7 @@ fn text_shape(
 }
 
 pub fn render(painter: &egui::Painter, rect: Rect, theme: &PresentationTheme, text: &str) {
-    render_with_override_color(painter, rect, theme, text, None);
+    render_internal(painter, rect, theme, text, None, 0.0);
 }
 
 pub fn render_with_override_color(
@@ -275,6 +275,27 @@ pub fn render_with_override_color(
     theme: &PresentationTheme,
     text: &str,
     override_color: Option<Color32>,
+) {
+    render_internal(painter, rect, theme, text, override_color, 0.0);
+}
+
+pub fn render_blurred(
+    painter: &egui::Painter,
+    rect: Rect,
+    theme: &PresentationTheme,
+    text: &str,
+    blur_radius: f32,
+) {
+    render_internal(painter, rect, theme, text, None, blur_radius);
+}
+
+fn render_internal(
+    painter: &egui::Painter,
+    rect: Rect,
+    theme: &PresentationTheme,
+    text: &str,
+    override_color: Option<Color32>,
+    blur_radius: f32,
 ) {
     let clean_text = crate::core::slides::strip_comments(text);
     if clean_text.trim().is_empty() || !rect.is_positive() {
@@ -349,79 +370,143 @@ pub fn render_with_override_color(
     let shadow_color = directives.shadow_color.unwrap_or(theme.shadow_color);
     if shadow_enabled {
         let offset = egui::vec2(theme.shadow_offset_x, theme.shadow_offset_y) * view_scale;
-        let blur = theme.shadow_blur * view_scale;
+        let shadow_blur = (theme.shadow_blur + blur_radius * 0.6) * view_scale;
         render_shadow(
             &mut clipped,
             text_layout.galley.clone(),
             position,
             offset,
-            blur,
+            shadow_blur,
             scale,
             angle,
             shadow_color,
             theme.options.text_opacity,
         );
     }
-    if theme.options.text_glow > 0.0 {
-        let glow_r = theme.options.text_glow * view_scale;
-        let num_rings = (glow_r / 2.0).ceil().clamp(3.0, 8.0) as usize;
-        let sigma = glow_r * 0.45;
-        let glow_color = theme.text_color;
-        let base_alpha =
-            (glow_color.a() as f32 / 255.0) * theme.options.text_opacity.clamp(0.0, 1.0);
-        for ring in 1..=num_rings {
-            let r = glow_r * (ring as f32 / num_rings as f32);
+
+    let blur = blur_radius * view_scale;
+    if blur <= 0.4 {
+        if theme.options.text_glow > 0.0 {
+            let glow_r = theme.options.text_glow * view_scale;
+            let num_rings = (glow_r / 2.0).ceil().clamp(3.0, 8.0) as usize;
+            let sigma = glow_r * 0.45;
+            let glow_color = theme.text_color;
+            let base_alpha =
+                (glow_color.a() as f32 / 255.0) * theme.options.text_opacity.clamp(0.0, 1.0);
+            for ring in 1..=num_rings {
+                let r = glow_r * (ring as f32 / num_rings as f32);
+                let w = (-0.5 * (r / sigma).powi(2)).exp();
+                let count = (8 + ring * 6).min(48);
+                let step = std::f32::consts::TAU / count as f32;
+                let ring_alpha =
+                    (base_alpha * w * 0.18 / (num_rings as f32).sqrt()).clamp(0.005, 0.4);
+                let sample_color = glow_color.linear_multiply(ring_alpha);
+                let phase = ring as f32 * 0.381966;
+                for i in 0..count {
+                    let a = i as f32 * step + phase;
+                    clipped.add(text_shape(
+                        text_layout.galley.clone(),
+                        position + egui::vec2(a.cos(), a.sin()) * r,
+                        scale,
+                        sample_color,
+                        angle,
+                        Some(sample_color),
+                    ));
+                }
+            }
+        }
+        if theme.outline_enabled && theme.outline_width > 0.0 {
+            let outline_r = theme.outline_width * view_scale;
+            let num_rings = (outline_r / 0.75).ceil().max(1.0) as usize;
+            let r_step = outline_r / num_rings as f32;
+            for ring in 1..=num_rings {
+                let r = ring as f32 * r_step;
+                let count =
+                    ((2.0 * std::f32::consts::PI * r / 0.85).ceil().max(8.0) as usize).min(64);
+                let angle_step = std::f32::consts::TAU / count as f32;
+                let offset_angle = ring as f32 * 0.381966;
+                for i in 0..count {
+                    let a = i as f32 * angle_step + offset_angle;
+                    clipped.add(text_shape(
+                        text_layout.galley.clone(),
+                        position + egui::vec2(a.cos(), a.sin()) * r,
+                        scale,
+                        theme.outline_color,
+                        angle,
+                        Some(theme.outline_color),
+                    ));
+                }
+            }
+        }
+        clipped.add(text_shape(
+            text_layout.galley,
+            position,
+            scale,
+            base_color,
+            angle,
+            None,
+        ));
+    } else {
+        // Convolução contínua em espiral de Vogel com decaimento gaussiano (desfoque óptico suave e sem serrilhado)
+        let num_samples = ((blur * 4.0).ceil().clamp(32.0, 64.0)) as usize;
+        let golden_angle = 2.399963229728653f32;
+        let sigma = blur * 0.48;
+
+        let mut sum_weights = 1.0f32;
+        for i in 0..num_samples {
+            let t = (i as f32 + 0.5) / (num_samples as f32);
+            let r = blur * t.sqrt();
+            sum_weights += (-0.5 * (r / sigma).powi(2)).exp();
+        }
+        let weight_scale = 1.0 / sum_weights;
+        let boost = (num_samples as f32).powf(0.28).clamp(1.2, 2.2);
+        let base_a = base_color.a() as f32 / 255.0;
+
+        // Amostra central de foco
+        let core_alpha = (base_a * weight_scale * boost).clamp(0.01, 1.0);
+        let core_col = base_color.linear_multiply(core_alpha);
+        clipped.add(text_shape(
+            text_layout.galley.clone(),
+            position,
+            scale,
+            core_col,
+            angle,
+            Some(core_col),
+        ));
+
+        // Taps sub-pixel cardeais para suavização no limiar do núcleo
+        let sub_r = (blur * 0.15).clamp(0.4, 1.2);
+        let sub_alpha = (base_a * 0.5 * weight_scale * boost).clamp(0.005, 0.5);
+        let sub_col = base_color.linear_multiply(sub_alpha);
+        for &(dx, dy) in &[(-sub_r, 0.0), (sub_r, 0.0), (0.0, -sub_r), (0.0, sub_r)] {
+            clipped.add(text_shape(
+                text_layout.galley.clone(),
+                position + egui::vec2(dx, dy),
+                scale,
+                sub_col,
+                angle,
+                Some(sub_col),
+            ));
+        }
+
+        // Amostragem em espiral de Vogel com atenuação gaussiana contínua
+        for i in 0..num_samples {
+            let t = (i as f32 + 0.5) / (num_samples as f32);
+            let r = blur * t.sqrt();
+            let theta = i as f32 * golden_angle;
             let w = (-0.5 * (r / sigma).powi(2)).exp();
-            let count = (8 + ring * 6).min(48);
-            let step = std::f32::consts::TAU / count as f32;
-            let ring_alpha =
-                (base_alpha * w * 0.18 / (num_rings as f32).sqrt()).clamp(0.005, 0.4);
-            let sample_color = glow_color.linear_multiply(ring_alpha);
-            let phase = ring as f32 * 0.381966;
-            for i in 0..count {
-                let a = i as f32 * step + phase;
-                clipped.add(text_shape(
-                    text_layout.galley.clone(),
-                    position + egui::vec2(a.cos(), a.sin()) * r,
-                    scale,
-                    sample_color,
-                    angle,
-                    Some(sample_color),
-                ));
-            }
+            let sample_alpha = (base_a * w * weight_scale * boost).clamp(0.003, 0.4);
+            let sample_col = base_color.linear_multiply(sample_alpha);
+            clipped.add(text_shape(
+                text_layout.galley.clone(),
+                position + egui::vec2(theta.cos(), theta.sin()) * r,
+                scale,
+                sample_col,
+                angle,
+                Some(sample_col),
+            ));
         }
     }
-    if theme.outline_enabled && theme.outline_width > 0.0 {
-        let outline_r = theme.outline_width * view_scale;
-        let num_rings = (outline_r / 0.75).ceil().max(1.0) as usize;
-        let r_step = outline_r / num_rings as f32;
-        for ring in 1..=num_rings {
-            let r = ring as f32 * r_step;
-            let count =
-                ((2.0 * std::f32::consts::PI * r / 0.85).ceil().max(8.0) as usize).min(64);
-            let angle_step = std::f32::consts::TAU / count as f32;
-            let offset_angle = ring as f32 * 0.381966;
-            for i in 0..count {
-                let a = i as f32 * angle_step + offset_angle;
-                clipped.add(text_shape(
-                    text_layout.galley.clone(),
-                    position + egui::vec2(a.cos(), a.sin()) * r,
-                    scale,
-                    theme.outline_color,
-                    angle,
-                    Some(theme.outline_color),
-                ));
-            }
-        }
-    }
-    clipped.add(text_shape(
-        text_layout.galley,
-        position,
-        scale,
-        base_color,
-        angle,
-        None,
-    ));
 }
 
 fn render_shadow(
@@ -659,5 +744,17 @@ mod tests {
             assert!(!layout_without.galley.rows.is_empty());
         });
         output.textures_delta.clear();
+    }
+
+    #[test]
+    fn test_render_blurred_produces_smooth_shapes() {
+        let ctx = egui::Context::default();
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            let theme = PresentationTheme::default();
+            let rect = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1280.0, 720.0));
+            render_blurred(ui.painter(), rect, &theme, "Holy Holy Holy", 16.0);
+        });
+        output.textures_delta.clear();
+        assert!(output.shapes.len() >= 30, "Gaussian spiral should generate rich multi-sample shapes");
     }
 }

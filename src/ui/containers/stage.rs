@@ -123,6 +123,7 @@ pub fn render_stage_column(
             Color32::from_rgb(230, 235, 245),
         );
     }
+    crate::render::paint_corner_mask(ui.painter(), live_rect, theme.radius_lg, theme.bg_card);
     ui.painter().rect_stroke(
         live_rect,
         theme.radius_lg,
@@ -200,7 +201,7 @@ pub fn render_preview_column(
                 );
             } else {
                 let live_theme = crate::services::media::live_theme(state, deck);
-                paint_theme_bg(ui.painter(), preview_rect, &live_theme, 0.0);
+                paint_theme_bg(ui.painter(), preview_rect, &live_theme, theme.radius_lg);
                 crate::render::render_theme_lyrics(
                     ui.painter(),
                     preview_rect,
@@ -224,6 +225,7 @@ pub fn render_preview_column(
     let hover = ui
         .ctx()
         .animate_bool(response.id.with("hover"), response.hovered());
+    crate::render::paint_corner_mask(ui.painter(), preview_rect, theme.radius_lg, theme.bg_card);
     ui.painter().rect_stroke(
         preview_rect,
         theme.radius_lg,
