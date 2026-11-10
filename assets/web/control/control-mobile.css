@@ -261,6 +261,8 @@
   .themes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 7px;
+    flex: 1;
+    height: 100%;
   }
   .theme-card {
     max-width: none;

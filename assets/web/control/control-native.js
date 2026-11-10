@@ -378,15 +378,25 @@ function prepareChrome() {
     settingsActions,
     appearance,
     focus,
-    themes,
   );
   document.body.append(settingsDialog);
   appearance.classList.add("native-extra-tools");
   focus.classList.add("native-extra-tools");
-  themes.classList.add("native-extra-tools");
   const bottom = node("div", undefined, "rail-bottom");
   bottom.append(settings, $("control-logout"));
-  rail.replaceChildren(home, bible, $("chat-link"), bottom);
+  rail.replaceChildren(home, bible, themes, $("chat-link"), bottom);
+  themes.onclick = () => {
+    if (mobile()) {
+      showView("themes");
+    } else {
+      const themesPanel = panelMap.Themes;
+      if (themesPanel && !root.contains(themesPanel)) {
+        resetNativeLayout();
+      } else if (themesPanel) {
+        themesPanel.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
   home.onclick = () => {
     page = "home";
     setNativePage(page);
@@ -506,10 +516,23 @@ export function setupNative() {
     document.querySelector(`[data-kind="${kind}"]`)?.click();
   });
   $("mobile-themes").onclick = () => {
-    $("mobile-more").close();
+    $("mobile-more")?.close();
     showView("themes");
+    setTimeout(fitNativePreview, 50);
   };
-  $("themes-toggle").onclick = () => showView("themes");
+  $("themes-toggle").onclick = () => {
+    if (mobile()) {
+      showView("themes");
+      setTimeout(fitNativePreview, 50);
+    } else {
+      const themesPanel = panelMap.Themes;
+      if (themesPanel && !root.contains(themesPanel)) {
+        resetNativeLayout();
+      } else if (themesPanel) {
+        themesPanel.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
   $("mobile-screens").onclick = () => {
     $("mobile-more").close();
     $("screens-dialog").showModal();
@@ -572,18 +595,17 @@ export function setupNative() {
 
 function fitNativePreview() {
   const themes = panelMap.Themes;
-  if (themes.clientWidth) {
-    const style = getComputedStyle(themes);
-    const width =
-      themes.clientWidth -
-      parseFloat(style.paddingLeft) -
-      parseFloat(style.paddingRight);
+  const computed = themes ? getComputedStyle(themes) : null;
+  const width = themes?.clientWidth
+    ? themes.clientWidth - parseFloat(computed?.paddingLeft || 0) - parseFloat(computed?.paddingRight || 0)
+    : (mobile() ? window.innerWidth - 24 : 0);
+  if (themes && width > 0) {
     const columns = width >= 420 ? 4 : width >= 300 ? 3 : width >= 180 ? 2 : 1;
     themes.style.setProperty("--theme-columns", columns);
     themes.style.setProperty(
       "--theme-height",
       Math.max(
-        25,
+        35,
         Math.round(
           (width - (columns - 1) * 6) /
             columns /

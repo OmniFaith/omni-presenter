@@ -7,7 +7,30 @@ fn color(value: eframe::egui::Color32) -> String {
 }
 fn theme(value: &crate::core::models::PresentationTheme, language: crate::core::i18n::Language) -> Value {
     let name = value.display_name(language);
-    json!({"id":value.id,"name":name,"top":color(value.bg_top),"bottom":color(value.bg_bottom),"color":color(value.text_color),"font":value.font_family,"weight":value.font_weight,"align":value.align_h,"case":value.text_case,"image":value.bg_type=="image"})
+    let (top, bottom, colors) = if value.bg_type == "shader" && !value.options.shader.colors.is_empty() {
+        let hex = |c: [u8; 3]| format!("#{:02x}{:02x}{:02x}", c[0], c[1], c[2]);
+        let hex_colors: Vec<String> = value.options.shader.colors.iter().copied().map(hex).collect();
+        let top_color = hex_colors.first().cloned().unwrap_or_else(|| color(value.bg_top));
+        let bottom_color = hex_colors.last().cloned().unwrap_or_else(|| color(value.bg_bottom));
+        (top_color, bottom_color, hex_colors)
+    } else {
+        (color(value.bg_top), color(value.bg_bottom), Vec::new())
+    };
+    json!({
+        "id": value.id,
+        "name": name,
+        "top": top,
+        "bottom": bottom,
+        "colors": colors,
+        "color": color(value.text_color),
+        "font": value.font_family,
+        "weight": value.font_weight,
+        "align": value.align_h,
+        "case": value.text_case,
+        "image": value.bg_type == "image",
+        "shader": value.bg_type == "shader",
+        "bg_type": value.bg_type
+    })
 }
 
 impl PresentationApp {

@@ -171,14 +171,16 @@ function appendFormattedRuns(parent, text) {
   }
 }
 
-function renderStrophe(container, rawText, isNext, showComments) {
+function renderStrophe(container, rawText, isNext, showComments, maxLines = 0) {
   if (!rawText) return false;
   const lines = rawText.split('\n');
   let count = 0;
-  lines.forEach((line) => {
-    if (isDirectiveLine(line)) return;
+  for (const line of lines) {
+    if (isDirectiveLine(line)) continue;
     const trimmed = line.trim();
-    if (!showComments && trimmed.startsWith('//')) return;
+    if (!showComments && trimmed.startsWith('//')) continue;
+    if (isNext && !trimmed) continue;
+    if (maxLines > 0 && count >= maxLines) break;
     count++;
     const p = document.createElement('span');
     p.className = 'paragraph' + (isNext ? ' next-paragraph' : '');
@@ -200,7 +202,7 @@ function renderStrophe(container, rawText, isNext, showComments) {
       appendFormattedRuns(p, line || '\u200b');
     }
     container.append(p);
-  });
+  }
   return count > 0;
 }
 
@@ -223,11 +225,11 @@ function render(s) {
     // 1. Estrofe atual
     renderStrophe(lyrics, s.text, false, s.showComments);
 
-    // 2. Estrofe a seguir (junto com o texto da música, em cor mais fraca)
+    // 2. Estrofe a seguir (junto com o texto da música, em cor mais fraca, limitando às duas primeiras linhas)
     if (s.showNextPreview && s.nextText && s.nextText.trim()) {
       const nextDiv = document.createElement('div');
       nextDiv.className = 'next-strophe';
-      const hasNext = renderStrophe(nextDiv, s.nextText, true, s.showComments);
+      const hasNext = renderStrophe(nextDiv, s.nextText, true, s.showComments, 2);
       if (hasNext) {
         lyrics.append(nextDiv);
       }
@@ -310,13 +312,16 @@ async function startShader(source) {
 
 function drawShader(now) {
   if (gl && program && shaderState) {
-    const s = shaderState, p = options(s).shader;
-    gl.viewport(0, 0, canvas.width, canvas.height); gl.useProgram(program);
-    gl.uniform4f(locations.screen, canvas.width, canvas.height, s.clock + (now - shaderSync) / 1000, s.shaderIndex);
-    gl.uniform4f(locations.motion, p.speed, p.scale, p.intensity, p.softness);
-    gl.uniform4f(locations.detail, p.detail, p.direction * Math.PI / 180, p.seed, p.vignette);
-    p.colors.forEach((color, i) => gl.uniform4f(locations['color' + i], ...color.map(n => n / 255), 1));
-    gl.uniform4f(locations.finish, p.grain, 0, 0, 0); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    try {
+      const s = shaderState, p = options(s).shader || {};
+      gl.viewport(0, 0, canvas.width, canvas.height); gl.useProgram(program);
+      gl.uniform4f(locations.screen, canvas.width, canvas.height, (s.clock || 0) + (now - shaderSync) / 1000, s.shaderIndex || 0);
+      gl.uniform4f(locations.motion, p.speed ?? 0.2, p.scale ?? 1, p.intensity ?? 1, p.softness ?? 0.5);
+      gl.uniform4f(locations.detail, p.detail ?? 4, (p.direction ?? 0) * Math.PI / 180, p.seed ?? 0, p.vignette ?? 0.4);
+      const colors = Array.isArray(p.colors) && p.colors.length >= 3 ? p.colors : [[6, 12, 28], [24, 160, 130], [90, 60, 180]];
+      colors.forEach((color, i) => gl.uniform4f(locations['color' + i], ...color.map(n => n / 255), 1));
+      gl.uniform4f(locations.finish, p.grain ?? 0.01, 0, 0, 0); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    } catch (_) {}
   }
   requestAnimationFrame(drawShader);
 }

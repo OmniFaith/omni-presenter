@@ -155,9 +155,13 @@ export function showView(view, monitor = "preview") {
 }
 export function applyTheme(element, theme) {
   if (!theme) return;
-  element.style.background = theme.image
-    ? `linear-gradient(#0003,#0003),url(${JSON.stringify("/api/control/background?id=" + encodeURIComponent(theme.id))}) center/cover`
-    : `linear-gradient(135deg,${theme.top},${theme.bottom})`;
+  if (theme.image) {
+    element.style.background = `linear-gradient(#0003,#0003),url(${JSON.stringify("/api/control/background?id=" + encodeURIComponent(theme.id))}) center/cover`;
+  } else if (theme.shader && Array.isArray(theme.colors) && theme.colors.length >= 2) {
+    element.style.background = `linear-gradient(135deg, ${theme.colors.join(", ")})`;
+  } else {
+    element.style.background = `linear-gradient(135deg,${theme.top},${theme.bottom})`;
+  }
   element.style.color = theme.color;
   element.style.fontFamily =
     JSON.stringify(theme.font) + ",system-ui,sans-serif";

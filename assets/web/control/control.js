@@ -178,7 +178,7 @@ function renderState(state) {
         }),
       );
   });
-  changed("themes", [state.themes, state.preview.theme.id], () => {
+  changed("themes", [state.themes, state.preview?.theme?.id], () => {
     $("themes").replaceChildren(
       ...state.themes.map((theme) => {
         const control = button(
@@ -188,9 +188,9 @@ function renderState(state) {
               { action: "theme", id: theme.id, live: $("theme-live").checked },
               element,
             ),
-          "theme-card" + (theme.id === state.preview.theme.id ? " active" : ""),
+          "theme-card" + (theme.id === state.preview?.theme?.id ? " active" : ""),
         );
-        const swatch = node("span", t("native_font_sample"), "theme-swatch");
+        const swatch = node("span", t("native_font_sample") + "\nAa Bb Cc Çç", "theme-swatch");
         swatch.dataset.i18n = "native_font_sample";
         applyTheme(swatch, theme);
         control.append(swatch, node("span", theme.name));

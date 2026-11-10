@@ -11,7 +11,7 @@ const fallback = split(
   split(
     "Horizontal",
     0.38,
-    leaf("Lyrics"),
+    split("Vertical", 0.3, leaf("Player"), leaf("Lyrics")),
     split(
       "Horizontal",
       0.54,
@@ -19,7 +19,7 @@ const fallback = split(
         "Vertical",
         0.68,
         split("Vertical", 0.5, leaf("Stage"), leaf("Preview")),
-        split("Vertical", 0.5, leaf("Player"), leaf("Themes")),
+        leaf("Themes"),
       ),
       leaf("Playlist"),
     ),

@@ -578,7 +578,7 @@ fn resolve_screen_bg(
             }).unwrap_or_else(|| "transparent".to_string()),
             crate::core::preferences::PhysicalBackground::Theme { id } => {
                 let th = all_themes.iter().find(|t| &t.id == id).unwrap_or(theme);
-                if th.bg_type == "color" || th.bg_type == "solid" { css_color(th.bg_top) } else { format!("linear-gradient({}, {})", css_color(th.bg_top), css_color(th.bg_bottom)) }
+                if th.bg_type == "color" || th.bg_type == "solid" { css_color(th.bg_top) } else { theme_gradient(th) }
             }
             _ => "transparent".to_string(),
         };
@@ -588,7 +588,16 @@ fn resolve_screen_bg(
     } else if screen_theme.bg_type == "color" || screen_theme.bg_type == "solid" {
         css_color(screen_theme.bg_top)
     } else {
-        format!("linear-gradient({}, {})", css_color(screen_theme.bg_top), css_color(screen_theme.bg_bottom))
+        theme_gradient(screen_theme)
+    }
+}
+
+fn theme_gradient(th: &PresentationTheme) -> String {
+    if th.bg_type == "shader" && !th.options.shader.colors.is_empty() {
+        let c = &th.options.shader.colors;
+        format!("linear-gradient(135deg, rgb({},{},{}), rgb({},{},{}), rgb({},{},{}))", c[0][0], c[0][1], c[0][2], c[1][0], c[1][1], c[1][2], c[2][0], c[2][1], c[2][2])
+    } else {
+        format!("linear-gradient({}, {})", css_color(th.bg_top), css_color(th.bg_bottom))
     }
 }
 

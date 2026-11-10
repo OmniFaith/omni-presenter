@@ -414,6 +414,9 @@ body[data-preview-design="true"] #slides {
 }
 .themes-panel {
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .themes {
   display: grid;
@@ -422,8 +425,11 @@ body[data-preview-design="true"] #slides {
   align-content: start;
   gap: 6px;
   padding-top: 10px;
+  flex: 1;
+  height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
 }
 .theme-card {
