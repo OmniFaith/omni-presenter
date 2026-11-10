@@ -383,6 +383,7 @@ pub fn render_presentation_dock(
 
             ui.add_space(4.0);
             if preview_mode_control(ui, &tokens, language, &mut state.dock_preview_bg) {
+                state.capture_profiles();
                 ui.ctx().request_repaint();
             }
             ui.add_space(4.0);

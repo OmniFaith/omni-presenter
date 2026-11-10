@@ -29,6 +29,10 @@ pub struct OperatorProfile {
     pub show_dock: bool,
     #[serde(default)]
     pub dock_preview_bg: bool,
+    #[serde(default = "default_dock_height")]
+    pub dock_height: f32,
+    #[serde(default)]
+    pub lyrics_cards_layout: bool,
     pub layout: LayoutTree,
     pub bible_layout: LayoutTree,
     #[serde(default = "LayoutTree::default_chat")]
@@ -37,6 +41,10 @@ pub struct OperatorProfile {
     pub avatar: Option<Vec<u8>>,
     pub chat_notifications: bool,
     pub web_password_hash: String,
+}
+
+fn default_dock_height() -> f32 {
+    175.0
 }
 
 impl Default for OperatorProfile {
@@ -52,6 +60,8 @@ impl Default for OperatorProfile {
             keyboard_shortcuts: true,
             show_dock: true,
             dock_preview_bg: false,
+            dock_height: 175.0,
+            lyrics_cards_layout: false,
             layout: LayoutTree::default(),
             bible_layout: LayoutTree::bible_workspace(),
             chat_layout: LayoutTree::default_chat(),

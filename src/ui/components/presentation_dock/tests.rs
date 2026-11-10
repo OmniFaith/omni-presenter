@@ -479,5 +479,31 @@ fn slide_card_wraps_long_verse_and_conditional_breaks_matching_projection() {
     assert!(!output.shapes.is_empty(), "Cards should produce shapes");
 }
 
+#[test]
+fn test_dock_height_and_preview_style_persist_across_restarts() {
+    let mut state = ControlPanelState::default();
+    state.dock_height = 245.0;
+    state.dock_preview_bg = true;
+    state.lyrics_cards_layout = true;
+
+    state.capture_profiles();
+
+    let op = state.settings.operator();
+    assert_eq!(op.dock_height, 245.0);
+    assert!(op.dock_preview_bg);
+    assert!(op.lyrics_cards_layout);
+
+    let serialized = serde_json::to_string(&state.settings).unwrap();
+    let restored_settings: crate::core::preferences::AppSettings = serde_json::from_str(&serialized).unwrap();
+
+    let mut new_state = ControlPanelState::default();
+    new_state.settings = restored_settings;
+    new_state.apply_profiles();
+
+    assert_eq!(new_state.dock_height, 245.0);
+    assert!(new_state.dock_preview_bg);
+    assert!(new_state.lyrics_cards_layout);
+}
+
 
 

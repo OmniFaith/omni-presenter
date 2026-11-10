@@ -188,6 +188,8 @@ fn draw_layer(
         }
         "blur" => {
             let blur = (1.0 - progress) * strength * rect.height() / 720.0;
+            let defocus_scale = 1.0 + (1.0 - progress) * 0.025;
+            let target = Rect::from_center_size(rect.center(), rect.size() * defocus_scale);
             crate::render::render_theme_lyrics_blurred(&layer, target, theme, text, blur);
             return;
         }

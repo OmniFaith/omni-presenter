@@ -58,6 +58,7 @@ pub fn render_lyrics_column(
             .clicked()
         {
             state.lyrics_cards_layout = !cards;
+            state.capture_profiles();
         }
         if toolbar_icon_button(ui, PENCIL_SIMPLE, language.text("workspace-edit-this-song-s-lyrics"), &theme).clicked() {
             state.song_editor.title = slide_deck.title().to_owned();

@@ -291,10 +291,11 @@ impl PresentationApp {
         if !(self.is_presentation_open && self.control_state.show_presentation_dock) {
             return;
         }
+        let dock_h = self.control_state.dock_height.clamp(130.0, 420.0);
         let dock_response = egui::Panel::bottom("presentation_dock")
             .resizable(true)
             .show_separator_line(false)
-            .default_size(175.0)
+            .default_size(dock_h)
             .min_size(130.0)
             .max_size(420.0)
             .frame(
@@ -312,6 +313,12 @@ impl PresentationApp {
                     &mut self.is_preview_modal_open,
                 );
             });
+
+        let current_h = dock_response.response.rect.height();
+        if current_h >= 130.0 && (current_h - self.control_state.dock_height).abs() > 0.5 {
+            self.control_state.dock_height = current_h;
+            self.control_state.capture_profiles();
+        }
 
         let dock_rect = dock_response.response.rect;
         ui.painter().line_segment(

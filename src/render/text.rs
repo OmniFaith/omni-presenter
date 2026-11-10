@@ -447,23 +447,27 @@ fn render_internal(
             None,
         ));
     } else {
-        // Convolução contínua em espiral de Vogel com decaimento gaussiano (desfoque óptico suave e sem serrilhado)
-        let num_samples = ((blur * 4.0).ceil().clamp(32.0, 64.0)) as usize;
-        let golden_angle = 2.399963229728653f32;
-        let sigma = blur * 0.48;
+        // Convolução circular concêntrica contínua com decaimento gaussiano 2D e rotação áurea entre anéis.
+        // Elimina totalmente os artefatos de grade/dither da espiral de Vogel e garante difusão óptica pura.
+        let max_r = blur.min(16.0);
+        let num_rings = ((max_r / 1.4).ceil().clamp(3.0, 6.0)) as usize;
+        let r_step = max_r / num_rings as f32;
+        let sigma = max_r * 0.50;
 
-        let mut sum_weights = 1.0f32;
-        for i in 0..num_samples {
-            let t = (i as f32 + 0.5) / (num_samples as f32);
-            let r = blur * t.sqrt();
-            sum_weights += (-0.5 * (r / sigma).powi(2)).exp();
+        let center_weight = 1.0f32;
+        let mut sum_weights = center_weight;
+        for ring in 1..=num_rings {
+            let r = ring as f32 * r_step;
+            let w = (-0.5 * (r / sigma).powi(2)).exp();
+            let count = 4 + ring * 4;
+            sum_weights += w * count as f32;
         }
-        let weight_scale = 1.0 / sum_weights;
-        let boost = (num_samples as f32).powf(0.28).clamp(1.2, 2.2);
+        let weight_scale = if sum_weights > 0.001 { 1.0 / sum_weights } else { 1.0 };
+        let boost = (1.0 + (num_rings as f32) * 0.24).clamp(1.15, 2.2);
         let base_a = base_color.a() as f32 / 255.0;
 
-        // Amostra central de foco
-        let core_alpha = (base_a * weight_scale * boost).clamp(0.01, 1.0);
+        // Amostra central com atenuação óptica proporcional ao desfoque (sem espícula nítida)
+        let core_alpha = (base_a * center_weight * weight_scale * boost).clamp(0.01, 0.45);
         let core_col = base_color.linear_multiply(core_alpha);
         clipped.add(text_shape(
             text_layout.galley.clone(),
@@ -474,37 +478,27 @@ fn render_internal(
             Some(core_col),
         ));
 
-        // Taps sub-pixel cardeais para suavização no limiar do núcleo
-        let sub_r = (blur * 0.15).clamp(0.4, 1.2);
-        let sub_alpha = (base_a * 0.5 * weight_scale * boost).clamp(0.005, 0.5);
-        let sub_col = base_color.linear_multiply(sub_alpha);
-        for &(dx, dy) in &[(-sub_r, 0.0), (sub_r, 0.0), (0.0, -sub_r), (0.0, sub_r)] {
-            clipped.add(text_shape(
-                text_layout.galley.clone(),
-                position + egui::vec2(dx, dy),
-                scale,
-                sub_col,
-                angle,
-                Some(sub_col),
-            ));
-        }
-
-        // Amostragem em espiral de Vogel com atenuação gaussiana contínua
-        for i in 0..num_samples {
-            let t = (i as f32 + 0.5) / (num_samples as f32);
-            let r = blur * t.sqrt();
-            let theta = i as f32 * golden_angle;
+        // Anéis concêntricos estagiados com espaçamento contínuo e fase áurea (evita eixos ou estrias)
+        for ring in 1..=num_rings {
+            let r = ring as f32 * r_step;
             let w = (-0.5 * (r / sigma).powi(2)).exp();
-            let sample_alpha = (base_a * w * weight_scale * boost).clamp(0.003, 0.4);
+            let count = 4 + ring * 4;
+            let step_angle = std::f32::consts::TAU / count as f32;
+            let phase = ring as f32 * 0.6180339887;
+            let sample_alpha = (base_a * w * weight_scale * boost).clamp(0.003, 0.35);
             let sample_col = base_color.linear_multiply(sample_alpha);
-            clipped.add(text_shape(
-                text_layout.galley.clone(),
-                position + egui::vec2(theta.cos(), theta.sin()) * r,
-                scale,
-                sample_col,
-                angle,
-                Some(sample_col),
-            ));
+
+            for i in 0..count {
+                let theta = i as f32 * step_angle + phase;
+                clipped.add(text_shape(
+                    text_layout.galley.clone(),
+                    position + egui::vec2(theta.cos(), theta.sin()) * r,
+                    scale,
+                    sample_col,
+                    angle,
+                    Some(sample_col),
+                ));
+            }
         }
     }
 }
@@ -539,71 +533,56 @@ fn render_shadow(
         return;
     }
 
-    // 1. Core shadow pass: Provides rich, solid contrast behind the text
-    let core_alpha = base_a * 0.65;
-    let core_color = color.linear_multiply(core_alpha);
+    // Difusão gaussiana concêntrica suave (sem núcleo rígido residual quando o desfoque é amplo)
+    let max_r = blur.min(18.0);
+    let num_rings = ((max_r / 1.5).ceil().clamp(3.0, 6.0)) as usize;
+    let r_step = max_r / num_rings as f32;
+    let sigma = max_r * 0.50;
+
+    let center_weight = 1.0f32;
+    let mut sum_weights = center_weight;
+    for ring in 1..=num_rings {
+        let r = ring as f32 * r_step;
+        let w = (-0.5 * (r / sigma).powi(2)).exp();
+        let count = 4 + ring * 4;
+        sum_weights += w * count as f32;
+    }
+    let weight_scale = if sum_weights > 0.001 { 1.0 / sum_weights } else { 1.0 };
+    let boost = (1.0 + (num_rings as f32) * 0.22).clamp(1.1, 2.0);
+
+    // Amostra central de sombra atenuada de acordo com o raio de difusão
+    let center_alpha = (base_a * center_weight * weight_scale * boost).clamp(0.005, 0.5);
+    let center_color = color.linear_multiply(center_alpha);
     clipped.add(text_shape(
         galley.clone(),
         position + offset,
         scale,
-        core_color,
+        center_color,
         angle,
-        Some(core_color),
+        Some(center_color),
     ));
 
-    // 4 cardinal sub-pixel taps at the core for anti-aliasing the core boundary
-    let core_sub_r = (blur * 0.12).clamp(0.4, 1.2);
-    let sub_color = color.linear_multiply(base_a * 0.18);
-    for &(dx, dy) in &[
-        (-core_sub_r, 0.0),
-        (core_sub_r, 0.0),
-        (0.0, -core_sub_r),
-        (0.0, core_sub_r),
-    ] {
-        clipped.add(text_shape(
-            galley.clone(),
-            position + offset + egui::vec2(dx, dy),
-            scale,
-            sub_color,
-            angle,
-            Some(sub_color),
-        ));
-    }
-
-    // 2. Continuous Vogel Spiral with Gaussian falloff (eliminates concentric rings and scallops)
-    let num_samples = ((blur * 3.5).ceil().clamp(36.0, 72.0)) as usize;
-    let golden_angle = 2.399963229728653; // radians: PI * (3.0 - sqrt(5.0))
-    let sigma = blur * 0.52;
-
-    let mut sum_weights = 0.0f32;
-    for i in 0..num_samples {
-        let t = (i as f32 + 0.5) / (num_samples as f32);
-        let r = blur * t.sqrt();
-        sum_weights += (-0.5 * (r / sigma).powi(2)).exp();
-    }
-    let weight_scale = if sum_weights > 0.001 {
-        1.0 / sum_weights
-    } else {
-        1.0 / num_samples as f32
-    };
-
-    for i in 0..num_samples {
-        let t = (i as f32 + 0.5) / (num_samples as f32);
-        let r = blur * t.sqrt();
-        let theta = i as f32 * golden_angle;
+    // Anéis concêntricos com rotação áurea relativa
+    for ring in 1..=num_rings {
+        let r = ring as f32 * r_step;
         let w = (-0.5 * (r / sigma).powi(2)).exp();
-        let sample_alpha =
-            (base_a * 0.75 * w * weight_scale * (num_samples as f32).sqrt() * 0.42)
-                .clamp(0.003, 0.35);
-        let sample_color = color.linear_multiply(sample_alpha);
-        clipped.add(text_shape(
-            galley.clone(),
-            position + offset + egui::vec2(theta.cos(), theta.sin()) * r,
-            scale,
-            sample_color,
-            angle,
-            Some(sample_color),
-        ));
+        let count = 4 + ring * 4;
+        let step_angle = std::f32::consts::TAU / count as f32;
+        let phase = ring as f32 * 0.6180339887;
+        let tap_alpha = (base_a * w * weight_scale * boost).clamp(0.003, 0.35);
+        let tap_color = color.linear_multiply(tap_alpha);
+
+        for i in 0..count {
+            let theta = i as f32 * step_angle + phase;
+            clipped.add(text_shape(
+                galley.clone(),
+                position + offset + egui::vec2(theta.cos(), theta.sin()) * r,
+                scale,
+                tap_color,
+                angle,
+                Some(tap_color),
+            ));
+        }
     }
 }
 

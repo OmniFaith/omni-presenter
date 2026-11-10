@@ -227,6 +227,8 @@ pub struct ControlPanelState {
     pub presentation_aspect_ratio: f32,
     /// Render slide-card previews with the presentation theme background.
     pub dock_preview_bg: bool,
+    /// Height of the presentation dock panel.
+    pub dock_height: f32,
     /// Show slide thumbnails instead of the full text list in the lyrics panel.
     pub lyrics_cards_layout: bool,
 
@@ -357,6 +359,7 @@ impl Default for ControlPanelState {
             show_search: false,
             presentation_aspect_ratio: 16.0 / 9.0,
             dock_preview_bg: false,
+            dock_height: 175.0,
             lyrics_cards_layout: false,
             selected_song_ids: std::collections::HashSet::new(),
             song_selection_anchor: None,
@@ -556,6 +559,8 @@ impl ControlPanelState {
             p.quick_items = self.quick_bar.items.clone();
             p.show_dock = self.show_presentation_dock;
             p.dock_preview_bg = self.dock_preview_bg;
+            p.dock_height = self.dock_height;
+            p.lyrics_cards_layout = self.lyrics_cards_layout;
         }
         if let Some(p) = self
             .settings
@@ -597,6 +602,12 @@ impl ControlPanelState {
         self.quick_bar.active_id = self.quick_bar.items.first().map(|q| q.id.clone());
         self.show_presentation_dock = operator.show_dock;
         self.dock_preview_bg = operator.dock_preview_bg;
+        self.dock_height = if operator.dock_height >= 100.0 {
+            operator.dock_height
+        } else {
+            175.0
+        };
+        self.lyrics_cards_layout = operator.lyrics_cards_layout;
         self.theme = if operator.dark_mode {
             AppTheme::dark()
         } else {

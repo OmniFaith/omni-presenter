@@ -229,6 +229,10 @@ impl eframe::App for PresentationApp {
         self.publish_web_control();
 
         self.autosave_profiles(&ctx);
+        if ctx.input(|i| i.viewport().close_requested()) {
+            self.control_state.capture_profiles();
+            let _ = self.db.save_settings(&self.control_state.settings);
+        }
         self.draw_toast(&ctx, &theme);
         crate::ui::pages::chat::render_chat_notice(&ctx, &mut self.control_state);
         crate::ui::components::drag_drop::paint_preview(&ctx, &theme);
