@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#16181e" />
+    <title>Controle web</title>
+    <link rel="stylesheet" href="/control-shell.css" />
+    <link rel="stylesheet" href="/control.css" />
+    <link rel="stylesheet" href="/control-dock.css" />
+    <link rel="stylesheet" href="/control-native-bible.css" />
+    <link rel="stylesheet" href="/control-mobile.css" />
+    <script type="module" src="/control-auth.js"></script>
+  </head>
+  <body data-view="operation" data-layout="studio" data-mobile-monitor="live" data-locked="true">
+    <section id="control-login" class="control-login">
+      <form id="control-login-form" class="control-login-card">
+        <h1>Controle web</h1>
+        <p>Entre com seu perfil e a senha definida em Configurações → Perfis.</p>
+        <label>Perfil<select id="control-profile" required autocomplete="username"></select></label>
+        <label>Senha<input id="control-password" type="password" required autocomplete="current-password" /></label>
+        <small>A senha padrão é omni-presenter.</small>
+        <button type="submit" class="primary">Entrar no controle</button>
+        <p id="control-login-error" role="alert"></p>
+      </form>
+    </section>
+    <aside class="app-rail" aria-label="Navegação">
+      <button
+        class="rail-home active"
+        data-nav-view="operation"
+        data-tip="operation"
+        aria-label="Operação"
+      >
+        <i data-icon="music"></i>
+      </button>
+      <span class="rail-divider"></span>
+      <button data-nav-kind="song" data-tip="songs" aria-label="Músicas">
+        <i data-icon="music"></i>
+      </button>
+      <button data-nav-kind="bible" data-tip="bible" aria-label="Bíblia">
+        <i data-icon="bible"></i>
+      </button>
+      <button data-nav-kind="text" data-tip="texts" aria-label="Textos">
+        <i data-icon="text"></i>
+      </button>
+      <button data-nav-kind="media" data-tip="media" aria-label="Mídias">
+        <i data-icon="media"></i>
+      </button>
+      <button id="themes-toggle" data-tip="themes" aria-label="Temas">
+        <i data-icon="theme"></i>
+      </button>
+      <div class="rail-bottom">
+        <button id="control-logout" title="Sair do controle" aria-label="Sair do controle">↪</button>
+        <button
+          id="layout-reset"
+          data-tip="reset_layout"
+          aria-label="Restaurar painéis"
+        >
+          <i data-icon="layout"></i></button
+        ><button id="appearance" data-tip="appearance" aria-label="Aparência">
+          <i data-icon="moon"></i>
+        </button>
+      </div>
+    </aside>
+    <header class="app-header">
+      <div class="app-heading">
+        <h1 data-i18n="title">Controle web</h1>
+        <span
+          id="connection"
+          class="connection"
+          role="status"
+          data-i18n="connecting"
+          >Conectando…</span
+        >
+      </div>
+      <div class="quick-bar">
+        <i data-icon="pin"></i>
+        <div id="quick-items"></div>
+        <small id="quick-empty" data-i18n="quick_empty"
+          >Fixe conteúdos da biblioteca para acessá-los aqui.</small
+        >
+      </div>
+      <div class="header-right">
+        <span id="operator-label" class="operator-label"></span
+        ><select id="service" aria-label="Culto"></select
+        ><span class="native-service-date" id="service-date-wrapper"
+          ><button
+            id="service-prev-date"
+            class="service-date-btn"
+            title="Data anterior"
+            aria-label="Data anterior"
+          >‹</button
+          ><select id="service-date" aria-label="Data do culto"></select
+          ><button
+            id="service-next-date"
+            class="service-date-btn"
+            title="Próxima data"
+            aria-label="Próxima data"
+          >›</button></span
+        ><button
+          id="screens-open"
+          class="icon-button"
+          data-tip="screens"
+          aria-label="Telas web"
+        >
+          <i data-icon="screen"></i></button
+        ><a
+          href="/chat"
+          id="chat-link"
+          class="icon-button"
+          data-tip="chat"
+          aria-label="Chat"
+          ><i data-icon="chat"></i></a
+        ><button
+          id="focus-mode"
+          class="icon-button"
+          data-tip="focus_mode"
+          aria-label="Foco na operação"
+        >
+          <i data-icon="expand"></i>
+        </button>
+      </div>
+      <button
+        id="mobile-options"
+        class="icon-button"
+        data-tip="more"
+        aria-label="Mais opções"
+      >
+        <i data-icon="more"></i>
+      </button>
+    </header>
+    <div id="error" class="error" role="alert" hidden></div>
+    <main class="workspace">
+      <aside
+        id="library-panel"
+        class="panel library-panel"
+        data-panel="library"
+      >
+        <header class="panel-heading" data-dock="library">
+          <i data-icon="grip" class="drag-grip"></i
+          ><i data-icon="music" class="panel-symbol" id="library-symbol"></i>
+          <h2 id="library-heading" data-i18n="songs">Músicas</h2>
+          <button
+            id="library-refresh"
+            class="icon-button subtle"
+            data-tip="refresh"
+            aria-label="Atualizar"
+          >
+            <i data-icon="refresh"></i></button
+          ><button
+            id="song-new"
+            class="icon-button subtle"
+            data-tip="new_song"
+            aria-label="Nova música"
+          >
+            <i data-icon="plus"></i>
+          </button>
+        </header>
+        <nav class="resource-tabs" aria-label="Bibliotecas">
+          <button
+            data-kind="song"
+            class="active"
+            data-tip="songs"
+            aria-label="Músicas"
+          >
+            <i data-icon="music"></i></button
+          ><button data-kind="bible" data-tip="bible" aria-label="Bíblia">
+            <i data-icon="bible"></i></button
+          ><button data-kind="text" data-tip="texts" aria-label="Textos">
+            <i data-icon="text"></i></button
+          ><button data-kind="media" data-tip="media" aria-label="Mídias">
+            <i data-icon="media"></i></button
+          ><button data-kind="design" data-tip="designs" aria-label="Designs">
+            <i data-icon="design"></i></button
+          ><button
+            data-kind="verse"
+            data-tip="saved_verses"
+            aria-label="Versículos"
+          >
+            <i data-icon="verse"></i>
+          </button>
+        </nav>
+        <section id="catalog">
+          <label class="search-field"
+            ><i data-icon="search"></i
+            ><input
+              id="library-search"
+              type="search"
+              placeholder="Título, artista ou trecho…"
+              data-placeholder="search"
+              aria-label="Pesquisar na biblioteca"
+          /></label>
+          <div class="folder-strip">
+            <i data-icon="folder"></i
+            ><select id="library-folder" aria-label="Pasta">
+              <option value="*">Todas as pastas</option></select
+            ><span id="library-count" class="count"></span>
+          </div>
+          <div id="library-items" class="item-list" aria-live="polite"></div>
+        </section>
+        <section id="bible" hidden>
+          <div class="bible-search-controls">
+            <select id="bible-version" aria-label="Versão bíblica"></select
+            ><label class="search-field"
+              ><i data-icon="search"></i
+              ><input
+                id="bible-query"
+                type="search"
+                placeholder="Livro, referência ou trecho…"
+                data-placeholder="bible_search"
+                aria-label="Pesquisar texto bíblico"
+                autocomplete="off"
+            /></label>
+            <div class="section-caption">
+              <span id="bible-stage"></span
+              ><button id="bible-reset" class="text-button" data-i18n="books">
+                Livros
+              </button>
+            </div>
+          </div>
+          <div id="bible-choices" class="bible-choices"></div>
+          <div id="bible-passage" class="passage" hidden></div>
+          <div class="bible-footer">
+            <label class="check"
+              ><input id="bible-merge" type="checkbox" /><span data-i18n="merge"
+                >Reunir em um slide</span
+              ></label
+            >
+            <div class="actions">
+              <button id="bible-preview">
+                <i data-icon="eye"></i
+                ><span data-i18n="preview">Prévia</span></button
+              ><button
+                id="bible-add"
+                class="icon-button"
+                data-tip="add_playlist"
+                aria-label="Adicionar ao repertório"
+              >
+                <i data-icon="addlist"></i></button
+              ><button id="bible-project" class="primary">
+                <i data-icon="play"></i
+                ><span data-i18n="project">Apresentar</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </aside>
+      <div
+        class="resize-handle"
+        data-resize="library"
+        role="separator"
+        aria-label="Largura da biblioteca"
+      ></div>
+      <section id="operation-panel" class="operation-panel">
+        <nav class="monitor-switch" aria-label="Monitor">
+          <button data-monitor="live" class="active">
+            <span class="live-dot"></span
+            ><span data-i18n="live">Ao vivo</span></button
+          ><button data-monitor="preview">
+            <i data-icon="eye"></i><span data-i18n="preview">Prévia</span>
+          </button>
+        </nav>
+        <div class="monitors">
+          <section class="panel monitor" id="monitor-preview">
+            <header class="panel-heading">
+              <i data-icon="eye" class="panel-symbol"></i>
+              <h2 data-i18n="preview">Prévia</h2>
+              <span id="preview-count" class="count"></span
+              ><button
+                id="edit-song"
+                class="icon-button subtle"
+                data-tip="edit_lyrics"
+                aria-label="Editar letra"
+              >
+                <i data-icon="edit"></i></button
+              ><button
+                class="icon-button subtle monitor-expand"
+                data-monitor-expand="preview"
+                data-tip="expand_preview"
+                aria-label="Ampliar prévia"
+              >
+                <i data-icon="expand"></i>
+              </button>
+            </header>
+            <div id="preview-stage" class="stage"><div></div></div>
+            <div class="monitor-footer">
+              <div>
+                <strong id="preview-title"></strong
+                ><small id="preview-subtitle"></small>
+              </div>
+              <button id="project-preview" class="primary">
+                <i data-icon="play"></i
+                ><span data-i18n="project">Apresentar</span>
+              </button>
+            </div>
+          </section>
+          <section class="panel monitor" id="monitor-live">
+            <header class="panel-heading">
+              <span class="live-dot"></span>
+              <h2 data-i18n="live">Ao vivo</h2>
+              <span id="live-status" class="badge"></span
+              ><span id="live-count" class="count"></span
+              ><button
+                class="icon-button subtle monitor-expand"
+                data-monitor-expand="live"
+                data-tip="expand_live"
+                aria-label="Ampliar retorno"
+              >
+                <i data-icon="expand"></i>
+              </button>
+            </header>
+            <div id="live-stage" class="stage">
+              <div></div>
+              <iframe
+                id="live-viewer"
+                title="Retorno ao vivo"
+                tabindex="-1"
+                allow="autoplay"
+                hidden
+              ></iframe>
+            </div>
+            <div class="monitor-footer">
+              <div>
+                <strong id="live-title"></strong
+                ><small id="live-subtitle"></small>
+              </div>
+              <span class="monitor-live-caption" data-i18n="live_output"
+                >Saída da apresentação</span
+              >
+            </div>
+          </section>
+        </div>
+        <section class="panel slides-panel">
+          <header class="panel-heading">
+            <i data-icon="grid" class="panel-symbol"></i>
+            <h2 data-i18n="slides">Estrofes e slides</h2>
+            <div class="segmented">
+              <button
+                data-slide-source="preview"
+                class="active"
+                data-i18n="preview"
+              >
+                Prévia</button
+              ><button data-slide-source="live" data-i18n="live">
+                Ao vivo
+              </button>
+            </div>
+          </header>
+          <div id="slides" class="slides-grid"></div>
+          <p class="slide-hint" data-i18n="slide_hint">
+            Clique para selecionar · Duplo clique para apresentar
+          </p>
+        </section>
+        <section class="panel themes-panel" id="themes-panel">
+          <header class="panel-heading">
+            <i data-icon="theme" class="panel-symbol"></i>
+            <h2 data-i18n="themes">Temas</h2>
+            <label class="check"
+              ><input id="theme-live" type="checkbox" /><span
+                data-i18n="apply_live"
+                >Aplicar ao vivo</span
+              ></label
+            ><button
+              id="themes-close"
+              class="icon-button subtle"
+              data-tip="close"
+              aria-label="Fechar"
+            >
+              <i data-icon="close"></i>
+            </button>
+          </header>
+          <div id="themes" class="themes"></div>
+        </section>
+        <section id="player-panel" class="panel tools-panel" hidden>
+          <header class="panel-heading">
+            <i data-icon="media" class="panel-symbol"></i>
+            <h2 data-i18n="player">Player</h2>
+            <strong id="player-title"></strong>
+          </header>
+          <div class="player-controls">
+            <button
+              id="player-toggle"
+              class="icon-button"
+              data-tip="play_pause"
+              aria-label="Tocar / pausar"
+            >
+              <i data-icon="pause"></i></button
+            ><button
+              id="player-stop"
+              class="icon-button"
+              data-tip="stop_media"
+              aria-label="Parar mídia"
+            >
+              <i data-icon="stop"></i></button
+            ><input
+              id="player-seek"
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              aria-label="Posição da mídia"
+            /><span id="player-time"></span
+            ><input
+              id="player-volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              aria-label="Volume"
+            />
+          </div>
+        </section>
+        <section id="design-controls" class="panel tools-panel" hidden>
+          <header class="panel-heading">
+            <i data-icon="design" class="panel-symbol"></i>
+            <h2 data-i18n="dynamic_controls">Controles do design</h2>
+            <span id="overlay-name"></span>
+          </header>
+          <div id="timers"></div>
+          <div class="actions">
+            <button data-design-op="start">
+              <i data-icon="play"></i
+              ><span data-i18n="start_timer">Iniciar</span></button
+            ><button data-design-op="pause">
+              <i data-icon="pause"></i
+              ><span data-i18n="pause_timer">Pausar</span></button
+            ><button data-design-op="reset">
+              <i data-icon="refresh"></i
+              ><span data-i18n="reset_timer">Reiniciar</span></button
+            ><button id="overlay-clear" data-i18n="remove_overlay">
+              Retirar extra
+            </button>
+          </div>
+          <div id="question-controls" class="actions">
+            <button
+              data-design-op="question_previous"
+              data-i18n="previous_question"
+            >
+              Pergunta anterior</button
+            ><button data-design-op="question_reveal" data-i18n="reveal">
+              Revelar / ocultar</button
+            ><button data-design-op="question_next" data-i18n="next_question">
+              Próxima pergunta
+            </button>
+          </div>
+        </section>
+      </section>
+      <div
+        class="resize-handle"
+        data-resize="playlist"
+        role="separator"
+        aria-label="Largura do repertório"
+      ></div>
+      <aside
+        id="playlist-panel"
+        class="panel playlist-panel"
+        data-panel="playlist"
+      >
+        <header class="panel-heading" data-dock="playlist">
+          <i data-icon="grip" class="drag-grip"></i
+          ><i data-icon="playlist" class="panel-symbol"></i>
+          <h2 data-i18n="playlist">Repertório</h2>
+          <span id="playlist-count" class="count"></span
+          ><button
+            id="playlist-clear"
+            class="icon-button subtle"
+            data-tip="clear"
+            aria-label="Limpar"
+          >
+            <i data-icon="trash"></i>
+          </button>
+        </header>
+        <div class="setlist-toolbar">
+          <span data-i18n="sequence">Sequência do culto</span
+          ><button
+            id="playlist-previous"
+            class="icon-button subtle"
+            data-tip="previous_item"
+            aria-label="Anterior"
+          >
+            <i data-icon="previous"></i></button
+          ><button
+            id="playlist-next"
+            class="icon-button subtle"
+            data-tip="next_item"
+            aria-label="Próximo item"
+          >
+            <i data-icon="next"></i>
+          </button>
+        </div>
+        <div id="playlist" class="item-list"></div>
+        <button id="notice-open" class="notice-button">
+          <i data-icon="plus"></i
+          ><span data-i18n="notice">Novo aviso / texto</span>
+        </button>
+      </aside>
+    </main>
+    <footer class="performance-bar">
+      <div class="now-playing">
+        <span class="live-dot" id="transport-dot"></span>
+        <div>
+          <strong id="transport-title">—</strong
+          ><small id="transport-position"></small>
+        </div>
+      </div>
+      <div class="transport">
+        <div class="navigation">
+          <button
+            data-direction="first"
+            class="icon-button subtle"
+            data-tip="first_slide"
+            aria-label="Primeira estrofe"
+          >
+            <i data-icon="first"></i></button
+          ><button
+            data-direction="previous"
+            class="icon-button"
+            data-tip="previous_slide"
+            aria-label="Estrofe anterior"
+          >
+            <i data-icon="previous"></i></button
+          ><button
+            data-direction="next"
+            class="icon-button next-slide"
+            data-tip="next_slide"
+            aria-label="Próxima estrofe"
+          >
+            <i data-icon="next"></i></button
+          ><button
+            data-direction="last"
+            class="icon-button subtle"
+            data-tip="last_slide"
+            aria-label="Última estrofe"
+          >
+            <i data-icon="last"></i>
+          </button>
+        </div>
+        <span class="transport-divider"></span
+        ><button
+          id="hide-toggle"
+          class="icon-button"
+          data-tip="hide"
+          aria-label="Ocultar texto"
+        >
+          <i data-icon="eyeoff"></i></button
+        ><button
+          id="stop"
+          class="icon-button danger"
+          data-tip="stop"
+          aria-label="Encerrar"
+        >
+          <i data-icon="stop"></i>
+        </button>
+      </div>
+      <div class="desktop-footer">
+        <span data-i18n="keyboard_short">← → passar slides · H ocultar</span
+        ><span id="sync-time"></span>
+      </div>
+    </footer>
+    <nav class="mobile-nav" aria-label="Navegação">
+      <button data-view="library" data-mobile-kind="song">
+        <i data-icon="music"></i><span data-i18n="songs">Músicas</span></button
+      ><button data-view="library" data-mobile-kind="bible">
+        <i data-icon="bible"></i><span data-i18n="bible">Bíblia</span></button
+      ><button data-view="operation" class="active">
+        <i data-icon="operate"></i><span data-i18n="live">Ao vivo</span></button
+      ><button data-view="playlist">
+        <i data-icon="playlist"></i
+        ><span data-i18n="playlist">Repertório</span></button
+      ><button id="mobile-more-open">
+        <i data-icon="more"></i><span data-i18n="more">Mais</span>
+      </button>
+    </nav>
+    <dialog id="mobile-more" class="mobile-sheet">
+      <header>
+        <h2 data-i18n="workspace">Área de operação</h2>
+        <button data-close class="icon-button" aria-label="Fechar">
+          <i data-icon="close"></i>
+        </button>
+      </header>
+      <div class="sheet-grid">
+        <button data-nav-kind="text">
+          <i data-icon="text"></i><span data-i18n="texts">Textos</span></button
+        ><button data-nav-kind="media">
+          <i data-icon="media"></i><span data-i18n="media">Mídias</span></button
+        ><button data-nav-kind="design">
+          <i data-icon="design"></i
+          ><span data-i18n="designs">Designs</span></button
+        ><button data-nav-kind="verse">
+          <i data-icon="verse"></i
+          ><span data-i18n="saved_verses">Versículos</span></button
+        ><button id="mobile-themes">
+          <i data-icon="theme"></i><span data-i18n="themes">Temas</span></button
+        ><button id="mobile-screens">
+          <i data-icon="screen"></i><span data-i18n="screens">Telas web</span>
+        </button>
+        <button id="mobile-chat">
+          <i data-icon="chat"></i><span data-i18n="chat">Chat</span>
+        </button>
+      </div>
+      <section class="mobile-pins" hidden>
+        <h3 data-i18n="quick">Fixados</h3>
+        <div id="mobile-quick-items"></div>
+      </section>
+      <div class="mobile-profile">
+        <select id="mobile-service" aria-label="Culto"></select>
+        <span class="native-service-date" id="mobile-service-date-wrapper">
+          <button id="mobile-service-prev-date" class="service-date-btn" aria-label="Data anterior">‹</button>
+          <select id="mobile-service-date" aria-label="Data do culto"></select>
+          <button id="mobile-service-next-date" class="service-date-btn" aria-label="Próxima data">›</button>
+        </span>
+        <button
+          id="mobile-appearance"
+          class="icon-button"
+          aria-label="Aparência"
+        >
+          <i data-icon="moon"></i>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="text-dialog">
+      <form id="text-form">
+        <h2 data-i18n="notice">Novo aviso / texto</h2>
+        <label
+          ><span data-i18n="name">Título</span
+          ><input id="text-title" maxlength="180" /></label
+        ><label
+          ><span data-i18n="content">Conteúdo</span
+          ><textarea id="text-content" rows="8" required></textarea>
+        </label>
+        <p class="hint" data-i18n="text_hint">
+          Separe os slides com uma linha em branco.
+        </p>
+        <div class="actions">
+          <button type="button" data-close data-i18n="cancel">Cancelar</button
+          ><button
+            type="submit"
+            name="intent"
+            value="playlist"
+            data-i18n="add_playlist"
+          >
+            Adicionar ao repertório</button
+          ><button
+            type="submit"
+            name="intent"
+            value="preview"
+            data-i18n="preview"
+          >
+            Prévia</button
+          ><button
+            type="submit"
+            name="intent"
+            value="project"
+            class="primary"
+            data-i18n="project"
+          >
+            Apresentar
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="song-dialog">
+      <form id="song-form">
+        <h2 data-i18n="song_editor">Música</h2>
+        <input id="song-id" type="hidden" /><label
+          ><span data-i18n="name">Título</span
+          ><input id="song-title" required maxlength="200" /></label
+        ><label
+          ><span data-i18n="artist">Artista</span
+          ><input id="song-artist" maxlength="200" /></label
+        ><label
+          ><span data-i18n="lyrics">Letra</span
+          ><textarea id="song-content" rows="12" required></textarea>
+        </label>
+        <p class="hint" data-i18n="text_hint">
+          Separe os slides com uma linha em branco.
+        </p>
+        <div class="actions">
+          <button type="button" data-close data-i18n="cancel">Cancelar</button
+          ><button class="primary" data-i18n="save">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="screens-dialog">
+      <h2 data-i18n="screens">Telas web</h2>
+      <div id="screens" class="item-list"></div>
+      <div class="actions">
+        <button data-close data-i18n="close">Fechar</button>
+      </div>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+  </body>
+</html>
