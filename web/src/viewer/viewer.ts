@@ -198,7 +198,7 @@ function fit(): void {
   stage.style.width = w + "px";
   stage.style.height = h + "px";
   const scale = h / 720,
-    b = s.box;
+    b = s.box || [0, 0, 1, 1];
   Object.assign(box.style, {
     left: b[0] * 100 + "%",
     top: b[1] * 100 + "%",
@@ -748,12 +748,16 @@ async function poll(): Promise<void> {
     );
     if (!response.ok) throw Error(String(response.status));
     const text = await response.text();
-    if (text !== last) {
-      render(JSON.parse(text));
-      last = text;
-    }
     failures = 0;
     connection.hidden = true;
+    if (text !== last) {
+      try {
+        render(JSON.parse(text));
+        last = text;
+      } catch (err) {
+        console.error("Erro ao renderizar tela:", err);
+      }
+    }
   } catch {
     if (++failures >= 2) {
       connection.textContent =

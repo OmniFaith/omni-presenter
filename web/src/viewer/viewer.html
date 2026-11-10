@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Omni Presenter · Tela virtual</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:white;font-family:Arial,sans-serif}body{display:grid;place-items:center}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:white;font-family:Arial,sans-serif}body{display:grid;place-items:center}
 #stage{position:relative;overflow:hidden;width:100vw;height:100vh}#background,#background video,#shader,#brightness,#dimmer,#text-layers,.slide-layer{position:absolute;inset:0;width:100%;height:100%}
 #background video{object-fit:cover}#shader{display:none}#brightness,#dimmer{pointer-events:none}.box{position:absolute;display:flex;overflow:hidden}.lyrics{white-space:pre-wrap;overflow-wrap:anywhere;width:100%;margin:0;paint-order:stroke fill;font-synthesis:none}.paragraph{display:block}
 #title{position:absolute;bottom:3%;left:5%;right:5%;text-align:center;font-size:clamp(12px,1.6vw,26px);opacity:.8}
@@ -13,7 +13,7 @@
 #next-preview{display:none!important}
 .next-strophe{opacity:.5;margin-top:.75em;font-size:.88em;filter:contrast(.92);display:block}
 #fullscreen,#connection,#background-error{position:fixed;border:1px solid #ffffff30;background:#121b2be8;color:white;border-radius:8px;padding:10px 16px;font:13px Arial;z-index:5}
-#fullscreen{right:20px;top:20px;cursor:pointer;opacity:0;transition:opacity .18s}body:hover #fullscreen,#fullscreen:focus-visible{opacity:1}#connection,#background-error{bottom:20px;left:50%;transform:translateX(-50%)}[hidden]{display:none!important}
+#fullscreen{right:20px;top:20px;cursor:pointer;opacity:0;transition:opacity .18s}body:hover #fullscreen,#fullscreen:focus-visible{opacity:1}#connection,#background-error{bottom:20px;left:50%;transform:translateX(-50%)}[hidden],#connection[hidden],#background-error[hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 <div id="stage">
@@ -27,5 +27,5 @@
 <button id="fullscreen" type="button">Tela cheia</button>
 <div id="connection" role="status">Conectando ao Omni Presenter…</div>
 <div id="background-error" hidden></div>
-<script src="/viewer.js" defer></script>
+<script type="module" src="/viewer.js"></script>
 </html>

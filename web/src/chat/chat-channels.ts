@@ -1,4 +1,4 @@
-export interface ChatChannelListOptions {
+interface ChatChannelListOptions {
   state: () => ChatState;
   request: (path: string, options?: RequestInit & { json?: unknown }) => Promise<unknown>;
   refresh: () => void;
@@ -8,14 +8,14 @@ export interface ChatChannelListOptions {
   text: (key: string) => string;
 }
 
-export interface ChannelItem {
+interface ChannelItem {
   id: string;
   name: string;
   description?: string;
   tool?: string;
 }
 
-export class ChatChannelList {
+class ChatChannelList {
   options: ChatChannelListOptions;
   selected = new Set<string>();
   anchor: string | null = null;

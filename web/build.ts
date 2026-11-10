@@ -16,6 +16,17 @@ async function run() {
   await $`cp ${srcDir}/viewer/*.html ${outDir}/viewer/`;
   await $`cp ${srcDir}/chat/*.html ${srcDir}/chat/*.css ${outDir}/chat/`;
 
+  // Classic scripts in chat.html should not have `export {};` appended by tsc
+  const chatJsFiles = await Array.fromAsync(new Bun.Glob("chat/*.js").scan({ cwd: outDir }));
+  for (const file of chatJsFiles) {
+    const fullPath = resolve(outDir, file);
+    const content = await Bun.file(fullPath).text();
+    const cleaned = content.replace(/\n?export\s*\{\s*\};?\s*$/g, "");
+    if (cleaned !== content) {
+      await Bun.write(fullPath, cleaned);
+    }
+  }
+
   console.log("Web assets built successfully to assets/web/");
 }
 
