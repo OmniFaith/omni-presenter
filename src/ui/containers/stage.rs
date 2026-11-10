@@ -123,7 +123,6 @@ pub fn render_stage_column(
             Color32::from_rgb(230, 235, 245),
         );
     }
-    crate::render::paint_corner_mask(ui.painter(), live_rect, theme.radius_lg, theme.bg_card);
     ui.painter().rect_stroke(
         live_rect,
         theme.radius_lg,
@@ -225,7 +224,6 @@ pub fn render_preview_column(
     let hover = ui
         .ctx()
         .animate_bool(response.id.with("hover"), response.hovered());
-    crate::render::paint_corner_mask(ui.painter(), preview_rect, theme.radius_lg, theme.bg_card);
     ui.painter().rect_stroke(
         preview_rect,
         theme.radius_lg,

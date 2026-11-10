@@ -176,18 +176,30 @@ impl PresentationApp {
                     return Err("Estrofe não encontrada.".into());
                 }
                 self.slide_deck.select_live_slide(index);
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
             }
-            Navigate { direction } => match direction.as_str() {
-                "next" => {
-                    if !self.slide_deck.next_slide() && self.is_presentation_open {
-                        self.is_presentation_open = false;
+            Navigate { direction } => {
+                match direction.as_str() {
+                    "next" => {
+                        if !self.slide_deck.next_slide() && self.is_presentation_open {
+                            self.is_presentation_open = false;
+                        }
                     }
+                    "previous" => self.slide_deck.prev_slide(),
+                    "first" => self.slide_deck.first_slide(),
+                    "last" => self.slide_deck.last_slide(),
+                    _ => return Err("Direção inválida.".into()),
                 }
-                "previous" => self.slide_deck.prev_slide(),
-                "first" => self.slide_deck.first_slide(),
-                "last" => self.slide_deck.last_slide(),
-                _ => return Err("Direção inválida.".into()),
-            },
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
+            }
             Visibility { hidden } => {
                 if self.slide_deck.is_content_hidden() != hidden {
                     self.slide_deck.toggle_hide_content();

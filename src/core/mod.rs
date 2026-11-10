@@ -19,4 +19,6 @@ pub mod search;
 pub mod seed;
 pub mod shortcuts;
 pub mod slides;
+#[cfg(test)]
+mod slides_tests;
 pub mod state;

@@ -99,7 +99,7 @@ impl PresentationApp {
 
     /// Renders the physical presentation viewport when a presentation is live.
     pub(super) fn draw_presentation_viewport(&mut self, ctx: &egui::Context) {
-        let settings = &self.control_state.settings;
+        let settings = self.control_state.settings.clone();
         let live_theme = crate::services::media::live_theme(&self.control_state, &self.slide_deck);
         let transparent = matches!(
             settings.physical_background,
@@ -168,6 +168,7 @@ impl PresentationApp {
             } else {
                 target_monitor.resolution.0 as f32 / target_monitor.resolution.1.max(1) as f32
             };
+            let mut nav_action = false;
             PresentationView::show(
                 ctx,
                 PresentationContent {
@@ -195,16 +196,22 @@ impl PresentationApp {
                         self.slide_deck.toggle_hide_content();
                         true
                     }
-                    PresentationAction::NextSlide => self.slide_deck.next_slide(),
+                    PresentationAction::NextSlide => {
+                        nav_action = true;
+                        self.slide_deck.next_slide()
+                    }
                     PresentationAction::PrevSlide => {
+                        nav_action = true;
                         self.slide_deck.prev_slide();
                         true
                     }
                     PresentationAction::FirstSlide => {
+                        nav_action = true;
                         self.slide_deck.first_slide();
                         true
                     }
                     PresentationAction::LastSlide => {
+                        nav_action = true;
                         self.slide_deck.last_slide();
                         true
                     }
@@ -219,6 +226,13 @@ impl PresentationApp {
                     }
                 },
             );
+            if nav_action {
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
+            }
         }
     }
 

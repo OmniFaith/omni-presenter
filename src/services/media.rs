@@ -45,10 +45,12 @@ pub fn activate(
         state.play_media(title.into(), path.into(), PlayerMediaKind::Video, project);
     }
     deck.load_custom_content(title.into(), state.settings.language.text("workspace-media").to_string(), String::new());
-    deck.preview_media = Some(crate::core::slides::MediaOutput {
+    let media = crate::core::slides::MediaOutput {
         path: path.into(),
         kind: kind.into(),
-    });
+    };
+    deck.preview_media = Some(media.clone());
+    deck.slide_media = vec![Some(media)];
     if project {
         deck.project_preview();
         state.apply_theme_to_live();
@@ -58,7 +60,7 @@ pub fn activate(
 }
 
 /// Temporary render parameters for an output, never a theme-library entry.
-fn output_theme(
+pub fn output_theme(
     base: &crate::core::models::PresentationTheme,
     media: Option<&crate::core::slides::MediaOutput>,
 ) -> crate::core::models::PresentationTheme {
@@ -122,6 +124,39 @@ pub fn live_theme(
         theme.options.video.start = media.video_seek_offset;
     }
     theme
+}
+
+pub fn sync_live_media_playback(
+    state: &mut ControlPanelState,
+    deck: &SlideDeck,
+    is_projecting: bool,
+) {
+    if let Some(media) = &deck.live_media {
+        if media.kind == "video" {
+            let already_playing = state
+                .active_player_media
+                .as_ref()
+                .map(|m| &m.path) == Some(&media.path);
+            if !already_playing {
+                let title = std::path::Path::new(&media.path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("Vídeo")
+                    .to_string();
+                state.play_media(title, media.path.clone(), PlayerMediaKind::Video, is_projecting);
+            }
+        } else if let Some(active) = &mut state.active_player_media {
+            if active.kind == PlayerMediaKind::Video {
+                active.is_playing = false;
+                state.audio_player.pause();
+            }
+        }
+    } else if let Some(active) = &mut state.active_player_media {
+        if active.kind == PlayerMediaKind::Video {
+            active.is_playing = false;
+            state.audio_player.pause();
+        }
+    }
 }
 
 pub fn audio_path(path: &str) -> Result<String, String> {

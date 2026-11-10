@@ -155,6 +155,7 @@ pub(crate) fn jump_input(
             && n >= 1 && n <= total {
                 deck.select_live_slide(n - 1);
             }
+        crate::services::media::sync_live_media_playback(state, deck, false);
         ui.ctx().data_mut(|d| d.remove_temp::<String>(id));
         ui.memory_mut(|m| m.surrender_focus(id));
         ui.ctx().request_repaint();
@@ -207,6 +208,7 @@ pub(crate) fn transport_controls(
             .clicked()
         {
             deck.first_slide();
+            crate::services::media::sync_live_media_playback(state, deck, *is_presentation_open);
         }
         if ui
             .add_enabled_ui(has_prev, |ui| {
@@ -222,6 +224,7 @@ pub(crate) fn transport_controls(
             .clicked()
         {
             deck.prev_slide();
+            crate::services::media::sync_live_media_playback(state, deck, *is_presentation_open);
         }
 
         jump_input(ui, tokens, deck, state);
@@ -242,6 +245,7 @@ pub(crate) fn transport_controls(
             if !deck.next_slide() && *is_presentation_open {
                 *is_presentation_open = false;
             }
+            crate::services::media::sync_live_media_playback(state, deck, *is_presentation_open);
         }
         if ui
             .add_enabled_ui(deck.total_slides() > 0 && deck.current_index() + 1 < deck.total_slides(), |ui| {
@@ -251,6 +255,7 @@ pub(crate) fn transport_controls(
             .clicked()
         {
             deck.last_slide();
+            crate::services::media::sync_live_media_playback(state, deck, *is_presentation_open);
         }
     });
 }

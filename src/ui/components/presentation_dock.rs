@@ -479,16 +479,22 @@ pub fn render_presentation_dock(
                     let is_song = slide_deck.is_live_song();
                     for (index, slide_content) in slides.iter().enumerate() {
                         let is_active = index == current_idx;
+                        let slide_media_opt = slide_deck.live_slide_media.get(index).and_then(|m| m.as_ref());
+                        let card_theme = if let Some(media) = slide_media_opt {
+                            crate::services::media::output_theme(state.live_theme(), Some(media))
+                        } else {
+                            live_theme.clone()
+                        };
                         let response = render_slide_card(
                             ui,
                             &tokens,
-                            &live_theme,
+                            &card_theme,
                             slide_content,
                             index,
                             is_active,
                             is_hidden,
                             aspect,
-                            with_bg,
+                            with_bg || slide_media_opt.is_some(),
                             card_w,
                             is_song,
                         );
@@ -501,6 +507,7 @@ pub fn render_presentation_dock(
                                 *is_presentation_open = true;
                                 state.presentation_started_at = Some(std::time::Instant::now());
                             }
+                            crate::services::media::sync_live_media_playback(state, slide_deck, *is_presentation_open);
                         }
                         ui.add_space(10.0);
                     }

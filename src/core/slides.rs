@@ -15,6 +15,8 @@ pub struct SlideDeck {
     pub live_overlay: Option<crate::core::design::DesignDocument>,
     pub preview_media: Option<MediaOutput>,
     pub live_media: Option<MediaOutput>,
+    pub slide_media: Vec<Option<MediaOutput>>,
+    pub live_slide_media: Vec<Option<MediaOutput>>,
     // Preview state (what is shown in lyrics container & preview monitor)
     title: String,
     artist: String,
@@ -40,6 +42,7 @@ impl Default for SlideDeck {
 
         if let Some(first_song) = songs.first().cloned() {
             let slides = build_song_slides(&first_song.title, &first_song.artist, &first_song.text);
+            let media_len = slides.len();
             Self {
                 designs: Vec::new(),
                 preview_design: None,
@@ -47,6 +50,8 @@ impl Default for SlideDeck {
                 live_overlay: None,
                 preview_media: None,
                 live_media: None,
+                slide_media: vec![None; media_len],
+                live_slide_media: vec![None; media_len],
                 title: first_song.title.clone(),
                 artist: first_song.artist.clone(),
                 raw_text: first_song.text,
@@ -70,6 +75,8 @@ impl Default for SlideDeck {
                 live_overlay: None,
                 preview_media: None,
                 live_media: None,
+                slide_media: Vec::new(),
+                live_slide_media: Vec::new(),
                 title: String::new(),
                 artist: String::new(),
                 raw_text: String::new(),
@@ -92,6 +99,7 @@ impl Default for SlideDeck {
 impl SlideDeck {
     pub fn new(raw_text: &str) -> Self {
         let slides = parse_slides_from_text(raw_text);
+        let media_len = slides.len();
         Self {
             designs: Vec::new(),
             preview_design: None,
@@ -99,6 +107,8 @@ impl SlideDeck {
             live_overlay: None,
             preview_media: None,
             live_media: None,
+            slide_media: vec![None; media_len],
+            live_slide_media: vec![None; media_len],
             title: crate::core::i18n::Language::system().text("services-presentation").to_string(),
             artist: String::new(),
             raw_text: raw_text.to_owned(),
@@ -136,6 +146,7 @@ impl SlideDeck {
         let def_text = songs[default_idx].text.clone();
         let slides = build_song_slides(&def_title, &def_artist, &def_text);
         let current_index = 0;
+        let media_len = slides.len();
 
         Self {
             designs,
@@ -144,6 +155,8 @@ impl SlideDeck {
             live_overlay: None,
             preview_media: None,
             live_media: None,
+            slide_media: vec![None; media_len],
+            live_slide_media: vec![None; media_len],
             title: def_title.clone(),
             artist: def_artist.clone(),
             raw_text: def_text,
@@ -226,6 +239,7 @@ impl SlideDeck {
             self.artist = self.library[index].artist.clone();
             self.raw_text = self.library[index].text.clone();
             self.slides = build_song_slides(&self.title, &self.artist, &self.raw_text);
+            self.slide_media = vec![None; self.slides.len()];
             self.preview_slide_index = 0;
             self.is_song = true;
         }
@@ -241,6 +255,22 @@ impl SlideDeck {
         self.project_preview();
     }
 
+    pub fn sync_preview_media(&mut self) {
+        self.preview_media = self
+            .slide_media
+            .get(self.preview_slide_index)
+            .cloned()
+            .flatten();
+    }
+
+    pub fn sync_live_media(&mut self) {
+        self.live_media = self
+            .live_slide_media
+            .get(self.live_index)
+            .cloned()
+            .flatten();
+    }
+
     /// Transfere o conteúdo atual da pré-visualização para o retorno ao vivo / projetor
     pub fn project_preview(&mut self) {
         if let Some(mut scene) = self.preview_design.clone().filter(|scene| scene.overlay) {
@@ -251,7 +281,7 @@ impl SlideDeck {
             return;
         }
         self.live_design = self.preview_design.clone();
-        self.live_media = self.preview_media.clone();
+        self.live_slide_media = self.slide_media.clone();
         if let Some(scene) = &mut self.live_design {
             scene.start_timers();
         }
@@ -263,6 +293,11 @@ impl SlideDeck {
             .min(self.live_slides.len().saturating_sub(1));
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
+        self.sync_live_media();
+        if self.live_media.is_none() && self.preview_media.is_some() {
+            self.live_media = self.preview_media.clone();
+            self.live_slide_media = vec![self.preview_media.clone()];
+        }
     }
 
     /// Projeta uma estrofe específica da pré-visualização no retorno ao vivo / projetor
@@ -272,7 +307,7 @@ impl SlideDeck {
             return;
         }
         self.live_design = self.preview_design.clone();
-        self.live_media = self.preview_media.clone();
+        self.live_slide_media = self.slide_media.clone();
         self.live_title = self.title.clone();
         self.live_artist = self.artist.clone();
         self.live_slides = self.slides.clone();
@@ -280,12 +315,18 @@ impl SlideDeck {
         self.live_index = slide_index.min(self.live_slides.len().saturating_sub(1));
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
+        self.sync_live_media();
+        if self.live_media.is_none() && self.preview_media.is_some() {
+            self.live_media = self.preview_media.clone();
+            self.live_slide_media = vec![self.preview_media.clone()];
+        }
     }
 
     pub fn clear_live(&mut self) {
         self.live_design = None;
         self.live_overlay = None;
         self.live_media = None;
+        self.live_slide_media.clear();
         self.live_title.clear();
         self.live_artist.clear();
         self.live_slides = vec![String::new()];
@@ -318,8 +359,10 @@ impl SlideDeck {
         if index < self.live_slides.len() {
             self.live_index = index;
             self.is_content_hidden = false;
+            self.sync_live_media();
             if self.is_previewing_live_song() {
                 self.preview_slide_index = index;
+                self.sync_preview_media();
             }
         }
     }
@@ -357,6 +400,7 @@ impl SlideDeck {
         } else {
             parsed
         };
+        self.slide_media = vec![None; self.slides.len()];
         self.preview_slide_index = 0;
         self.is_song = false;
     }
@@ -372,8 +416,32 @@ impl SlideDeck {
         } else {
             slides
         };
+        self.slide_media = vec![None; self.slides.len()];
         self.preview_slide_index = 0;
         self.is_song = false;
+    }
+
+    pub fn load_custom_slides_with_media(
+        &mut self,
+        title: String,
+        artist: String,
+        slides: Vec<String>,
+        media: Vec<Option<MediaOutput>>,
+    ) {
+        self.preview_design = None;
+        self.title = title;
+        self.artist = artist;
+        self.raw_text = slides.join("\n\n");
+        let (final_slides, final_media) = if slides.is_empty() {
+            (vec![String::new()], vec![None])
+        } else {
+            (slides, media)
+        };
+        self.slides = final_slides;
+        self.slide_media = final_media;
+        self.preview_slide_index = 0;
+        self.is_song = false;
+        self.sync_preview_media();
     }
 
     pub fn project_custom_content(&mut self, title: String, artist: String, text: String) {
@@ -598,12 +666,15 @@ impl SlideDeck {
         if !self.live_slides.is_empty() && self.live_index + 1 < self.live_slides.len() {
             self.live_index += 1;
             self.is_content_hidden = false;
+            self.sync_live_media();
             if self.is_previewing_live_song() {
                 self.preview_slide_index = self.live_index;
+                self.sync_preview_media();
             }
             true
         } else if self.live_slides.is_empty() && !self.slides.is_empty() && self.preview_slide_index + 1 < self.slides.len() {
             self.preview_slide_index += 1;
+            self.sync_preview_media();
             true
         } else {
             false
@@ -614,11 +685,14 @@ impl SlideDeck {
         if self.live_index > 0 {
             self.live_index -= 1;
             self.is_content_hidden = false;
+            self.sync_live_media();
             if self.is_previewing_live_song() {
                 self.preview_slide_index = self.live_index;
+                self.sync_preview_media();
             }
         } else if self.live_slides.is_empty() && self.preview_slide_index > 0 {
             self.preview_slide_index -= 1;
+            self.sync_preview_media();
         }
     }
 
@@ -626,11 +700,14 @@ impl SlideDeck {
         if !self.live_slides.is_empty() {
             self.live_index = 0;
             self.is_content_hidden = false;
+            self.sync_live_media();
             if self.is_previewing_live_song() {
                 self.preview_slide_index = 0;
+                self.sync_preview_media();
             }
         } else if !self.slides.is_empty() {
             self.preview_slide_index = 0;
+            self.sync_preview_media();
         }
     }
 
@@ -638,11 +715,14 @@ impl SlideDeck {
         if !self.live_slides.is_empty() {
             self.live_index = self.live_slides.len() - 1;
             self.is_content_hidden = false;
+            self.sync_live_media();
             if self.is_previewing_live_song() {
                 self.preview_slide_index = self.live_index;
+                self.sync_preview_media();
             }
         } else if !self.slides.is_empty() {
             self.preview_slide_index = self.slides.len() - 1;
+            self.sync_preview_media();
         }
     }
 
@@ -827,158 +907,4 @@ pub fn set_strophe_tag(strophe: &str, tag: Option<&str>) -> String {
 }
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_strip_comments() {
-        let input = "// Intro: G D Em\nPorque Deus amou o mundo\n// Todos juntos\nDe tal maneira";
-        let stripped = strip_comments(input);
-        assert_eq!(stripped, "Porque Deus amou o mundo\nDe tal maneira");
-
-        let only_comments = "// Linha 1\n  // Linha 2";
-        assert_eq!(strip_comments(only_comments), "");
-
-        let no_comments = "Sem nenhum comentário\nApenas louvor";
-        assert_eq!(strip_comments(no_comments), no_comments);
-
-        let inline_comment = "Nada havia em Sua aparência // bis\nPara o desejarmos";
-        assert_eq!(strip_comments(inline_comment), "Nada havia em Sua aparência\nPara o desejarmos");
-
-        let tag_and_comment = "#*Refrão\n// bis\nNada havia // nota";
-        assert_eq!(strip_comments(tag_and_comment), "Nada havia");
-    }
-
-    #[test]
-    fn test_strophe_tags() {
-        let strophe = "#*Refrão\nPorque Ele vive\nPosso crer no amanhã";
-        assert_eq!(extract_strophe_tag(strophe), Some("Refrão".to_string()));
-        assert_eq!(strip_strophe_tag(strophe), "Porque Ele vive\nPosso crer no amanhã");
-
-        let changed = set_strophe_tag(strophe, Some("Ponte"));
-        assert_eq!(extract_strophe_tag(&changed), Some("Ponte".to_string()));
-        assert!(changed.starts_with("#*Ponte\n"));
-
-        let removed = set_strophe_tag(&changed, None);
-        assert_eq!(extract_strophe_tag(&removed), None);
-        assert_eq!(removed, "Porque Ele vive\nPosso crer no amanhã");
-    }
-
-    #[test]
-    fn test_double_enter_splitting() {
-        let text = "Estrofe 1\nLinha 2\n\nEstrofe 2\nLinha 2\n\n\nEstrofe 3";
-        let slides = parse_slides_from_text(text);
-        assert_eq!(slides.len(), 3);
-        assert_eq!(slides[0], "Estrofe 1\nLinha 2");
-        assert_eq!(slides[1], "Estrofe 2\nLinha 2");
-        assert_eq!(slides[2], "Estrofe 3");
-    }
-
-    #[test]
-    fn test_navigation_and_hiding() {
-        let mut deck = SlideDeck::new("Slide 1\n\nSlide 2\n\nSlide 3");
-        assert_eq!(deck.current_slide_text(), "Slide 1");
-        assert_eq!(deck.projected_text(), "Slide 1");
-
-        // Hide with ESC
-        deck.toggle_hide_content();
-        assert!(deck.is_content_hidden());
-        assert_eq!(deck.projected_text(), "");
-
-        // Next slide restores visibility
-        deck.next_slide();
-        assert_eq!(deck.current_index(), 1);
-        assert!(!deck.is_content_hidden());
-        assert_eq!(deck.projected_text(), "Slide 2");
-    }
-
-    #[test]
-    fn test_song_selection_only_changes_preview_not_live() {
-        let songs = vec![
-            Song::new(
-                "Deus de Promessas",
-                "Davi Sacer",
-                "Sei que os Teus olhos\nSempre atentos\npermanecem em mim",
-            ),
-            Song::new(
-                "Isaías 53",
-                "Projeto Sola",
-                "Ele não tinha qualquer beleza\nOu majestade pra nos atrair\n\nMais rejeitado dentre os homens\nAinda assim carregou nossas dores\nO Seu castigo nos traz paz\nE a esperança não se esvai",
-            ),
-        ];
-        let mut deck = SlideDeck {
-            library: songs,
-            ..SlideDeck::default()
-        };
-        deck.project_song(1);
-        deck.select_live_slide(1);
-        assert_eq!(deck.live_title(), "Isaías 53");
-        assert_eq!(deck.title(), "Isaías 53");
-
-        // Operator selects song 0 ("Deus de Promessas") with a single click
-        deck.preview_song(0);
-
-        // Preview title updates to "Deus de Promessas"
-        assert_eq!(deck.title(), "Deus de Promessas");
-        assert_eq!(deck.preview_slide_text(), "Deus de Promessas\nDavi Sacer");
-
-        // But LIVE is STILL "Isaías 53" completely untouched!
-        assert_eq!(deck.live_title(), "Isaías 53");
-        assert_eq!(
-            deck.live_slide_text(),
-            "Ele não tinha qualquer beleza\nOu majestade pra nos atrair"
-        );
-        assert_eq!(deck.projected_text(), deck.live_slide_text());
-
-        // Now operator projects the preview (double click or "Projetar" button)
-        deck.project_preview();
-
-        // Now and ONLY now does LIVE update to "Deus de Promessas"!
-        assert_eq!(deck.live_title(), "Deus de Promessas");
-        assert_eq!(deck.live_slide_text(), "Deus de Promessas\nDavi Sacer");
-        assert_eq!(deck.projected_text(), deck.live_slide_text());
-    }
-
-    #[test]
-    fn test_strophe_reordering_and_manipulation() {
-        let mut deck = SlideDeck::new("Estrofe A\n\nEstrofe B\n\nEstrofe C");
-        assert_eq!(deck.slides().len(), 3);
-        assert_eq!(deck.slides()[0], "Estrofe A");
-        assert_eq!(deck.slides()[1], "Estrofe B");
-        assert_eq!(deck.slides()[2], "Estrofe C");
-
-        // Move B up -> [B, A, C]
-        deck.move_slide_up(1);
-        assert_eq!(deck.slides()[0], "Estrofe B");
-        assert_eq!(deck.slides()[1], "Estrofe A");
-        assert_eq!(deck.slides()[2], "Estrofe C");
-
-        // Move B down -> [A, B, C]
-        deck.move_slide_down(0);
-        assert_eq!(deck.slides()[0], "Estrofe A");
-        assert_eq!(deck.slides()[1], "Estrofe B");
-
-        // Duplicate B -> [A, B, B, C]
-        deck.duplicate_slide(1);
-        assert_eq!(deck.slides().len(), 4);
-        assert_eq!(deck.slides()[1], "Estrofe B");
-        assert_eq!(deck.slides()[2], "Estrofe B");
-
-        // Delete duplicated strophe -> [A, B, C]
-        deck.delete_slide(2);
-        assert_eq!(deck.slides().len(), 3);
-        assert_eq!(deck.slides()[2], "Estrofe C");
-
-        // Update strophe B
-        deck.update_slide_text(1, "Estrofe B Modificada");
-        assert_eq!(deck.slides()[1], "Estrofe B Modificada");
-    }
-
-    #[test]
-    fn test_strip_directive_commands() {
-        let text = "//t: 60\n//c: #FF0000\n// Intro: G D Em\nBless the Lord, oh my soul\n//f: Inter";
-        let cleaned = strip_directive_commands(text);
-        assert_eq!(cleaned, "// Intro: G D Em\nBless the Lord, oh my soul");
-    }
-}

@@ -681,6 +681,7 @@ pub fn activate_selected_playlist_items(
     }
 
     let mut all_slides = Vec::new();
+    let mut all_media = Vec::new();
 
     for item in &selected_items {
         match item.kind {
@@ -695,6 +696,7 @@ pub fn activate_selected_playlist_items(
                 for slide in song_slides {
                     if !slide.trim().is_empty() {
                         all_slides.push(slide);
+                        all_media.push(None);
                     }
                 }
             }
@@ -707,8 +709,12 @@ pub fn activate_selected_playlist_items(
                 let parsed = crate::core::slides::parse_slides_from_text(text);
                 if parsed.is_empty() {
                     all_slides.push(text.to_string());
+                    all_media.push(None);
                 } else {
-                    all_slides.extend(parsed);
+                    for s in parsed {
+                        all_slides.push(s);
+                        all_media.push(None);
+                    }
                 }
             }
             PlaylistItemKind::Design => {
@@ -716,21 +722,38 @@ pub fn activate_selected_playlist_items(
                     let parsed = crate::core::slides::parse_slides_from_text(&item.content);
                     if parsed.is_empty() {
                         all_slides.push(item.content.clone());
+                        all_media.push(None);
                     } else {
-                        all_slides.extend(parsed);
+                        for s in parsed {
+                            all_slides.push(s);
+                            all_media.push(None);
+                        }
                     }
                 } else {
                     all_slides.push(item.title.clone());
+                    all_media.push(None);
                 }
             }
             PlaylistItemKind::Media => {
-                all_slides.push(item.title.clone());
+                let kind = if item.subtitle.starts_with("video") {
+                    "video"
+                } else if item.subtitle.starts_with("audio") {
+                    "audio"
+                } else {
+                    crate::core::models::MediaItem::detect_type(&item.content)
+                };
+                all_slides.push(String::new());
+                all_media.push(Some(crate::core::slides::MediaOutput {
+                    path: item.content.clone(),
+                    kind: kind.to_string(),
+                }));
             }
         }
     }
 
     if all_slides.is_empty() {
         all_slides.push(String::new());
+        all_media.push(None);
     }
 
     let titles_joined = selected_items
@@ -748,7 +771,7 @@ pub fn activate_selected_playlist_items(
         .map(|it| it.subtitle.clone())
         .unwrap_or_default();
 
-    deck.load_custom_slides(combined_title, combined_artist, all_slides);
+    deck.load_custom_slides_with_media(combined_title, combined_artist, all_slides, all_media);
     if project {
         deck.project_preview();
         if !deck
@@ -760,6 +783,7 @@ pub fn activate_selected_playlist_items(
         }
         *presenting = true;
         state.show_presentation_dock = state.settings.operator().show_dock;
+        crate::services::media::sync_live_media_playback(state, deck, *presenting);
     }
 }
 

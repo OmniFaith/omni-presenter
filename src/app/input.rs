@@ -86,10 +86,36 @@ impl PresentationApp {
                     }
                     self.control_state.audio_player.pause();
                 }
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
             }
-            Command::PreviousSlide => self.slide_deck.prev_slide(),
-            Command::FirstSlide => self.slide_deck.first_slide(),
-            Command::LastSlide => self.slide_deck.last_slide(),
+            Command::PreviousSlide => {
+                self.slide_deck.prev_slide();
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
+            }
+            Command::FirstSlide => {
+                self.slide_deck.first_slide();
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
+            }
+            Command::LastSlide => {
+                self.slide_deck.last_slide();
+                crate::services::media::sync_live_media_playback(
+                    &mut self.control_state,
+                    &self.slide_deck,
+                    self.is_presentation_open,
+                );
+            }
             Command::Settings => self.control_state.settings_ui.open = true,
             Command::JumpSlide => {
                 self.control_state.show_presentation_dock = true;
