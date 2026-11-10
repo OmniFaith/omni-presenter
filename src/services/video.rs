@@ -182,7 +182,7 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                     worker.expired.store(true, Ordering::Relaxed);
                     break;
                 }
-                if worker.paused.load(Ordering::Relaxed) {
+                if sequence > 0 && worker.paused.load(Ordering::Relaxed) {
                     std::thread::sleep(Duration::from_millis(30));
                     next_frame_time = Instant::now();
                     continue;
@@ -315,6 +315,14 @@ fn ensure_entry<'a>(
         entries.remove(&key);
     }
     if !entries.contains_key(&key) {
+        entries.retain(|k, entry| {
+            if k != &key && (path.is_empty() || k.starts_with(path)) {
+                entry.shared.stop.store(true, Ordering::Relaxed);
+                false
+            } else {
+                true
+            }
+        });
         if entries.len() >= 4
             && let Some(oldest) = entries
                 .iter()

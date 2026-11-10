@@ -47,11 +47,11 @@ pub fn render_stage_column(
     };
     let hidden = deck.is_content_hidden();
     let has_subtitle = !live_subtitle.is_empty() && *presenting && !hidden;
-    let subtitle_reserve = if has_subtitle { 18.0 } else { 0.0 };
+    let subtitle_reserve = if has_subtitle { 22.0 } else { 0.0 };
 
     let aspect = state.presentation_aspect_ratio.clamp(0.5, 3.5);
     let width = (ui.available_width() - 1.0).max(40.0);
-    let avail_h = (ui.available_height() - subtitle_reserve - 6.0).max(35.0);
+    let avail_h = (ui.available_height() - subtitle_reserve - 8.0).max(35.0);
     let height = (width / aspect).min(avail_h);
     let live_theme = crate::services::media::live_theme(state, deck);
     let animate = !state.settings.operator().reduce_motion;
@@ -139,14 +139,15 @@ pub fn render_stage_column(
                     ui.add(
                         egui::Label::new(
                             egui::RichText::new(live_subtitle)
-                                .size(10.0)
-                                .color(theme.text_muted),
+                                .size(10.5)
+                                .color(theme.text_secondary),
                         )
                         .truncate(),
                     );
                 },
             );
         });
+        ui.add_space(2.0);
     }
 }
 
@@ -160,9 +161,21 @@ pub fn render_preview_column(
     render_header_bar(ui, ContainerKind::Preview, "workspace-preview-label", &theme);
     ui.add_space(2.0);
 
+    let title = deck.title();
+    let artist = deck.artist();
+    let subtitle = if !title.is_empty() && !artist.is_empty() {
+        format!("{title} · {artist}")
+    } else if !title.is_empty() {
+        title.to_string()
+    } else {
+        artist.to_string()
+    };
+    let has_subtitle = !subtitle.is_empty();
+    let subtitle_reserve = if has_subtitle { 22.0 } else { 0.0 };
+
     let aspect = state.presentation_aspect_ratio.clamp(0.5, 3.5);
     let width = (ui.available_width() - 1.0).max(40.0);
-    let avail_h = (ui.available_height() - 6.0).max(35.0);
+    let avail_h = (ui.available_height() - subtitle_reserve - 8.0).max(35.0);
     let height = (width / aspect).min(avail_h);
     let preview_theme = crate::services::media::preview_theme(state, deck);
     let animate = !state.settings.operator().reduce_motion;
@@ -256,17 +269,8 @@ pub fn render_preview_column(
             }
         }
     }
-    ui.add_space(4.0);
-    let title = deck.title();
-    let artist = deck.artist();
-    let subtitle = if !title.is_empty() && !artist.is_empty() {
-        format!("{title} · {artist}")
-    } else if !title.is_empty() {
-        title.to_string()
-    } else {
-        artist.to_string()
-    };
-    if !subtitle.is_empty() {
+    if has_subtitle {
+        ui.add_space(2.0);
         ui.horizontal(|ui| {
             ui.with_layout(
                 egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
@@ -274,14 +278,15 @@ pub fn render_preview_column(
                     ui.add(
                         egui::Label::new(
                             egui::RichText::new(subtitle)
-                                .size(10.0)
-                                .color(theme.text_muted),
+                                .size(10.5)
+                                .color(theme.text_secondary),
                         )
                         .truncate(),
                     );
                 },
             );
         });
+        ui.add_space(2.0);
     }
 }
 

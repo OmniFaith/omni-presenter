@@ -100,6 +100,7 @@ pub fn preview_theme(
     {
         theme.options.video.paused = !media.is_playing;
         theme.options.video.fit = media.video_fit.clone();
+        theme.options.video.start = media.video_seek_offset;
     }
     theme
 }
@@ -118,6 +119,7 @@ pub fn live_theme(
     {
         theme.options.video.paused = !media.is_playing;
         theme.options.video.fit = media.video_fit.clone();
+        theme.options.video.start = media.video_seek_offset;
     }
     theme
 }

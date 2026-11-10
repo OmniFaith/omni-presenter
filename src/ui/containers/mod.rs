@@ -1,5 +1,6 @@
 pub mod lyrics;
 pub mod player;
+pub mod player_widgets;
 pub mod playlist;
 pub mod playlist_footer;
 pub mod selection;
