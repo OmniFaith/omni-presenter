@@ -1,0 +1,313 @@
+/* Conversation and shared-content cards use the same compact hierarchy as the native chat. */
+#timeline {
+  max-width: 940px;
+  width: 100%;
+  margin: 0 auto;
+   gap: 14px;
+}
+.message {
+  width: 100%;
+  max-width: 570px;
+  gap: 10px;
+}
+.message.own {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+.message-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 520px;
+}
+.own .message-body {
+  align-items: flex-end;
+}
+.message-head {
+  gap: 9px;
+  margin-bottom: 6px;
+}
+.message-head b {
+  font-size: 12px;
+  color: var(--muted);
+}
+.message-head time {
+  font-size: 10px;
+}
+.message-content {
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 14px;
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.own .message-content {
+  background: var(--soft);
+  border-color: transparent;
+}
+.shared,
+.attachment {
+  width: min(420px, 100%);
+  max-width: 420px;
+  min-width: 0;
+  padding: 12px;
+  margin-top: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.own .shared,
+.own .attachment {
+  background: var(--soft);
+}
+.resource-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.resource-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.resource-icon svg,
+.resource-icon .native-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+.own .resource-icon {
+  background: var(--panel);
+}
+.resource-info {
+  min-width: 0;
+  flex: 1;
+}
+.resource-info small {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+.resource-info h3 {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.45;
+}
+.resource-info h3 a {
+  font-size: 14px !important;
+  text-decoration: none;
+  color: var(--ink);
+}
+.resource-info span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.shared details {
+  margin-top: 10px;
+}
+.shared summary {
+  font-size: 11px;
+  margin-bottom: 0;
+}
+.shared details[open] summary {
+  margin-bottom: 10px;
+}
+.shared pre {
+  font-size: 13px;
+  line-height: 1.65;
+}
+.shared-actions {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 12px;
+  gap: 5px;
+}
+.shared-actions svg,
+.shared-actions .native-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.shared-actions .action-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 7px 10px;
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.own .shared-actions .action-primary {
+  background: var(--panel);
+}
+.shared-actions .action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  min-width: 29px;
+  padding: 6px;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  text-decoration: none;
+}
+.shared-actions .action-icon:hover {
+  background: var(--soft);
+  color: var(--accent);
+}
+.resource-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.resource-top .resource-heading {
+  flex: 1;
+  min-width: 0;
+}
+.resource-top .shared-actions,
+.attachment > .shared-actions {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+}
+.attachment > .shared-actions {
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.resource-top .shared-actions .action-primary,
+.attachment > .shared-actions .action-primary {
+  height: 24px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  border-radius: 7px;
+}
+.resource-top .shared-actions .action-icon,
+.attachment > .shared-actions .action-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 4px;
+}
+.voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.voice-play {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  padding: 11px;
+}
+.voice-play:hover {
+  background: #244ed1;
+}
+.voice-play svg,
+.voice-play .native-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.voice-info {
+  flex: 1;
+  min-width: 0;
+}
+.voice-info strong {
+  display: block;
+  font-size: 13px;
+}
+.voice-info input[type="range"] {
+  appearance: auto;
+  accent-color: var(--accent);
+  width: 100%;
+  height: 5px;
+  padding: 0;
+  border: 0;
+  margin: 10px 0 7px;
+  background: transparent;
+}
+.voice-info small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+.attachment img,
+.attachment video {
+  max-height: 230px;
+}
+@media (max-width: 750px) {
+  #messages {
+    padding: 20px 14px;
+  }
+  .message {
+    max-width: 100%;
+  }
+  .message-body {
+    max-width: calc(100% - 42px);
+  }
+  .shared,
+  .attachment {
+    padding: 13px;
+  }
+  .resource-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .message-content {
+    font-size: 13px;
+  }
+  .shared-actions .action-primary {
+    padding: 6px 8px;
+  }
+  .shared-actions {
+    gap: 3px;
+  }
+  .message-head {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+}

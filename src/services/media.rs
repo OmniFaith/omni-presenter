@@ -82,6 +82,7 @@ pub fn output_theme(
                 String::new()
             },
             repeat: false,
+            paused: true,
             ..Default::default()
         };
     }
@@ -133,11 +134,30 @@ pub fn sync_live_media_playback(
 ) {
     if let Some(media) = &deck.live_media {
         if media.kind == "video" {
-            let already_playing = state
-                .active_player_media
-                .as_ref()
-                .map(|m| &m.path) == Some(&media.path);
-            if !already_playing {
+            if let Some(active) = &mut state.active_player_media {
+                if active.path == media.path {
+                    if !active.is_playing && is_projecting {
+                        active.is_playing = true;
+                        let offset = active.video_paused_at.unwrap_or(0.0);
+                        active.video_start_time = std::time::Instant::now()
+                            - std::time::Duration::from_secs_f32(offset);
+                        active.video_paused_at = None;
+                        active.is_projecting = true;
+                        let _ = state.audio_player.play_video_stream(
+                            active.title.clone(),
+                            active.path.clone(),
+                            offset,
+                        );
+                    }
+                } else {
+                    let title = std::path::Path::new(&media.path)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("Vídeo")
+                        .to_string();
+                    state.play_media(title, media.path.clone(), PlayerMediaKind::Video, is_projecting);
+                }
+            } else {
                 let title = std::path::Path::new(&media.path)
                     .file_stem()
                     .and_then(|s| s.to_str())
@@ -147,12 +167,14 @@ pub fn sync_live_media_playback(
             }
         } else if let Some(active) = &mut state.active_player_media {
             if active.kind == PlayerMediaKind::Video {
+                active.video_paused_at = Some(active.video_position());
                 active.is_playing = false;
                 state.audio_player.pause();
             }
         }
     } else if let Some(active) = &mut state.active_player_media {
         if active.kind == PlayerMediaKind::Video {
+            active.video_paused_at = Some(active.video_position());
             active.is_playing = false;
             state.audio_player.pause();
         }

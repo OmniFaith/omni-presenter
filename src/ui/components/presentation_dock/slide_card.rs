@@ -102,8 +102,6 @@ pub(crate) fn render_slide_card(
         } else {
             (index.to_string(), if is_active { tokens.accent } else { tokens.text_muted })
         }
-    } else if is_blank {
-        ("—".to_string(), if is_active { tokens.accent } else { tokens.text_muted })
     } else {
         ((index + 1).to_string(), if is_active { tokens.accent } else { tokens.text_muted })
     };
@@ -121,11 +119,13 @@ pub(crate) fn render_slide_card(
         badge_color,
     );
 
-
-    let hover_text = if is_blank {
-        "Slide em branco"
+    let clean = crate::core::slides::strip_comments(slide_content);
+    let hover_text = if !clean.trim().is_empty() {
+        clean.trim().to_string()
+    } else if is_song && index == 0 {
+        "Título".to_string()
     } else {
-        slide_content.trim()
+        format!("Slide {}", index + 1)
     };
     response.on_hover_text(hover_text)
 }

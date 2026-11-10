@@ -23,7 +23,7 @@ impl ControlPanelState {
                 }
                 (
                     crate::services::video::duration(&path).unwrap_or(0.0),
-                    true,
+                    project,
                     language.format("player-playing-video", &[("title", &title)]),
                 )
             }
@@ -36,7 +36,7 @@ impl ControlPanelState {
             is_playing: playing,
             is_projecting: project,
             video_start_time: std::time::Instant::now(),
-            video_paused_at: None,
+            video_paused_at: if playing { None } else { Some(0.0) },
             video_fit: "contain".into(),
             video_seek_offset: 0.0,
         });

@@ -1,0 +1,15 @@
+{
+  "name": "omni-presenter-web",
+  "version": "0.8.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "@types/web": "^0.0.270",
+    "typescript": "^7.0.2"
+  }
+}

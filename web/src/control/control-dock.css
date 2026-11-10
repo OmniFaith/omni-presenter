@@ -1,0 +1,203 @@
+.performance-bar {
+  display: flex;
+  flex-direction: column;
+}
+.native-dock-toolbar {
+  flex: 0 0 26px;
+  height: 26px;
+}
+.native-dock-toolbar .now-playing > div {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.native-dock-toolbar .now-playing strong {
+  font-size: 13px;
+}
+.native-dock-toolbar .now-playing small {
+  font-size: 11.5px;
+}
+.native-dock-options {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+.native-dock-options > button {
+  font-size: 12px;
+  min-height: 26px;
+  border-radius: 8px;
+}
+.native-dock-options > button:first-of-type {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.native-dock-options .segmented {
+  display: flex;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--pill);
+}
+.native-dock-options .segmented button {
+  min-height: 20px;
+  padding: 1px 10px;
+  background: transparent;
+  border-color: transparent;
+  font-size: 11.5px;
+}
+.native-dock-options .segmented .active {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+.native-dock-cards {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: flex-start;
+}
+.native-dock-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 144px;
+  max-width: 144px;
+  width: 144px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.native-dock-card.active {
+  background: transparent;
+}
+.native-dock-card > .native-dock-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 144px;
+  height: calc(144px / var(--aspect, 1.77778));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 8px;
+  color: var(--ink);
+}
+.native-dock-card.active > .native-dock-face {
+  border: 2px solid var(--accent);
+}
+.native-dock-face > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+.native-dock-card > small {
+  min-width: 24px;
+  height: 14px;
+  line-height: 14px;
+  border-radius: 6px;
+  background: var(--pill);
+  color: var(--muted);
+  font-size: 10px;
+  margin: 2px 0 0;
+  text-align: center;
+}
+.native-dock-card.active > small {
+  color: var(--accent);
+}
+.native-dock-bottom {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 26px;
+  height: 26px;
+}
+.native-progress {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.native-progress > div {
+  width: 110px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pill);
+  overflow: hidden;
+}
+.native-progress > div > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.native-dock-bottom .navigation {
+  background: var(--pill);
+  padding: 2px 4px;
+  border-radius: 8px;
+  gap: 2px;
+}
+.native-dock-bottom .navigation .icon-button {
+  border: 0;
+  width: 26px;
+  min-width: 26px;
+  height: 22px;
+  min-height: 22px;
+  padding: 4px;
+}
+#native-slide-jump {
+  width: 42px;
+  height: 22px;
+  padding: 1px 4px;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.native-dock-bottom .transport-divider {
+  display: none;
+}
+.native-dock-final {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.native-dock-action {
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.native-dock-action.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+.native-output-dialog {
+  width: min(880px, calc(100% - 30px));
+}
+.native-output-cards {
+  display: flex;
+  gap: 14px;
+  overflow: auto;
+  padding: 12px 0;
+}
+.native-output-cards .native-dock-card {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+.native-output-cards .native-dock-face {
+  width: 200px;
+  height: calc(200px / var(--aspect, 1.77778));
+}

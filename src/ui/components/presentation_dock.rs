@@ -481,7 +481,9 @@ pub fn render_presentation_dock(
                         let is_active = index == current_idx;
                         let slide_media_opt = slide_deck.live_slide_media.get(index).and_then(|m| m.as_ref());
                         let card_theme = if let Some(media) = slide_media_opt {
-                            crate::services::media::output_theme(state.live_theme(), Some(media))
+                            let mut theme = crate::services::media::output_theme(state.live_theme(), Some(media));
+                            theme.options.video.paused = !is_active || !*is_presentation_open;
+                            theme
                         } else {
                             live_theme.clone()
                         };

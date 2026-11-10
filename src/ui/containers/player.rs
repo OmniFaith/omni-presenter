@@ -113,17 +113,33 @@ fn render_active_player(
         .ctx()
         .data(|d| d.get_temp::<bool>(close_anim_id).unwrap_or(false));
 
+    let is_live_video = media.is_projecting
+        && *is_presentation_open
+        && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path);
+
     if is_video && media.is_playing && !is_closing {
         let cur = media.video_position();
         let dur = media.duration_secs;
         let finished = (dur > 0.0
             && cur >= dur - 0.08
             && media.video_start_time.elapsed().as_secs_f32() > 0.3)
-            || crate::services::video::is_finished(ui.ctx(), &media.path);
+            || (is_live_video && crate::services::video::is_finished(ui.ctx(), &media.path));
         if finished {
+            let has_next_slide = is_live_video
+                && deck.live_slides().len() > 1
+                && deck.live_index() + 1 < deck.live_slides().len();
+
+            if has_next_slide {
+                crate::services::video::stop(ui.ctx(), &media.path);
+                deck.next_slide();
+                crate::services::media::sync_live_media_playback(state, deck, *is_presentation_open);
+                ui.ctx().request_repaint();
+                return;
+            }
+
             is_closing = true;
             ui.ctx().data_mut(|d| d.insert_temp(close_anim_id, true));
-            if media.is_projecting || *is_presentation_open {
+            if is_live_video {
                 deck.live_media = None;
                 *is_presentation_open = false;
             }
@@ -383,7 +399,10 @@ fn stop_and_close_video(
         )
     });
     crate::services::video::stop(ctx, &media.path);
-    if deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path) || media.is_projecting {
+    let is_live_video = media.is_projecting
+        && *is_presentation_open
+        && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path);
+    if is_live_video {
         deck.live_media = None;
         deck.preview_media = None;
         if deck.live_title() == media.title {

@@ -116,6 +116,7 @@ fn localize_language(lang: &str) -> &'static str {
 
 fn main() {
     let manifest = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).to_path_buf();
+    build_web_assets(&manifest);
     embed_locales(&manifest);
     let folder = manifest.join("assets/bible-source/json");
     println!("cargo:rerun-if-changed={}", folder.display());
@@ -282,4 +283,18 @@ fn embed_locales(manifest: &Path) {
     }
     output.push_str("];\n");
     fs::write(Path::new(&env::var("OUT_DIR").unwrap()).join("locale_assets.rs"), output).unwrap();
+}
+
+fn build_web_assets(manifest: &Path) {
+    let web_dir = manifest.join("web");
+    println!("cargo:rerun-if-changed={}", web_dir.join("src").display());
+    println!("cargo:rerun-if-changed={}", web_dir.join("package.json").display());
+    println!("cargo:rerun-if-changed={}", web_dir.join("tsconfig.json").display());
+    println!("cargo:rerun-if-changed={}", web_dir.join("build.ts").display());
+
+    let _ = std::process::Command::new("bun")
+        .current_dir(&web_dir)
+        .arg("run")
+        .arg("build")
+        .status();
 }
