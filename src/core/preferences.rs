@@ -115,6 +115,8 @@ pub struct ServiceProfile {
     pub name: String,
     pub theme_id: String,
     pub idle_theme_id: String,
+    #[serde(default)]
+    pub wallpaper: Option<PhysicalBackground>,
     /// 0 = monitor, otherwise the chosen width / height.
     pub aspect_ratio: f32,
     pub bible_version: String,
@@ -412,6 +414,7 @@ impl Default for ServiceProfile {
             name: "workspace-new-event".into(),
             theme_id: "obsidian_pro".into(),
             idle_theme_id: "obsidian_pro".into(),
+            wallpaper: None,
             aspect_ratio: 0.0,
             bible_version: String::new(),
             bible_shortcuts: Vec::new(),
@@ -897,6 +900,13 @@ impl AppSettings {
             }
         }
         &self.physical_background
+    }
+
+    pub fn effective_wallpaper(&self, monitor_name: &str) -> &PhysicalBackground {
+        if let Some(bg) = &self.service().wallpaper {
+            return bg;
+        }
+        self.wallpaper_for_monitor(monitor_name)
     }
 
     pub fn wallpaper_for_monitor_mut(&mut self, monitor_name: &str) -> &mut PhysicalBackground {

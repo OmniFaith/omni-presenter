@@ -291,7 +291,7 @@ pub fn render_selection_column(
                         ui.close();
                     }
                     if kind == LibraryKind::Media
-                        && context_menu_item(ui, LINK, language.text("library-add-web-video"), &theme)
+                        && context_menu_item(ui, GLOBE, language.text("library-add-web-video"), &theme)
                             .clicked()
                     {
                         state.web_media_modal.target_folder = folder.clone();
@@ -541,7 +541,7 @@ pub fn render_selection_column(
                     ui.close();
                 }
                 if kind == LibraryKind::Media
-                    && context_menu_item(ui, LINK, language.text("library-add-web-video"), &theme)
+                    && context_menu_item(ui, GLOBE, language.text("library-add-web-video"), &theme)
                         .clicked()
                 {
                     state.web_media_modal.target_folder.clear();

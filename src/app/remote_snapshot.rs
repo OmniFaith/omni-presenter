@@ -16,6 +16,49 @@ fn theme(value: &crate::core::models::PresentationTheme, language: crate::core::
     } else {
         (color(value.bg_top), color(value.bg_bottom), Vec::new())
     };
+    let shader_kind = value
+        .id
+        .strip_prefix("shader_")
+        .or_else(|| {
+            if value.bg_type == "shader" && !value.options.shader.kind.is_empty() {
+                Some(value.options.shader.kind.as_str())
+            } else {
+                None
+            }
+        })
+        .or_else(|| match value.name.as_str() {
+            "Aurora · Dinâmico" | "Aurora · Animated" | "Aurora · Animado" => Some("aurora"),
+            "Nebulosa · Dinâmico" | "Nebula · Animated" | "Nebulosa · Animado" => Some("nebula"),
+            "Ondas · Dinâmico" | "Waves · Animated" | "Olas · Animado" => Some("waves"),
+            "Seda · Dinâmico" | "Silk · Animated" | "Seda · Animado" => Some("silk"),
+            "Partículas · Dinâmico" | "Particles · Animated" | "Partículas · Animado" => Some("particles"),
+            "Anéis · Dinâmico" | "Rings · Animated" | "Anillos · Animado" => Some("rings"),
+            "Fluido · Dinâmico" | "Fluid · Animated" | "Fluido · Animado" => Some("fluid"),
+            "Grade de Luz · Dinâmico" | "Grade de luz · Dinâmico" | "Light grid · Animated" | "Light Grid · Animated" | "Cuadrícula de luz · Animado" => Some("grid"),
+            "Bokeh · Dinâmico" | "Bokeh · Animated" | "Bokeh · Animado" => Some("bokeh"),
+            "Prisma · Dinâmico" | "Prism · Animated" | "Prisma · Animado" => Some("prism"),
+            _ => None,
+        })
+        .unwrap_or("");
+    let shader_index = crate::services::shaders::kind_index(shader_kind);
+    let shader_options = if value.bg_type == "shader" {
+        json!({
+            "kind": shader_kind,
+            "index": shader_index,
+            "colors": value.options.shader.colors,
+            "speed": value.options.shader.speed,
+            "scale": value.options.shader.scale,
+            "intensity": value.options.shader.intensity,
+            "softness": value.options.shader.softness,
+            "detail": value.options.shader.detail,
+            "direction": value.options.shader.direction,
+            "seed": value.options.shader.seed,
+            "vignette": value.options.shader.vignette,
+            "grain": value.options.shader.grain,
+        })
+    } else {
+        json!(null)
+    };
     json!({
         "id": value.id,
         "name": name,
@@ -29,6 +72,9 @@ fn theme(value: &crate::core::models::PresentationTheme, language: crate::core::
         "case": value.text_case,
         "image": value.bg_type == "image",
         "shader": value.bg_type == "shader",
+        "shader_kind": shader_kind,
+        "shader_index": shader_index,
+        "shader_options": shader_options,
         "bg_type": value.bg_type
     })
 }

@@ -15,6 +15,7 @@ pub struct EventEditorDraft {
     pub copy_current_playlist: bool,
     pub theme_id: String,
     pub idle_theme_id: String,
+    pub wallpaper: Option<crate::core::preferences::PhysicalBackground>,
 }
 
 impl Default for EventEditorDraft {
@@ -33,6 +34,7 @@ impl Default for EventEditorDraft {
             copy_current_playlist: false,
             theme_id: String::new(),
             idle_theme_id: String::new(),
+            wallpaper: None,
         }
     }
 }
@@ -83,6 +85,15 @@ impl ControlPanelState {
                 copy_current_playlist: false,
                 theme_id: service.theme_id.clone(),
                 idle_theme_id: service.idle_theme_id.clone(),
+                wallpaper: service.wallpaper.clone().or_else(|| {
+                    if !service.idle_theme_id.is_empty() && service.idle_theme_id != "obsidian_pro" {
+                        Some(crate::core::preferences::PhysicalBackground::Theme {
+                            id: service.idle_theme_id.clone(),
+                        })
+                    } else {
+                        None
+                    }
+                }),
             });
             self.show_event_editor_modal = true;
         }
@@ -138,7 +149,11 @@ impl ControlPanelState {
                 service.recurrence = recurrence;
                 service.event_date = event_date;
                 service.theme_id = draft.theme_id.clone();
-                service.idle_theme_id = draft.idle_theme_id.clone();
+                service.idle_theme_id = match &draft.wallpaper {
+                    Some(crate::core::preferences::PhysicalBackground::Theme { id }) => id.clone(),
+                    _ => draft.idle_theme_id.clone(),
+                };
+                service.wallpaper = draft.wallpaper.clone();
                 for d in &specific_dates {
                     if !service.sessions.iter().any(|s| &s.date == d)
                         && service.event_date.as_deref() != Some(d.as_str())
@@ -191,7 +206,11 @@ impl ControlPanelState {
                 id: new_id.clone(),
                 name: trimmed_name.clone(),
                 theme_id: draft.theme_id.clone(),
-                idle_theme_id: draft.idle_theme_id.clone(),
+                idle_theme_id: match &draft.wallpaper {
+                    Some(crate::core::preferences::PhysicalBackground::Theme { id }) => id.clone(),
+                    _ => draft.idle_theme_id.clone(),
+                },
+                wallpaper: draft.wallpaper.clone(),
                 playlist,
                 event_date,
                 recurrence,
@@ -952,19 +971,19 @@ pub mod tests {
         };
         state.themes.push(custom_theme);
 
-        // Criar evento com tema e wallpaper padrão
         state.event_editor_draft = Some(EventEditorDraft {
             id: None,
             name: "Culto de Jovens".into(),
             theme_id: "theme_youth".into(),
-            idle_theme_id: "obsidian_pro".into(),
+            wallpaper: Some(crate::core::preferences::PhysicalBackground::Color { rgb: [10, 20, 30] }),
             ..Default::default()
         });
         state.save_event_from_draft();
 
         assert_eq!(state.settings.service().name, "Culto de Jovens");
         assert_eq!(state.settings.service().theme_id, "theme_youth");
-        assert_eq!(state.settings.service().idle_theme_id, "obsidian_pro");
+        assert_eq!(state.settings.service().wallpaper, Some(crate::core::preferences::PhysicalBackground::Color { rgb: [10, 20, 30] }));
+        assert_eq!(state.settings.effective_wallpaper("HDMI-1"), &crate::core::preferences::PhysicalBackground::Color { rgb: [10, 20, 30] });
         assert_eq!(state.live_theme_id, "theme_youth");
     }
 }

@@ -66,8 +66,8 @@ impl PresentationView {
         } = content;
         let viewport_id = viewport_id(target_monitor.map(|m| m.name.as_str()).unwrap_or("default"));
         let monitor_bg = target_monitor
-            .map(|m| settings.wallpaper_for_monitor(&m.name))
-            .unwrap_or(&settings.physical_background);
+            .map(|m| settings.effective_wallpaper(&m.name))
+            .unwrap_or_else(|| settings.effective_wallpaper(""));
         let transparent_wallpaper = matches!(
             monitor_bg,
             crate::core::preferences::PhysicalBackground::Transparent

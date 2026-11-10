@@ -190,8 +190,7 @@ function renderState(state) {
             ),
           "theme-card" + (theme.id === state.preview?.theme?.id ? " active" : ""),
         );
-        const swatch = node("span", t("native_font_sample") + "\nAa Bb Cc Çç", "theme-swatch");
-        swatch.dataset.i18n = "native_font_sample";
+        const swatch = node("span", "Aa", "theme-swatch");
         applyTheme(swatch, theme);
         control.append(swatch, node("span", theme.name));
         control.dataset.id = theme.id;

@@ -14,7 +14,7 @@ mod connections;
 pub mod floating_preview;
 mod interface;
 pub mod outputs;
-mod physical_background;
+pub mod physical_background;
 mod profiles;
 mod plugins;
 mod plugin_details;

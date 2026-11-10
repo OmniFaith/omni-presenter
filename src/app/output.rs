@@ -101,13 +101,17 @@ impl PresentationApp {
     pub(super) fn draw_presentation_viewport(&mut self, ctx: &egui::Context) {
         let settings = self.control_state.settings.clone();
         let live_theme = crate::services::media::live_theme(&self.control_state, &self.slide_deck);
-        let transparent = matches!(
-            settings.physical_background,
-            crate::core::preferences::PhysicalBackground::Transparent
-        ) && settings
-            .monitor_backgrounds
-            .values()
-            .all(|bg| matches!(bg, crate::core::preferences::PhysicalBackground::Transparent));
+        let transparent = if let Some(service_bg) = &settings.service().wallpaper {
+            matches!(service_bg, crate::core::preferences::PhysicalBackground::Transparent)
+        } else {
+            matches!(
+                settings.physical_background,
+                crate::core::preferences::PhysicalBackground::Transparent
+            ) && settings
+                .monitor_backgrounds
+                .values()
+                .all(|bg| matches!(bg, crate::core::preferences::PhysicalBackground::Transparent))
+        };
         let active = self.is_presentation_open
             && settings.physical_output_enabled
             && (!transparent
@@ -278,29 +282,82 @@ impl PresentationApp {
         let Some((message, since)) = self.control_state.toast.clone() else {
             return;
         };
-        if since.elapsed().as_secs_f32() >= 3.0 {
+        let elapsed = since.elapsed().as_secs_f32();
+        if elapsed >= 3.5 {
             self.control_state.toast = None;
             return;
         }
+
+        let fade_in = (elapsed / 0.18).clamp(0.0, 1.0);
+        let fade_out = ((3.5 - elapsed) / 0.35).clamp(0.0, 1.0);
+        let alpha = fade_in * fade_out;
+        let y_anim = -28.0 + (1.0 - fade_in) * 10.0;
+
+        let max_w = (ctx.content_rect().width() - 48.0).clamp(240.0, 560.0);
+        let mut dismiss = false;
+
         egui::Area::new(egui::Id::unique("app_toast"))
             .order(egui::Order::Tooltip)
-            .anchor(egui::Align2::CENTER_BOTTOM, [0.0, -24.0])
+            .anchor(egui::Align2::CENTER_BOTTOM, [0.0, y_anim])
             .show(ctx, |ui| {
-                egui::Frame::new()
-                    .fill(theme.bg_card)
-                    .stroke(egui::Stroke::new(1.0, theme.border_default))
-                    .corner_radius(10.0)
-                    .inner_margin(14)
+                ui.set_max_width(max_w);
+                let bg = theme.bg_card.linear_multiply(alpha);
+                let border = theme.border_default.linear_multiply(alpha);
+                let text_col = theme.text_primary.linear_multiply(alpha);
+                let accent_col = theme.accent.linear_multiply(alpha);
+                let muted_col = theme.text_muted.linear_multiply(alpha);
+
+                let frame_resp = egui::Frame::new()
+                    .fill(bg)
+                    .stroke(egui::Stroke::new(1.0, border))
+                    .corner_radius(8.0)
+                    .inner_margin(egui::Margin::symmetric(14, 9))
                     .shadow(egui::epaint::Shadow {
                         offset: [0, 4],
-                        blur: 20,
+                        blur: 16,
                         spread: 0,
-                        color: egui::Color32::from_black_alpha(24),
+                        color: egui::Color32::from_black_alpha((35.0 * alpha) as u8),
                     })
                     .show(ui, |ui| {
-                            ui.label(egui::RichText::new(self.control_state.settings.language.message(&message)).color(theme.text_primary));
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing = egui::vec2(8.0, 0.0);
+                            ui.label(
+                                egui::RichText::new(egui_phosphor::regular::INFO)
+                                    .size(15.0)
+                                    .color(accent_col),
+                            );
+                            let text = self.control_state.settings.language.message(&message);
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(text)
+                                        .size(12.0)
+                                        .color(text_col),
+                                )
+                                .wrap_mode(egui::TextWrapMode::Wrap),
+                            );
+                            let close_resp = ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(egui_phosphor::regular::X)
+                                        .size(12.0)
+                                        .color(muted_col),
+                                )
+                                .sense(egui::Sense::click()),
+                            );
+                            if close_resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                                dismiss = true;
+                            }
+                        });
                     });
+
+                if frame_resp.response.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                    dismiss = true;
+                }
             });
-        ctx.request_repaint_after(std::time::Duration::from_millis(100));
+
+        if dismiss {
+            self.control_state.toast = None;
+        }
+
+        ctx.request_repaint_after(std::time::Duration::from_millis(30));
     }
 }

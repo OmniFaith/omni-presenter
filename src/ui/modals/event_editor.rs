@@ -8,18 +8,22 @@ use egui_phosphor::regular::*;
 pub fn render_event_editor_modal(
     ctx: &egui::Context,
     state: &mut ControlPanelState,
-    _db: Option<&AppDb>,
+    db: Option<&AppDb>,
 ) {
     if !state.show_event_editor_modal {
         return;
     }
+
+    let theme = state.theme.clone();
+    let language = state.settings.language;
+    let themes = &state.themes;
+    let recent_wallpapers = &mut state.settings.recent_wallpapers;
 
     let Some(ref mut draft) = state.event_editor_draft else {
         state.show_event_editor_modal = false;
         return;
     };
 
-    let theme = state.theme.clone();
     let is_editing = draft.id.is_some();
     let title_key = if is_editing {
         "workspace-edit-event"
@@ -35,10 +39,14 @@ pub fn render_event_editor_modal(
         "event_editor_modal",
         title_key,
         "workspace-event-settings-desc",
-        510.0,
+        540.0,
         &theme,
         |ui| {
-            ui.spacing_mut().item_spacing = egui::vec2(8.0, 10.0);
+            egui::ScrollArea::vertical()
+                .max_height((ctx.content_rect().height() - 200.0).clamp(240.0, 560.0))
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                    ui.spacing_mut().item_spacing = egui::vec2(8.0, 10.0);
 
             // Nome do Evento
             ui.vertical(|ui| {
@@ -363,9 +371,6 @@ pub fn render_event_editor_modal(
             ui.add_space(4.0);
 
             // Visualização e Seleção de Temas
-            let language = state.settings.language;
-            let themes = &state.themes;
-
             render_visual_theme_selector(
                 ui,
                 "event_default_theme_strip",
@@ -376,21 +381,89 @@ pub fn render_event_editor_modal(
                 &theme,
             );
 
-            ui.add_space(6.0);
+            ui.add_space(8.0);
 
-            render_visual_theme_selector(
-                ui,
-                "event_default_wallpaper_strip",
-                "workspace-event-default-wallpaper",
-                &mut draft.idle_theme_id,
-                themes,
-                language,
-                &theme,
-            );
+            // Papel de parede padrão (papel de parede fixo do evento)
+            let is_custom_bg = draft.wallpaper.is_some();
+            let current_desc = match &draft.wallpaper {
+                None => crate::ui::i18n::text(ui, "workspace-none-keep-current"),
+                Some(bg) => crate::ui::i18n::text(ui, bg.label()),
+            };
+
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new(crate::ui::i18n::text(ui, "workspace-event-default-wallpaper"))
+                        .size(11.5)
+                        .strong()
+                        .color(theme.text_secondary),
+                );
+                ui.add_space(2.0);
+                ui.label(
+                    RichText::new(format!("— {current_desc}"))
+                        .size(11.0)
+                        .color(theme.text_muted),
+                );
+            });
+
+            ui.add_space(3.0);
+
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing = egui::vec2(6.0, 4.0);
+                let none_btn = crate::ui::modals::settings::physical_background::styled_pill_tab(
+                    ui,
+                    crate::ui::i18n::text(ui, "workspace-none-keep-current"),
+                    !is_custom_bg,
+                    false,
+                    &theme,
+                );
+                if none_btn.clicked() && is_custom_bg {
+                    draft.wallpaper = None;
+                    draft.idle_theme_id.clear();
+                }
+
+                let custom_btn = crate::ui::modals::settings::physical_background::styled_pill_tab(
+                    ui,
+                    crate::ui::i18n::text(ui, "settings-background-custom-wallpaper"),
+                    is_custom_bg,
+                    false,
+                    &theme,
+                );
+                if custom_btn.clicked() && !is_custom_bg {
+                    draft.wallpaper = Some(crate::core::preferences::PhysicalBackground::Color {
+                        rgb: [24, 26, 31],
+                    });
+                }
+            });
+
+            if let Some(ref mut wp) = draft.wallpaper {
+                ui.add_space(6.0);
+                let designs = db.and_then(|d| d.load_designs().ok()).unwrap_or_default();
+                let default_theme = if !draft.theme_id.is_empty() {
+                    &draft.theme_id
+                } else {
+                    "obsidian_pro"
+                };
+                crate::ui::modals::settings::physical_background::render_wallpaper_body(
+                    ui,
+                    wp,
+                    &theme,
+                    default_theme,
+                    &designs,
+                    themes,
+                    recent_wallpapers,
+                    db,
+                    "event_editor",
+                );
+                if let crate::core::preferences::PhysicalBackground::Theme { id } = wp {
+                    draft.idle_theme_id = id.clone();
+                } else {
+                    draft.idle_theme_id.clear();
+                }
+            }
 
             // Se for novo evento, opção de copiar itens da lista atual
             if !is_editing {
-                ui.add_space(4.0);
+                ui.add_space(6.0);
                 ui.checkbox(
                     &mut draft.copy_current_playlist,
                     RichText::new(crate::ui::i18n::text(
@@ -401,6 +474,7 @@ pub fn render_event_editor_modal(
                     .color(theme.text_primary),
                 );
             }
+                });
 
             ui.add_space(8.0);
             ui.separator();

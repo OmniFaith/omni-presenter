@@ -153,15 +153,140 @@ export function showView(view, monitor = "preview") {
   );
   document.dispatchEvent(new Event("control-view"));
 }
-export function applyTheme(element, theme) {
-  if (!theme) return;
+let shaderGl = null;
+let shaderProg = null;
+const shaderLocs = {};
+let shaderCanvas = null;
+const themeThumbCache = new Map();
+
+async function initShaderRenderer() {
+  if (shaderGl && shaderProg) return true;
+  try {
+    shaderCanvas = document.createElement("canvas");
+    shaderCanvas.width = 160;
+    shaderCanvas.height = 90;
+    shaderGl = shaderCanvas.getContext("webgl2", {
+      alpha: false,
+      antialias: false,
+      preserveDrawingBuffer: true,
+    });
+    if (!shaderGl) return false;
+    const vertex =
+      "#version 300 es\nprecision highp float;out vec2 uv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));gl_Position=vec4(p*vec2(2,-2)+vec2(-1,1),0,1);uv=p;}";
+    const resp = await fetch("/shader.glsl");
+    if (!resp.ok) return false;
+    const fragment = await resp.text();
+    const compile = (type, src) => {
+      const s = shaderGl.createShader(type);
+      shaderGl.shaderSource(s, src);
+      shaderGl.compileShader(s);
+      return s;
+    };
+    const vs = compile(shaderGl.VERTEX_SHADER, vertex);
+    const fs = compile(shaderGl.FRAGMENT_SHADER, fragment);
+    shaderProg = shaderGl.createProgram();
+    shaderGl.attachShader(shaderProg, vs);
+    shaderGl.attachShader(shaderProg, fs);
+    shaderGl.linkProgram(shaderProg);
+    shaderGl.bindVertexArray(shaderGl.createVertexArray());
+    for (const name of [
+      "screen",
+      "motion",
+      "detail",
+      "color0",
+      "color1",
+      "color2",
+      "finish",
+    ]) {
+      shaderLocs[name] = shaderGl.getUniformLocation(shaderProg, name);
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function applyThemeBackground(element, theme) {
+  if (!element || !theme) return;
   if (theme.image) {
     element.style.background = `linear-gradient(#0003,#0003),url(${JSON.stringify("/api/control/background?id=" + encodeURIComponent(theme.id))}) center/cover`;
-  } else if (theme.shader && Array.isArray(theme.colors) && theme.colors.length >= 2) {
-    element.style.background = `linear-gradient(135deg, ${theme.colors.join(", ")})`;
+    return;
+  }
+  if (theme.shader && theme.shader_options) {
+    const cacheKey = `${theme.id}_${theme.shader_index}_${JSON.stringify(theme.shader_options)}`;
+    if (themeThumbCache.has(cacheKey)) {
+      element.style.background = `linear-gradient(#0002,#0002),url("${themeThumbCache.get(cacheKey)}") center/cover`;
+      return;
+    }
+    const ready = await initShaderRenderer();
+    if (ready && shaderGl && shaderProg) {
+      try {
+        const p = theme.shader_options;
+        const gl = shaderGl;
+        gl.viewport(0, 0, shaderCanvas.width, shaderCanvas.height);
+        gl.useProgram(shaderProg);
+        const time = 2.0;
+        gl.uniform4f(
+          shaderLocs.screen,
+          shaderCanvas.width,
+          shaderCanvas.height,
+          time,
+          theme.shader_index || 0,
+        );
+        gl.uniform4f(
+          shaderLocs.motion,
+          p.speed ?? 0.2,
+          p.scale ?? 1,
+          p.intensity ?? 1,
+          p.softness ?? 0.5,
+        );
+        gl.uniform4f(
+          shaderLocs.detail,
+          p.detail ?? 4,
+          ((p.direction ?? 0) * Math.PI) / 180,
+          p.seed ?? 0,
+          p.vignette ?? 0.4,
+        );
+        const colors =
+          Array.isArray(p.colors) && p.colors.length >= 3
+            ? p.colors
+            : [
+                [6, 12, 28],
+                [24, 160, 130],
+                [90, 60, 180],
+              ];
+        colors.forEach((c, i) =>
+          gl.uniform4f(
+            shaderLocs["color" + i],
+            c[0] / 255,
+            c[1] / 255,
+            c[2] / 255,
+            1,
+          ),
+        );
+        gl.uniform4f(shaderLocs.finish, p.grain ?? 0.01, 0, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        const dataUrl = shaderCanvas.toDataURL("image/jpeg", 0.85);
+        themeThumbCache.set(cacheKey, dataUrl);
+        element.style.background = `linear-gradient(#0002,#0002),url("${dataUrl}") center/cover`;
+        return;
+      } catch (_) {}
+    }
+    if (Array.isArray(theme.colors) && theme.colors.length >= 2) {
+      element.style.background = `linear-gradient(135deg, ${theme.colors.join(", ")})`;
+      return;
+    }
+  }
+  if (theme.bg_type === "color" || theme.bg_type === "solid") {
+    element.style.background = theme.top;
   } else {
     element.style.background = `linear-gradient(135deg,${theme.top},${theme.bottom})`;
   }
+}
+
+export function applyTheme(element, theme) {
+  if (!theme) return;
+  applyThemeBackground(element, theme);
   element.style.color = theme.color;
   element.style.fontFamily =
     JSON.stringify(theme.font) + ",system-ui,sans-serif";

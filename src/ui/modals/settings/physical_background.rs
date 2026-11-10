@@ -200,124 +200,18 @@ pub(super) fn render(
         }
 
         ui.add_space(5.0);
-        let preview_width = (ui.available_width() * 0.32).clamp(140.0, 210.0);
-        ui.horizontal_top(|ui| {
-            ui.spacing_mut().item_spacing.x = 16.0;
-            ui.allocate_ui_with_layout(
-                egui::vec2(preview_width, 0.0),
-                egui::Layout::top_down(egui::Align::Min),
-                |ui| {
-                    let (rect, _) = ui.allocate_exact_size(
-                        egui::vec2(preview_width, preview_width * 9.0 / 16.0),
-                        egui::Sense::hover(),
-                    );
-                    ui.painter()
-                        .rect_filled(rect.expand(3.0), 9.0, theme.bg_app);
-                    let painter = ui.painter().with_clip_rect(rect);
-                    let tile = 12.0;
-                    for y in 0..(rect.height() / tile).ceil() as i32 {
-                        for x in 0..(rect.width() / tile).ceil() as i32 {
-                            painter.rect_filled(
-                                egui::Rect::from_min_size(
-                                    rect.min + egui::vec2(x as f32 * tile, y as f32 * tile),
-                                    egui::Vec2::splat(tile),
-                                ),
-                                0.0,
-                                if (x + y) % 2 == 0 {
-                                    theme.bg_pill
-                                } else {
-                                    theme.bg_card
-                                },
-                            );
-                        }
-                    }
-                    let design = match &current_bg {
-                        PhysicalBackground::Design { id } => {
-                            designs.iter().find(|design| design.id == *id)
-                        }
-                        _ => None,
-                    };
-                    crate::ui::presentation::paint_wallpaper(
-                        &painter,
-                        rect,
-                        &current_bg,
-                        design,
-                        themes,
-                    );
-                    ui.painter().rect_stroke(
-                        rect.expand(3.0),
-                        9.0,
-                        Stroke::new(1.0, theme.border_default),
-                        egui::StrokeKind::Inside,
-                    );
-                },
-            );
-            ui.vertical(|ui| {
-                ui.set_width(ui.available_width());
-                let idle_theme_id = draft.service().idle_theme_id.clone();
-                kind_picker(ui, &mut current_bg, theme, &idle_theme_id, "physical_wallpaper_types");
-                ui.add_space(3.0);
-                match &mut current_bg {
-                    PhysicalBackground::Transparent => {
-                        detail(
-                            ui,
-                            crate::ui::i18n::text(ui, "settings-keep-the-desktop-visible-without-covering-it-with-a-background"),
-                            theme,
-                        );
-                    }
-                    PhysicalBackground::Color { rgb } => {
-                        ui.horizontal(|ui| {
-                            ui.color_edit_button_srgb(rgb);
-                            detail(
-                                ui,
-                                &format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2]),
-                                theme,
-                            );
-                        });
-                    }
-                    background @ (PhysicalBackground::Image { .. }
-                    | PhysicalBackground::Video { .. }) => file_picker(ui, background, theme, &mut draft.recent_wallpapers, db, "physical"),
-                    PhysicalBackground::Design { id } => {
-                        let default_label = crate::ui::i18n::text(ui, "settings-choose-a-design");
-                        let selected = designs
-                            .iter()
-                            .find(|design| design.id == *id)
-                            .map(|design| design.name.as_str())
-                            .unwrap_or(default_label);
-                        egui::ComboBox::from_id_salt("physical_wallpaper_design")
-                            .width(ui.available_width())
-                            .selected_text(RichText::new(selected).size(12.0))
-                            .show_ui(ui, |ui| {
-                                for design in &designs {
-                                    ui.selectable_value(id, design.id.clone(), &design.name);
-                                }
-                            });
-                        if designs.is_empty() {
-                            detail(ui, crate::ui::i18n::text(ui, "settings-your-saved-designs-appear-here"), theme);
-                        }
-                    }
-                    PhysicalBackground::Theme { id } => {
-                        let default_label = crate::ui::i18n::text(ui, "settings-choose-a-theme");
-                        let lang = crate::ui::i18n::language(ui.ctx());
-                        let selected = themes
-                            .iter()
-                            .find(|item| item.id == *id)
-                            .map(|item| item.display_name(lang))
-                            .unwrap_or_else(|| default_label.to_string());
-                        egui::ComboBox::from_id_salt("physical_wallpaper_theme")
-                            .width(ui.available_width())
-                            .selected_text(RichText::new(&selected).size(12.0))
-                            .show_ui(ui, |ui| {
-                                for item in themes {
-                                    let label = item.display_name(lang);
-                                    ui.selectable_value(id, item.id.clone(), label);
-                                }
-                            });
-                        detail(ui, crate::ui::i18n::text(ui, "settings-use-only-this-theme-s-background-while-on-standby"), theme);
-                    }
-                }
-            });
-        });
+        let idle_theme_id = draft.service().idle_theme_id.clone();
+        render_wallpaper_body(
+            ui,
+            &mut current_bg,
+            theme,
+            &idle_theme_id,
+            &designs,
+            themes,
+            &mut draft.recent_wallpapers,
+            db,
+            "physical",
+        );
 
         if current_bg != prev_bg {
             if is_all {
@@ -405,7 +299,7 @@ fn action_pill_btn(ui: &mut egui::Ui, text: &str, tooltip: Option<&str>, theme: 
     resp.clicked()
 }
 
-fn styled_pill_tab(
+pub(crate) fn styled_pill_tab(
     ui: &mut egui::Ui,
     text: &str,
     selected: bool,
@@ -417,6 +311,140 @@ fn styled_pill_tab(
     let bg = if selected { theme.accent_soft } else { theme.bg_pill };
     let stroke = if selected { Stroke::new(1.0, theme.accent) } else { Stroke::new(1.0, theme.border_default) };
     ui.add(egui::Button::new(RichText::new(label).size(11.5).color(color)).fill(bg).stroke(stroke).corner_radius(6.0).min_size(egui::vec2(0.0, 26.0)))
+}
+
+pub(crate) fn render_wallpaper_body(
+    ui: &mut egui::Ui,
+    current_bg: &mut PhysicalBackground,
+    theme: &AppTheme,
+    default_theme_id: &str,
+    designs: &[crate::core::design::DesignDocument],
+    themes: &[PresentationTheme],
+    recent_wallpapers: &mut Vec<String>,
+    db: Option<&AppDb>,
+    id_prefix: &str,
+) {
+    let preview_width = (ui.available_width() * 0.32).clamp(140.0, 210.0);
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = 16.0;
+        ui.allocate_ui_with_layout(
+            egui::vec2(preview_width, 0.0),
+            egui::Layout::top_down(egui::Align::Min),
+            |ui| {
+                let (rect, _) = ui.allocate_exact_size(
+                    egui::vec2(preview_width, preview_width * 9.0 / 16.0),
+                    egui::Sense::hover(),
+                );
+                ui.painter()
+                    .rect_filled(rect.expand(3.0), 9.0, theme.bg_app);
+                let painter = ui.painter().with_clip_rect(rect);
+                let tile = 12.0;
+                for y in 0..(rect.height() / tile).ceil() as i32 {
+                    for x in 0..(rect.width() / tile).ceil() as i32 {
+                        painter.rect_filled(
+                            egui::Rect::from_min_size(
+                                rect.min + egui::vec2(x as f32 * tile, y as f32 * tile),
+                                egui::Vec2::splat(tile),
+                            ),
+                            0.0,
+                            if (x + y) % 2 == 0 {
+                                theme.bg_pill
+                            } else {
+                                theme.bg_card
+                            },
+                        );
+                    }
+                }
+                let design = match current_bg {
+                    PhysicalBackground::Design { id } => {
+                        designs.iter().find(|design| design.id == *id)
+                    }
+                    _ => None,
+                };
+                crate::ui::presentation::paint_wallpaper(
+                    &painter,
+                    rect,
+                    current_bg,
+                    design,
+                    themes,
+                );
+                ui.painter().rect_stroke(
+                    rect.expand(3.0),
+                    9.0,
+                    Stroke::new(1.0, theme.border_default),
+                    egui::StrokeKind::Inside,
+                );
+            },
+        );
+
+        ui.vertical(|ui| {
+            ui.set_width(ui.available_width());
+            let grid_id = format!("wp_types_{id_prefix}");
+            kind_picker(ui, current_bg, theme, default_theme_id, &grid_id);
+            ui.add_space(3.0);
+            match current_bg {
+                PhysicalBackground::Transparent => {
+                    detail(
+                        ui,
+                        crate::ui::i18n::text(ui, "settings-keep-the-desktop-visible-without-covering-it-with-a-background"),
+                        theme,
+                    );
+                }
+                PhysicalBackground::Color { rgb } => {
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgb(rgb);
+                        detail(
+                            ui,
+                            &format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2]),
+                            theme,
+                        );
+                    });
+                }
+                background @ (PhysicalBackground::Image { .. }
+                | PhysicalBackground::Video { .. }) => {
+                    file_picker(ui, background, theme, recent_wallpapers, db, id_prefix);
+                }
+                PhysicalBackground::Design { id } => {
+                    let default_label = crate::ui::i18n::text(ui, "settings-choose-a-design");
+                    let selected = designs
+                        .iter()
+                        .find(|design| design.id == *id)
+                        .map(|design| design.name.as_str())
+                        .unwrap_or(default_label);
+                    egui::ComboBox::from_id_salt(format!("wp_design_{id_prefix}"))
+                        .width(ui.available_width())
+                        .selected_text(RichText::new(selected).size(12.0))
+                        .show_ui(ui, |ui| {
+                            for design in designs {
+                                ui.selectable_value(id, design.id.clone(), &design.name);
+                            }
+                        });
+                    if designs.is_empty() {
+                        detail(ui, crate::ui::i18n::text(ui, "settings-your-saved-designs-appear-here"), theme);
+                    }
+                }
+                PhysicalBackground::Theme { id } => {
+                    let default_label = crate::ui::i18n::text(ui, "settings-choose-a-theme");
+                    let lang = crate::ui::i18n::language(ui.ctx());
+                    let selected = themes
+                        .iter()
+                        .find(|item| item.id == *id)
+                        .map(|item| item.display_name(lang))
+                        .unwrap_or_else(|| default_label.to_string());
+                    egui::ComboBox::from_id_salt(format!("wp_theme_{id_prefix}"))
+                        .width(ui.available_width())
+                        .selected_text(RichText::new(&selected).size(12.0))
+                        .show_ui(ui, |ui| {
+                            for item in themes {
+                                let label = item.display_name(lang);
+                                ui.selectable_value(id, item.id.clone(), label);
+                            }
+                        });
+                    detail(ui, crate::ui::i18n::text(ui, "settings-use-only-this-theme-s-background-while-on-standby"), theme);
+                }
+            }
+        });
+    });
 }
 
 fn detail(ui: &mut egui::Ui, text: &str, theme: &AppTheme) {
@@ -752,127 +780,17 @@ pub(super) fn render_virtual_screen_appearance(
     ui.add_space(6.0);
 
     if let Some(ref mut current_bg) = screen.custom_background {
-        let preview_width = (ui.available_width() * 0.32).clamp(140.0, 210.0);
-        ui.horizontal_top(|ui| {
-            ui.spacing_mut().item_spacing.x = 16.0;
-            ui.allocate_ui_with_layout(
-                egui::vec2(preview_width, 0.0),
-                egui::Layout::top_down(egui::Align::Min),
-                |ui| {
-                    let (rect, _) = ui.allocate_exact_size(
-                        egui::vec2(preview_width, preview_width * 9.0 / 16.0),
-                        egui::Sense::hover(),
-                    );
-                    ui.painter()
-                        .rect_filled(rect.expand(3.0), 9.0, theme.bg_app);
-                    let painter = ui.painter().with_clip_rect(rect);
-                    let tile = 12.0;
-                    for y in 0..(rect.height() / tile).ceil() as i32 {
-                        for x in 0..(rect.width() / tile).ceil() as i32 {
-                            painter.rect_filled(
-                                egui::Rect::from_min_size(
-                                    rect.min + egui::vec2(x as f32 * tile, y as f32 * tile),
-                                    egui::Vec2::splat(tile),
-                                ),
-                                0.0,
-                                if (x + y) % 2 == 0 {
-                                    theme.bg_pill
-                                } else {
-                                    theme.bg_card
-                                },
-                            );
-                        }
-                    }
-                    let design = match current_bg {
-                        PhysicalBackground::Design { id } => {
-                            designs.iter().find(|design| design.id == *id)
-                        }
-                        _ => None,
-                    };
-                    crate::ui::presentation::paint_wallpaper(
-                        &painter,
-                        rect,
-                        current_bg,
-                        design,
-                        themes,
-                    );
-                    ui.painter().rect_stroke(
-                        rect.expand(3.0),
-                        9.0,
-                        Stroke::new(1.0, theme.border_default),
-                        egui::StrokeKind::Inside,
-                    );
-                },
-            );
-
-            ui.vertical(|ui| {
-                ui.set_width(ui.available_width());
-                let grid_id = format!("virtual_wallpaper_types_{}", screen.id);
-                kind_picker(ui, current_bg, theme, idle_theme_id, &grid_id);
-                ui.add_space(3.0);
-                match current_bg {
-                    PhysicalBackground::Transparent => {
-                        detail(
-                            ui,
-                            crate::ui::i18n::text(ui, "settings-keep-the-desktop-visible-without-covering-it-with-a-background"),
-                            theme,
-                        );
-                    }
-                    PhysicalBackground::Color { rgb } => {
-                        ui.horizontal(|ui| {
-                            ui.color_edit_button_srgb(rgb);
-                            detail(
-                                ui,
-                                &format!("#{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2]),
-                                theme,
-                            );
-                        });
-                    }
-                    background @ (PhysicalBackground::Image { .. }
-                    | PhysicalBackground::Video { .. }) => {
-                        file_picker(ui, background, theme, recent_wallpapers, db, &screen.id);
-                    }
-                    PhysicalBackground::Design { id } => {
-                        let default_label = crate::ui::i18n::text(ui, "settings-choose-a-design");
-                        let selected = designs
-                            .iter()
-                            .find(|design| design.id == *id)
-                            .map(|design| design.name.as_str())
-                            .unwrap_or(default_label);
-                        egui::ComboBox::from_id_salt(format!("virtual_wp_design_{}", screen.id))
-                            .width(ui.available_width())
-                            .selected_text(RichText::new(selected).size(12.0))
-                            .show_ui(ui, |ui| {
-                                for design in &designs {
-                                    ui.selectable_value(id, design.id.clone(), &design.name);
-                                }
-                            });
-                        if designs.is_empty() {
-                            detail(ui, crate::ui::i18n::text(ui, "settings-your-saved-designs-appear-here"), theme);
-                        }
-                    }
-                    PhysicalBackground::Theme { id } => {
-                        let default_label = crate::ui::i18n::text(ui, "settings-choose-a-theme");
-                        let lang = crate::ui::i18n::language(ui.ctx());
-                        let selected = themes
-                            .iter()
-                            .find(|item| item.id == *id)
-                            .map(|item| item.display_name(lang))
-                            .unwrap_or_else(|| default_label.to_string());
-                        egui::ComboBox::from_id_salt(format!("virtual_wp_theme_{}", screen.id))
-                            .width(ui.available_width())
-                            .selected_text(RichText::new(&selected).size(12.0))
-                            .show_ui(ui, |ui| {
-                                for item in themes {
-                                    let label = item.display_name(lang);
-                                    ui.selectable_value(id, item.id.clone(), label);
-                                }
-                            });
-                        detail(ui, crate::ui::i18n::text(ui, "settings-use-only-this-theme-s-background-while-on-standby"), theme);
-                    }
-                }
-            });
-        });
+        render_wallpaper_body(
+            ui,
+            current_bg,
+            theme,
+            idle_theme_id,
+            &designs,
+            themes,
+            recent_wallpapers,
+            db,
+            &screen.id,
+        );
     } else {
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 10.0;

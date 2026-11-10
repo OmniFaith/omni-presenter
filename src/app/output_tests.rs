@@ -312,3 +312,36 @@ fn test_song_title_and_artist_projected_only_on_first_slide() {
     assert!(!deck.is_live_song());
 }
 
+#[test]
+fn test_draw_toast_renders_and_dismisses() {
+    let db = AppDb::open_in_memory().unwrap();
+    let mut app = PresentationApp::with_db(db);
+    let ctx = egui::Context::default();
+    let theme = crate::ui::AppTheme::default();
+
+    // No toast initially
+    app.draw_toast(&ctx, &theme);
+    assert!(app.control_state.toast.is_none());
+
+    // Trigger toast
+    app.control_state.notify("Test Notification");
+    assert!(app.control_state.toast.is_some());
+
+    // Draw toast with active message
+    let mut out1 = ctx.run_ui(Default::default(), |ui| {
+        app.draw_toast(ui.ctx(), &theme);
+    });
+    out1.textures_delta.clear();
+    assert!(app.control_state.toast.is_some());
+
+    // Expire toast
+    if let Some((msg, _)) = app.control_state.toast.take() {
+        app.control_state.toast = Some((msg, std::time::Instant::now() - std::time::Duration::from_secs(4)));
+    }
+    let mut out2 = ctx.run_ui(Default::default(), |ui| {
+        app.draw_toast(ui.ctx(), &theme);
+    });
+    out2.textures_delta.clear();
+    assert!(app.control_state.toast.is_none());
+}
+

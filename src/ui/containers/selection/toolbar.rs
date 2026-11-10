@@ -46,7 +46,7 @@ pub(super) fn toolbar(
         } else {
             language.text("library-web-search")
         };
-        if toolbar_icon_button(ui, LINK, link_label, &theme).clicked() {
+        if toolbar_icon_button(ui, GLOBE, link_label, &theme).clicked() {
             if is_media {
                 state.web_media_modal.open = true;
             } else {
