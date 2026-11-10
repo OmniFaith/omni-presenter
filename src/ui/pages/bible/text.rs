@@ -10,7 +10,7 @@ use super::helpers::current_book;
 use super::import::open_bible_settings;
 use super::selection::{
     add_to_playlist, is_in_selection, pin_passage, project, select_reference, selected_passage,
-    selection_toolbar, sync_preview,
+    selection_passages, selection_toolbar, sync_preview,
 };
 
 fn verse_row(
@@ -172,6 +172,15 @@ pub fn render_bible_text(
     deck: &mut SlideDeck,
     presenting: &mut bool,
 ) {
+    let enter_pressed = !ui.ctx().egui_wants_keyboard_input()
+        && !state.bible.show_search
+        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
+
+    if enter_pressed && !selection_passages(state).is_empty() {
+        project(state, deck, presenting);
+        ui.ctx().request_repaint();
+    }
+
     let theme = state.theme.clone();
     sync_preview(state, deck, false);
     render_header_bar(ui, ContainerKind::Lyrics, "workspace-text-preview", &theme);

@@ -431,3 +431,36 @@ fn test_floating_bible_search_overlay_renders_from_any_page() {
     assert!(!output.shapes.is_empty(), "floating search overlay rendered shapes");
     assert_eq!(Command::BibleSearch.label_key(), "command-bible-search");
 }
+
+#[test]
+fn test_pressing_enter_projects_selected_verse() {
+    let mut state = ControlPanelState::default();
+    let mut deck = SlideDeck::default();
+    state.bible_verse = 1;
+    state.bible.verse_end = 1;
+    let mut presenting = false;
+
+    let ctx = egui::Context::default();
+    let mut raw_input = egui::RawInput {
+        screen_rect: Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            egui::vec2(1280.0, 1024.0),
+        )),
+        ..Default::default()
+    };
+    raw_input.events.push(egui::Event::Key {
+        key: egui::Key::Enter,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    });
+
+    let mut output = ctx.run_ui(raw_input, |ui| {
+        super::text::render_bible_text(ui, &mut state, &mut deck, &mut presenting);
+    });
+    output.textures_delta.clear();
+
+    assert!(presenting, "Pressing enter must project the selected verse");
+    assert!(!deck.projected_text().is_empty(), "Projected text should not be empty");
+}
