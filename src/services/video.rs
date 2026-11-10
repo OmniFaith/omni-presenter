@@ -315,14 +315,6 @@ fn ensure_entry<'a>(
         entries.remove(&key);
     }
     if !entries.contains_key(&key) {
-        entries.retain(|k, entry| {
-            if k != &key && (path.is_empty() || k.starts_with(path)) {
-                entry.shared.stop.store(true, Ordering::Relaxed);
-                false
-            } else {
-                true
-            }
-        });
         if entries.len() >= 4
             && let Some(oldest) = entries
                 .iter()
@@ -591,7 +583,31 @@ mod tests {
             "The first frame must be ready before fullscreen starts"
         );
         shared.stop.store(true, Ordering::Relaxed);
-        let _ = std::fs::remove_file(path);
         assert!(changed, "{}", shared.status.lock().unwrap());
+
+        // Test seeking does not destroy concurrent/dock entries and prepares target offset
+        let mut seek_theme = theme.clone();
+        seek_theme.options.video.start = 0.5;
+        seek(&ctx, &theme.bg_image_path, 0.5);
+        assert!(!prepare(&ctx, &seek_theme));
+        let seek_shared = cache(&ctx)
+            .lock()
+            .unwrap()
+            .get(&key(&seek_theme.bg_image_path, &seek_theme.options.video))
+            .unwrap()
+            .shared
+            .clone();
+        let seek_deadline = Instant::now() + Duration::from_secs(6);
+        let mut seek_ready = false;
+        while Instant::now() < seek_deadline {
+            if prepare(&ctx, &seek_theme) {
+                seek_ready = true;
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(40));
+        }
+        seek_shared.stop.store(true, Ordering::Relaxed);
+        let _ = std::fs::remove_file(path);
+        assert!(seek_ready, "Seeked video frame must be produced without getting stuck");
     }
 }

@@ -480,9 +480,13 @@ pub fn render_presentation_dock(
                     for (index, slide_content) in slides.iter().enumerate() {
                         let is_active = index == current_idx;
                         let slide_media_opt = slide_deck.live_slide_media.get(index).and_then(|m| m.as_ref());
-                        let card_theme = if let Some(media) = slide_media_opt {
+                        let card_theme = if is_active {
+                            let mut theme = live_theme.clone();
+                            theme.options.video.paused = !is_active || !*is_presentation_open || theme.options.video.paused;
+                            theme
+                        } else if let Some(media) = slide_media_opt {
                             let mut theme = crate::services::media::output_theme(state.live_theme(), Some(media));
-                            theme.options.video.paused = !is_active || !*is_presentation_open;
+                            theme.options.video.paused = true;
                             theme
                         } else {
                             live_theme.clone()
