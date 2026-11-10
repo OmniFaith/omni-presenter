@@ -15,6 +15,7 @@ pub struct ActivePlayerMedia {
     pub video_start_time: std::time::Instant,
     pub video_paused_at: Option<f32>,
     pub video_fit: String,
+    pub video_seek_offset: f32,
 }
 
 impl ActivePlayerMedia {
@@ -49,6 +50,7 @@ impl ActivePlayerMedia {
         } else {
             position.max(0.0)
         };
+        self.video_seek_offset = position;
         if self.is_playing {
             if let Ok(duration) = std::time::Duration::try_from_secs_f32(position) {
                 self.video_start_time = std::time::Instant::now()

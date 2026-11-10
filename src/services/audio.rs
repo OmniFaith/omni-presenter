@@ -58,6 +58,45 @@ pub fn silence_audio_backend_noise() {
 #[cfg(not(target_os = "linux"))]
 pub fn silence_audio_backend_noise() {}
 
+struct PcmStream {
+    reader: BufReader<std::process::ChildStdout>,
+    child: std::process::Child,
+}
+
+impl Drop for PcmStream {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+impl Iterator for PcmStream {
+    type Item = f32;
+    fn next(&mut self) -> Option<f32> {
+        let mut b = [0u8; 4];
+        if std::io::Read::read_exact(&mut self.reader, &mut b).is_ok() {
+            Some(f32::from_le_bytes(b))
+        } else {
+            None
+        }
+    }
+}
+
+impl Source for PcmStream {
+    fn current_span_len(&self) -> Option<usize> {
+        None
+    }
+    fn channels(&self) -> std::num::NonZero<u16> {
+        std::num::NonZero::new(2).unwrap()
+    }
+    fn sample_rate(&self) -> std::num::NonZero<u32> {
+        std::num::NonZero::new(48000).unwrap()
+    }
+    fn total_duration(&self) -> Option<Duration> {
+        None
+    }
+}
+
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct AudioTrackInfo {
     pub title: String,
@@ -199,6 +238,87 @@ impl AudioPlayer {
         Ok(())
     }
 
+    pub fn play_video_stream(
+        &mut self,
+        title: String,
+        file_path: String,
+        start_secs: f32,
+    ) -> Result<(), String> {
+        let path = Path::new(&file_path);
+        if !path.exists() {
+            return Err(Language::system().format(
+                "services-audio-file-not-found",
+                &[("file_path", &file_path)],
+            ));
+        }
+
+        let mut child = std::process::Command::new("ffmpeg")
+            .args([
+                "-nostdin",
+                "-v",
+                "error",
+                "-ss",
+                &start_secs.max(0.0).to_string(),
+                "-i",
+                &file_path,
+                "-vn",
+                "-sn",
+                "-f",
+                "f32le",
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                "pipe:1",
+            ])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|e| e.to_string())?;
+
+        let stdout = child.stdout.take().ok_or_else(|| "no stdout".to_string())?;
+        let stream = PcmStream {
+            reader: BufReader::new(stdout),
+            child,
+        };
+
+        let mut inner = self.inner.lock().unwrap();
+
+        if inner.sink.is_none() {
+            silence_audio_backend_noise();
+            inner.sink = DeviceSinkBuilder::open_default_sink()
+                .or_else(|_| {
+                    DeviceSinkBuilder::from_default_device()
+                        .and_then(|b| b.open_sink_or_fallback())
+                })
+                .ok();
+        }
+
+        if let Some(old_player) = inner.player.take() {
+            old_player.stop();
+        }
+
+        let sink = inner.sink.as_ref().ok_or_else(|| {
+            Language::system()
+                .text("services-no-audio-device-detected-on-this-system")
+                .to_string()
+        })?;
+        let player = Player::connect_new(sink.mixer());
+        player.set_volume(inner.volume);
+        player.append(stream);
+        player.play();
+
+        inner.player = Some(player);
+        inner.current_track = Some(AudioTrackInfo {
+            title,
+            path: file_path,
+            duration_secs: 0.0,
+        });
+        inner.is_playing = true;
+
+        Ok(())
+    }
+
     pub fn toggle_play_pause(&mut self) {
         let track_to_restart = {
             let mut inner = self.inner.lock().unwrap();
@@ -285,3 +405,22 @@ impl Default for AudioPlayer {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pcm_stream_source() {
+        let p_webm = "/home/lewis/Projetos/omni-presenter/converted-media/conversion_1794249981543590224_1/For King & Country - The Proof of Your Love-1.webm";
+        if Path::new(p_webm).exists() {
+            let mut player = AudioPlayer::new();
+            let res = player.play_video_stream("Test".into(), p_webm.into(), 0.0);
+            assert!(res.is_ok());
+            assert!(player.is_playing());
+            player.set_volume(0.5);
+            assert_eq!(player.volume(), 0.5);
+        }
+    }
+}
+

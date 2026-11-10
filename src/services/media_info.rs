@@ -144,17 +144,28 @@ pub fn probe_media_details(path_str: &str) -> MediaDetails {
             let text = String::from_utf8_lossy(&output.stdout);
             let mut width = None;
             let mut height = None;
-            let mut current_type = String::new();
+            let mut cur_codec_name = String::new();
+            let mut cur_codec_type = String::new();
 
             for line in text.lines() {
                 let line = line.trim();
                 if let Some(val) = line.strip_prefix("codec_type=") {
-                    current_type = val.to_string();
+                    cur_codec_type = val.to_string();
+                    if !cur_codec_name.is_empty() {
+                        if cur_codec_type == "video" && details.video_codec.is_none() {
+                            details.video_codec = Some(cur_codec_name.to_uppercase());
+                        } else if cur_codec_type == "audio" && details.audio_codec.is_none() {
+                            details.audio_codec = Some(cur_codec_name.to_uppercase());
+                        }
+                    }
                 } else if let Some(val) = line.strip_prefix("codec_name=") {
-                    if current_type == "video" && details.video_codec.is_none() {
-                        details.video_codec = Some(val.to_uppercase());
-                    } else if current_type == "audio" && details.audio_codec.is_none() {
-                        details.audio_codec = Some(val.to_uppercase());
+                    cur_codec_name = val.to_string();
+                    if !cur_codec_type.is_empty() {
+                        if cur_codec_type == "video" && details.video_codec.is_none() {
+                            details.video_codec = Some(cur_codec_name.to_uppercase());
+                        } else if cur_codec_type == "audio" && details.audio_codec.is_none() {
+                            details.audio_codec = Some(cur_codec_name.to_uppercase());
+                        }
                     }
                 } else if let Some(val) = line.strip_prefix("width=") {
                     if let Ok(w) = val.parse::<usize>() {
@@ -187,5 +198,44 @@ pub fn probe_media_details(path_str: &str) -> MediaDetails {
     }
 
     details
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculate_aspect_ratio() {
+        assert_eq!(calculate_aspect_ratio(1920, 1080), "16:9");
+        assert_eq!(calculate_aspect_ratio(1280, 720), "16:9");
+        assert_eq!(calculate_aspect_ratio(720, 1280), "9:16 (Vertical)");
+        assert_eq!(calculate_aspect_ratio(1920, 1200), "16:10");
+        assert_eq!(calculate_aspect_ratio(1024, 768), "4:3");
+        assert_eq!(calculate_aspect_ratio(2560, 1080), "21:9 (Ultrawide)");
+    }
+
+    #[test]
+    fn test_format_duration() {
+        assert_eq!(format_duration(14.2), "00:14");
+        assert_eq!(format_duration(278.8), "04:39");
+        assert_eq!(format_duration(3665.0), "01:01:05");
+    }
+
+    #[test]
+    fn test_format_bytes() {
+        assert_eq!(format_bytes(500), "500 B");
+        assert_eq!(format_bytes(1024 * 1024 * 3), "3.0 MB");
+    }
+
+    #[test]
+    fn test_probe_media_details_codecs() {
+        let path = "/home/lewis/Downloads/Pinterest video #754282637635119717 [754282637635119717].webm";
+        if std::path::Path::new(path).exists() {
+            let details = probe_media_details(path);
+            assert_eq!(details.video_codec.as_deref(), Some("VP9"));
+            assert_eq!(details.audio_codec.as_deref(), Some("OPUS"));
+            assert_eq!(details.dimensions, Some((720, 1280)));
+        }
+    }
 }
 

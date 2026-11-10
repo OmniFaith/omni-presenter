@@ -227,7 +227,8 @@ pub fn render_preview_column(
         .clicked()
         && (deck.preview_design.is_some()
             || !deck.preview_slide_text().is_empty()
-            || !deck.slides().is_empty())
+            || !deck.slides().is_empty()
+            || deck.preview_media.is_some())
     {
         deck.project_preview();
         if !deck
@@ -239,6 +240,21 @@ pub fn render_preview_column(
         }
         *presenting = true;
         state.show_presentation_dock = state.settings.operator().show_dock;
+        if let Some(media) = &mut state.active_player_media {
+            if media.kind == crate::core::state::PlayerMediaKind::Video
+                && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
+            {
+                media.is_projecting = true;
+                if media.is_playing {
+                    let pos = media.video_position();
+                    let _ = state.audio_player.play_video_stream(
+                        media.title.clone(),
+                        media.path.clone(),
+                        pos,
+                    );
+                }
+            }
+        }
     }
     ui.add_space(4.0);
     let title = deck.title();

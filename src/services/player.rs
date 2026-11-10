@@ -16,7 +16,11 @@ impl ControlPanelState {
                 (duration, playing, message)
             }
             PlayerMediaKind::Video => {
-                self.audio_player.stop();
+                if project {
+                    let _ = self.audio_player.play_video_stream(title.clone(), path.clone(), 0.0);
+                } else {
+                    self.audio_player.pause();
+                }
                 (
                     crate::services::video::duration(&path).unwrap_or(0.0),
                     true,
@@ -34,6 +38,7 @@ impl ControlPanelState {
             video_start_time: std::time::Instant::now(),
             video_paused_at: None,
             video_fit: "contain".into(),
+            video_seek_offset: 0.0,
         });
         self.notify(message);
     }
@@ -68,10 +73,20 @@ impl ControlPanelState {
                     if media.is_playing {
                         media.video_paused_at = Some(media.video_position());
                         media.is_playing = false;
+                        self.audio_player.pause();
                     } else {
                         let position = media.video_paused_at.take().unwrap_or(0.0);
                         media.is_playing = true;
                         media.seek_video(position);
+                        if media.is_projecting {
+                            let _ = self.audio_player.play_video_stream(
+                                media.title.clone(),
+                                media.path.clone(),
+                                position,
+                            );
+                        } else {
+                            self.audio_player.pause();
+                        }
                     }
                 }
             }
@@ -90,7 +105,18 @@ impl ControlPanelState {
             };
             match media.kind {
                 PlayerMediaKind::Audio => self.audio_player.seek(position),
-                PlayerMediaKind::Video => media.seek_video(position),
+                PlayerMediaKind::Video => {
+                    media.seek_video(position);
+                    if media.is_projecting && media.is_playing {
+                        let _ = self.audio_player.play_video_stream(
+                            media.title.clone(),
+                            media.path.clone(),
+                            position,
+                        );
+                    } else {
+                        self.audio_player.pause();
+                    }
+                }
             }
         }
     }
@@ -107,6 +133,7 @@ impl ControlPanelState {
             match media.kind {
                 PlayerMediaKind::Audio => self.audio_player.stop(),
                 PlayerMediaKind::Video => {
+                    self.audio_player.stop();
                     media.video_paused_at = Some(0.0);
                     media.seek_video(0.0);
                 }

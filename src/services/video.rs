@@ -90,7 +90,7 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                     "-select_streams",
                     "v:0",
                     "-show_entries",
-                    "stream=width,height",
+                    "stream=width,height,r_frame_rate",
                     "-of",
                     "csv=s=x:p=0",
                 ])
@@ -103,12 +103,19 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
                 return Err(Language::system().text("services-could-not-open-this-video-file").to_string());
             }
             let dimensions = String::from_utf8_lossy(&metadata.stdout);
-            let mut values = dimensions
-                .trim()
-                .split('x')
-                .filter_map(|s| s.trim().parse::<usize>().ok());
-            let source_w = values.next().ok_or_else(|| Language::system().text("services-invalid-video-width").to_string())?;
-            let source_h = values.next().ok_or_else(|| Language::system().text("services-invalid-video-height").to_string())?;
+            let parts: Vec<&str> = dimensions.trim().split('x').collect();
+            let source_w: usize = parts.first().and_then(|s| s.trim().parse().ok()).ok_or_else(|| Language::system().text("services-invalid-video-width").to_string())?;
+            let source_h: usize = parts.get(1).and_then(|s| s.trim().parse().ok()).ok_or_else(|| Language::system().text("services-invalid-video-height").to_string())?;
+            let native_fps: f32 = parts.get(2).and_then(|s| {
+                let s = s.trim();
+                if let Some((num, den)) = s.split_once('/') {
+                    let n: f32 = num.parse().ok()?;
+                    let d: f32 = den.parse().ok()?;
+                    if d > 0.0 { Some(n / d) } else { None }
+                } else {
+                    s.parse().ok()
+                }
+            }).unwrap_or(30.0).clamp(1.0, 60.0);
             if source_w == 0 || source_h == 0 {
                 return Err(Language::system().text("services-the-video-has-no-image").to_string());
             }
@@ -118,6 +125,8 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
             let width = ((source_w as f32 * scale) as usize / 2 * 2).max(2);
             let height = ((source_h as f32 * scale) as usize / 2 * 2).max(2);
             let speed = options.speed.clamp(0.1, 4.0);
+            let effective_fps = (native_fps * speed).clamp(0.5, 120.0);
+            let frame_interval = Duration::from_secs_f64(1.0 / effective_fps as f64);
             let mut command = Command::new("ffmpeg");
             command.args([
                 "-nostdin",
@@ -136,16 +145,12 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
             }
             command
                 .args([
-                    "-readrate",
-                    &speed.to_string(),
                     "-ss",
                     &options.start.max(0.0).to_string(),
                     "-i",
                 ])
                 .arg(&stream_path);
             let mut filter_parts = vec![
-                format!("setpts=PTS/{speed}"),
-                "fps=30".to_string(),
                 format!("scale={width}:{height}"),
             ];
             if (options.contrast - 1.0).abs() > 0.01 || (options.saturation - 1.0).abs() > 0.01 {
@@ -169,22 +174,34 @@ fn start(path: String, options: VideoOptions, ctx: egui::Context) -> Arc<Shared>
             let mut stdout = child.stdout.take().unwrap();
             let mut sequence = 0;
             let mut bytes = vec![0u8; width * height * 4];
+            let mut next_frame_time = Instant::now();
             loop {
                 if worker.stop.load(Ordering::Relaxed)
-                    || worker.used.lock().unwrap().elapsed() > Duration::from_secs(2)
+                    || worker.used.lock().unwrap().elapsed() > Duration::from_secs(10)
                 {
                     worker.expired.store(true, Ordering::Relaxed);
                     break;
                 }
                 if worker.paused.load(Ordering::Relaxed) {
                     std::thread::sleep(Duration::from_millis(30));
+                    next_frame_time = Instant::now();
                     continue;
                 }
                 if stdout.read_exact(&mut bytes).is_err() {
                     break;
                 }
+                let now = Instant::now();
+                if let Some(sleep_time) = next_frame_time.checked_duration_since(now) {
+                    std::thread::sleep(sleep_time);
+                }
+                next_frame_time += frame_interval;
+                let now_after = Instant::now();
+                if next_frame_time + frame_interval < now_after {
+                    next_frame_time = now_after + frame_interval;
+                }
+
                 sequence += 1;
-                let image = Arc::new(egui::ColorImage::from_rgba_unmultiplied(
+                let image = Arc::new(egui::ColorImage::from_rgba_premultiplied(
                     [width, height],
                     &bytes,
                 ));
@@ -412,7 +429,7 @@ pub fn paint_video(
             Color32::GRAY,
         );
     }
-    if !options.paused {
+    if !options.paused && entry.texture.is_none() {
         painter
             .ctx()
             .request_repaint_after(Duration::from_millis(33));
@@ -462,6 +479,7 @@ pub fn resume(ctx: &egui::Context, path: &str) {
 
 pub fn seek(ctx: &egui::Context, path: &str, _position: f32) {
     stop(ctx, path);
+    ctx.request_repaint();
 }
 
 pub fn is_finished(ctx: &egui::Context, path: &str) -> bool {

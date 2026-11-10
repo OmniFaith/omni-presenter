@@ -58,6 +58,15 @@ pub enum VideoAspectRatio {
     R21x9,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum VideoCodec {
+    #[default]
+    Auto,
+    H264,
+    H265,
+    Vp9,
+    Av1,
+}
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum AudioFormat {
     #[default]
     Flac,
@@ -71,6 +80,7 @@ pub enum AudioFormat {
 pub struct Formats {
     pub image: ImageFormat,
     pub video: VideoFormat,
+    pub video_codec: VideoCodec,
     pub video_resolution: VideoResolution,
     pub video_aspect_ratio: VideoAspectRatio,
     pub audio: AudioFormat,
@@ -145,6 +155,54 @@ pub fn convertible(path: &Path) -> bool {
         MediaItem::detect_type(&path.to_string_lossy()),
         "image" | "video" | "audio"
     )
+}
+
+fn video_codec_args(codec: VideoCodec, format: VideoFormat) -> Vec<String> {
+    match codec {
+        VideoCodec::Auto => match format {
+            VideoFormat::Webm => vec![
+                "-c:v".into(), "libvpx-vp9".into(),
+                "-row-mt".into(), "1".into(),
+                "-tile-columns".into(), "2".into(),
+                "-tile-rows".into(), "1".into(),
+                "-frame-parallel".into(), "1".into(),
+                "-threads".into(), "0".into(),
+                "-crf".into(), "30".into(),
+                "-b:v".into(), "0".into(),
+            ],
+            VideoFormat::LosslessMkv => vec!["-c:v".into(), "ffv1".into(), "-level".into(), "3".into()],
+            _ => vec![
+                "-c:v".into(), "libx264".into(),
+                "-preset".into(), "medium".into(),
+                "-crf".into(), "20".into(),
+            ],
+        },
+        VideoCodec::H264 => vec![
+            "-c:v".into(), "libx264".into(),
+            "-preset".into(), "medium".into(),
+            "-crf".into(), "20".into(),
+        ],
+        VideoCodec::H265 => vec![
+            "-c:v".into(), "libx265".into(),
+            "-preset".into(), "medium".into(),
+            "-crf".into(), "24".into(),
+        ],
+        VideoCodec::Vp9 => vec![
+            "-c:v".into(), "libvpx-vp9".into(),
+            "-row-mt".into(), "1".into(),
+            "-tile-columns".into(), "2".into(),
+            "-tile-rows".into(), "1".into(),
+            "-frame-parallel".into(), "1".into(),
+            "-threads".into(), "0".into(),
+            "-crf".into(), "30".into(),
+            "-b:v".into(), "0".into(),
+        ],
+        VideoCodec::Av1 => vec![
+            "-c:v".into(), "libsvtav1".into(),
+            "-preset".into(), "6".into(),
+            "-crf".into(), "32".into(),
+        ],
+    }
 }
 
 pub fn convert(
@@ -237,84 +295,50 @@ pub fn convert_with_progress(
                 ),
             },
             "video" => match formats.video {
-                VideoFormat::Mp4 => (
-                    "mp4",
-                    vec![
-                        "-map".into(),
-                        "0:v:0".into(),
-                        "-map".into(),
-                        "0:a?".into(),
-                        "-c:v".into(),
-                        "libx264".into(),
-                        "-preset".into(),
-                        "slow".into(),
-                        "-crf".into(),
-                        "16".into(),
-                        "-vf".into(),
-                        video_vf.clone(),
-                        "-pix_fmt".into(),
-                        "yuv420p".into(),
-                        "-c:a".into(),
-                        "aac".into(),
-                        "-b:a".into(),
-                        "320k".into(),
-                        "-movflags".into(),
-                        "+faststart".into(),
-                    ],
-                ),
-                VideoFormat::Webm => (
-                    "webm",
-                    vec![
-                        "-map".into(),
-                        "0:v:0".into(),
-                        "-map".into(),
-                        "0:a?".into(),
-                        "-c:v".into(),
-                        "libvpx-vp9".into(),
-                        "-crf".into(),
-                        "30".into(),
-                        "-b:v".into(),
-                        "0".into(),
-                        "-vf".into(),
-                        video_vf.clone(),
-                        "-pix_fmt".into(),
-                        "yuv420p".into(),
-                        "-c:a".into(),
-                        "libopus".into(),
-                        "-b:a".into(),
-                        "192k".into(),
-                    ],
-                ),
-                VideoFormat::LosslessMkv => (
-                    "mkv",
-                    vec![
-                        "-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into(), "-c:v".into(), "ffv1".into(), "-level".into(), "3".into(), "-c:a".into(),
-                        "flac".into(),
-                    ],
-                ),
-                VideoFormat::Mov => (
-                    "mov",
-                    vec![
-                        "-map".into(),
-                        "0:v:0".into(),
-                        "-map".into(),
-                        "0:a?".into(),
-                        "-c:v".into(),
-                        "libx264".into(),
-                        "-preset".into(),
-                        "slow".into(),
-                        "-crf".into(),
-                        "16".into(),
-                        "-vf".into(),
-                        video_vf.clone(),
-                        "-pix_fmt".into(),
-                        "yuv420p".into(),
-                        "-c:a".into(),
-                        "aac".into(),
-                        "-b:a".into(),
-                        "320k".into(),
-                    ],
-                ),
+                VideoFormat::Mp4 => {
+                    let mut opts = vec!["-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into()];
+                    opts.extend(video_codec_args(formats.video_codec, VideoFormat::Mp4));
+                    opts.extend(vec![
+                        "-vf".into(), video_vf.clone(),
+                        "-pix_fmt".into(), "yuv420p".into(),
+                        "-c:a".into(), "aac".into(),
+                        "-b:a".into(), "320k".into(),
+                        "-movflags".into(), "+faststart".into(),
+                    ]);
+                    ("mp4", opts)
+                }
+                VideoFormat::Webm => {
+                    let mut opts = vec!["-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into()];
+                    opts.extend(video_codec_args(formats.video_codec, VideoFormat::Webm));
+                    opts.extend(vec![
+                        "-vf".into(), video_vf.clone(),
+                        "-pix_fmt".into(), "yuv420p".into(),
+                        "-c:a".into(), "libopus".into(),
+                        "-b:a".into(), "192k".into(),
+                    ]);
+                    ("webm", opts)
+                }
+                VideoFormat::LosslessMkv => {
+                    if formats.video_codec == VideoCodec::Auto {
+                        ("mkv", vec!["-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into(), "-c:v".into(), "ffv1".into(), "-level".into(), "3".into(), "-c:a".into(), "flac".into()])
+                    } else {
+                        let mut opts = vec!["-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into()];
+                        opts.extend(video_codec_args(formats.video_codec, VideoFormat::LosslessMkv));
+                        opts.extend(vec!["-vf".into(), video_vf.clone(), "-c:a".into(), "flac".into()]);
+                        ("mkv", opts)
+                    }
+                }
+                VideoFormat::Mov => {
+                    let mut opts = vec!["-map".into(), "0:v:0".into(), "-map".into(), "0:a?".into()];
+                    opts.extend(video_codec_args(formats.video_codec, VideoFormat::Mov));
+                    opts.extend(vec![
+                        "-vf".into(), video_vf.clone(),
+                        "-pix_fmt".into(), "yuv420p".into(),
+                        "-c:a".into(), "aac".into(),
+                        "-b:a".into(), "320k".into(),
+                    ]);
+                    ("mov", opts)
+                }
             },
             "audio" => match formats.audio {
                 AudioFormat::Flac => ("flac", vec!["-map".into(), "0:a:0".into(), "-vn".into(), "-c:a".into(), "flac".into()]),

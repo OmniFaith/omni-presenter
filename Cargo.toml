@@ -50,3 +50,7 @@ openssl = { version = "0.10.82", features = ["vendored"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 x11rb = "0.14.0"
+
+[profile.dev.package."*"]
+opt-level = 2
+

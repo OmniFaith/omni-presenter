@@ -92,4 +92,5 @@ library-media-info = Información del archivo
 library-conversion-aspect-ratio = Proporción de aspecto
 library-conversion-ar-original = Mantener original (Recomendado)
 library-conversion-resolution = Resolución de vídeo
+library-conversion-codec = Códec de vídeo
 library-conversion-and-import = Convertir e importar

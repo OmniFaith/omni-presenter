@@ -39,11 +39,7 @@ pub fn render_player_column(
                 && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path);
             if !is_still_projecting {
                 media.is_projecting = false;
-                if media.is_playing {
-                    media.is_playing = false;
-                    media.video_paused_at = Some(media.video_position());
-                    crate::services::video::stop(ui.ctx(), &media.path);
-                }
+                state.audio_player.pause();
             }
         }
     }
@@ -492,6 +488,7 @@ fn render_compact_video_showcase(
                         m.video_paused_at = Some(m.video_position());
                     }
                     crate::services::video::stop(ui.ctx(), &media.path);
+                    state.audio_player.pause();
                 } else {
                     deck.load_custom_content(media.title.clone(), state.settings.language.text("workspace-media").to_string(), String::new());
                     deck.preview_media = Some(crate::core::slides::MediaOutput {
@@ -505,6 +502,8 @@ fn render_compact_video_showcase(
                     if let Some(m) = &mut state.active_player_media {
                         m.is_projecting = true;
                         m.is_playing = true;
+                        let pos = m.video_position();
+                        let _ = state.audio_player.play_video_stream(m.title.clone(), m.path.clone(), pos);
                     }
                 }
             }
@@ -673,7 +672,11 @@ fn render_playback_buttons(
     if render_hero_play_button(ui, media.is_playing, theme, language).clicked() {
         state.toggle_player_playback();
         if media.kind == PlayerMediaKind::Video {
-            if media.is_playing {
+            let is_now_playing = state
+                .active_player_media
+                .as_ref()
+                .map_or(false, |m| m.is_playing);
+            if is_now_playing {
                 crate::services::video::resume(ui.ctx(), &media.path);
             } else {
                 crate::services::video::pause(ui.ctx(), &media.path);
@@ -806,21 +809,16 @@ fn render_custom_scrubber(
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
 
-    let progress_ratio = if total_dur > 0.0 {
+    let progress_ratio = if is_dragged && let Some(mouse_pos) = resp.interact_pointer_pos() {
+        ((mouse_pos.x - rect.min.x) / rect.width().max(1.0)).clamp(0.0, 1.0)
+    } else if total_dur > 0.0 {
         (cur_pos / total_dur).clamp(0.0, 1.0)
     } else {
         0.0
     };
     let center_y = rect.center().y;
-
-    // A trilha se expande suavemente no hover
     let rail_h = if is_hovered || is_dragged { 4.5 } else { 3.0 };
-    let rail_rect = egui::Rect::from_min_max(
-        egui::pos2(rect.min.x, center_y - rail_h * 0.5),
-        egui::pos2(rect.max.x, center_y + rail_h * 0.5),
-    );
-
-    // Trilha de fundo
+    let rail_rect = egui::Rect::from_center_size(rect.center(), egui::vec2(rect.width(), rail_h));
     painter.rect_filled(rail_rect, rail_h * 0.5, theme.border_default);
 
     // Trilha preenchida com a cor de destaque
@@ -844,7 +842,7 @@ fn render_custom_scrubber(
     painter.circle_filled(knob_pos, knob_radius, Color32::WHITE);
     painter.circle_stroke(knob_pos, knob_radius, egui::Stroke::new(1.5, theme.accent));
 
-    let seek_result = if resp.clicked() || resp.dragged() {
+    let seek_result = if resp.clicked() || resp.drag_stopped() {
         if let Some(mouse_pos) = resp.interact_pointer_pos() {
             let rel_x = (mouse_pos.x - rect.min.x).clamp(0.0, rect.width());
             let new_ratio = if rect.width() > 0.0 {

@@ -84,6 +84,7 @@ impl PresentationApp {
                             }
                         }
                     }
+                    self.control_state.audio_player.pause();
                 }
             }
             Command::PreviousSlide => self.slide_deck.prev_slide(),
@@ -100,15 +101,33 @@ impl PresentationApp {
                 if self.is_presentation_open {
                     self.slide_deck.project_preview();
                     self.control_state.apply_theme_to_live();
-                } else if let Some(media) = &mut self.control_state.active_player_media {
-                    if media.is_projecting {
-                        media.is_projecting = false;
-                        if media.is_playing {
-                            media.is_playing = false;
-                            media.video_paused_at = Some(media.video_position());
-                            crate::services::video::stop(ctx, &media.path);
+                    if let Some(media) = &mut self.control_state.active_player_media {
+                        if media.kind == crate::core::state::PlayerMediaKind::Video
+                            && self.slide_deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
+                        {
+                            media.is_projecting = true;
+                            if media.is_playing {
+                                let pos = media.video_position();
+                                let _ = self.control_state.audio_player.play_video_stream(
+                                    media.title.clone(),
+                                    media.path.clone(),
+                                    pos,
+                                );
+                            }
                         }
                     }
+                } else {
+                    if let Some(media) = &mut self.control_state.active_player_media {
+                        if media.is_projecting {
+                            media.is_projecting = false;
+                            if media.is_playing {
+                                media.is_playing = false;
+                                media.video_paused_at = Some(media.video_position());
+                                crate::services::video::stop(ctx, &media.path);
+                            }
+                        }
+                    }
+                    self.control_state.audio_player.pause();
                 }
             }
             Command::StopPresentation => {
@@ -123,6 +142,7 @@ impl PresentationApp {
                         }
                     }
                 }
+                self.control_state.audio_player.pause();
             }
             Command::NewSong => {
                 self.control_state.song_editor = Default::default();

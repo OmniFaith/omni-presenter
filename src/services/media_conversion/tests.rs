@@ -70,6 +70,7 @@ fn converts_images_audio_and_video_without_modifying_originals() {
             image: ImageFormat::Webp,
             audio: AudioFormat::Mp3,
             video: VideoFormat::LosslessMkv,
+            video_codec: VideoCodec::Auto,
             video_resolution: VideoResolution::Original,
             video_aspect_ratio: VideoAspectRatio::Original,
         },

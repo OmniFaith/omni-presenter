@@ -26,6 +26,7 @@ fn test_player_column_renders_with_audio_and_video() {
         video_start_time: std::time::Instant::now(),
         video_paused_at: None,
         video_fit: "contain".into(),
+        video_seek_offset: 0.0,
     });
 
     let ctx = egui::Context::default();
@@ -45,6 +46,7 @@ fn test_player_column_renders_with_audio_and_video() {
         video_start_time: std::time::Instant::now(),
         video_paused_at: None,
         video_fit: "contain".into(),
+        video_seek_offset: 0.0,
     });
     deck.live_media = Some(crate::core::slides::MediaOutput {
         path: "/path/to/video.mp4".into(),
@@ -82,6 +84,7 @@ fn test_player_stop_closes_player_and_unprojects() {
         video_start_time: std::time::Instant::now(),
         video_paused_at: None,
         video_fit: "contain".into(),
+        video_seek_offset: 0.0,
     });
 
     let is_open = true;
@@ -129,6 +132,7 @@ fn test_player_video_finishes_and_auto_closes_with_transition() {
         video_start_time: std::time::Instant::now(),
         video_paused_at: None,
         video_fit: "contain".into(),
+        video_seek_offset: 0.0,
     });
     deck.live_media = Some(crate::core::slides::MediaOutput {
         path: video_path.into(),

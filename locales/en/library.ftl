@@ -92,4 +92,5 @@ library-media-info = Media details
 library-conversion-aspect-ratio = Aspect ratio
 library-conversion-ar-original = Keep original (Recommended)
 library-conversion-resolution = Video resolution
+library-conversion-codec = Video codec
 library-conversion-and-import = Convert & import

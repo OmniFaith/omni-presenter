@@ -94,7 +94,9 @@ pub fn preview_theme(
     theme.options.video.hwaccel = state.settings.hardware_acceleration;
     if let Some(media) = &state.active_player_media
         && media.kind == PlayerMediaKind::Video
-        && deck.preview_media.as_ref().map(|m| &m.path) == Some(&media.path)
+        && (deck.preview_media.as_ref().map(|m| &m.path) == Some(&media.path)
+            || theme.bg_image_path == media.path
+            || theme.options.video.path == media.path)
     {
         theme.options.video.paused = !media.is_playing;
         theme.options.video.fit = media.video_fit.clone();
@@ -110,7 +112,9 @@ pub fn live_theme(
     theme.options.video.hwaccel = state.settings.hardware_acceleration;
     if let Some(media) = &state.active_player_media
         && media.kind == PlayerMediaKind::Video
-        && deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
+        && (deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
+            || theme.bg_image_path == media.path
+            || theme.options.video.path == media.path)
     {
         theme.options.video.paused = !media.is_playing;
         theme.options.video.fit = media.video_fit.clone();

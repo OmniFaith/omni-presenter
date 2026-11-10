@@ -64,6 +64,7 @@ impl PresentationApp {
                         media.video_paused_at = Some(media.video_position());
                         crate::services::video::stop(&ctx, &media.path);
                     }
+                    self.control_state.audio_player.pause();
                 }
             }
         }

@@ -590,6 +590,21 @@ pub fn render_presentation_dock(
                 *is_presentation_open = !*is_presentation_open;
                 if *is_presentation_open {
                     state.presentation_started_at = Some(std::time::Instant::now());
+                    if let Some(media) = &mut state.active_player_media {
+                        if media.kind == crate::core::state::PlayerMediaKind::Video
+                            && slide_deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path)
+                        {
+                            media.is_projecting = true;
+                            if media.is_playing {
+                                let pos = media.video_position();
+                                let _ = state.audio_player.play_video_stream(
+                                    media.title.clone(),
+                                    media.path.clone(),
+                                    pos,
+                                );
+                            }
+                        }
+                    }
                 } else {
                     state.presentation_started_at = None;
                     if let Some(media) = &mut state.active_player_media {
@@ -602,6 +617,7 @@ pub fn render_presentation_dock(
                             }
                         }
                     }
+                    state.audio_player.pause();
                 }
             }
 

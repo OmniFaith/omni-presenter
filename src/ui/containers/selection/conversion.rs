@@ -2,7 +2,7 @@ use crate::{
     core::{models::MediaItem, state::ControlPanelState},
     services::{
         db::AppDb,
-        media_conversion::{self, AudioFormat, ImageFormat, VideoAspectRatio, VideoFormat, VideoResolution},
+        media_conversion::{self, AudioFormat, ImageFormat, VideoAspectRatio, VideoCodec, VideoFormat, VideoResolution},
         tasks::BackgroundTask,
     },
     ui::components::dialog,
@@ -331,6 +331,71 @@ fn aspect_ratio_segmented_picker(
     changed
 }
 
+fn video_codec_segmented_picker(
+    ui: &mut egui::Ui,
+    theme: &crate::ui::AppTheme,
+    selected: VideoCodec,
+) -> Option<VideoCodec> {
+    let mut changed = None;
+    let avail_w = ui.available_width();
+
+    let codecs = [
+        (VideoCodec::Auto, "Auto", "Automático: usa o codec padrão recomendado para o formato (H.264 para MP4, VP9 para WebM)"),
+        (VideoCodec::H264, "H.264", "H.264 (AVC): máxima compatibilidade universal e aceleração por hardware"),
+        (VideoCodec::H265, "H.265", "H.265 (HEVC): alta eficiência de compressão para arquivos menores"),
+        (VideoCodec::Vp9, "VP9", "VP9: codec aberto moderno otimizado para WebM"),
+        (VideoCodec::Av1, "AV1", "AV1: codec de última geração com alta eficiência"),
+    ];
+    let count = codecs.len() as f32;
+    let spacing = 4.0;
+    let item_w = ((avail_w - spacing * (count - 1.0)) / count).max(40.0);
+    let item_h = 24.0;
+
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = spacing;
+        for (c, label, tooltip) in codecs {
+            let is_sel = selected == c;
+            let (rect, resp) =
+                ui.allocate_exact_size(egui::vec2(item_w, item_h), egui::Sense::click());
+            if resp.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+            }
+            let fill = if is_sel {
+                theme.bg_card_active
+            } else if resp.hovered() {
+                theme.bg_card_hover
+            } else {
+                theme.bg_pill
+            };
+            let stroke = if is_sel {
+                egui::Stroke::new(1.0, theme.accent)
+            } else {
+                egui::Stroke::new(1.0, theme.border_default)
+            };
+            ui.painter()
+                .rect(rect, 5.0, fill, stroke, egui::StrokeKind::Inside);
+            ui.painter().text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                label,
+                egui::FontId::proportional(11.0),
+                if is_sel {
+                    theme.accent
+                } else if resp.hovered() {
+                    theme.text_primary
+                } else {
+                    theme.text_secondary
+                },
+            );
+            if resp.on_hover_text(tooltip).clicked() {
+                changed = Some(c);
+            }
+        }
+    });
+
+    changed
+}
+
 fn section_title(ui: &mut egui::Ui, icon: &str, text: &str, theme: &crate::ui::AppTheme) {
     ui.horizontal(|ui| {
         ui.label(RichText::new(icon).size(15.0).color(theme.accent));
@@ -549,6 +614,16 @@ pub fn render_media_conversion(
                                 3 => VideoFormat::Mov,
                                 _ => VideoFormat::Mp4,
                             };
+                        }
+
+                        ui.add_space(3.0);
+                        ui.label(
+                            RichText::new(language.text("library-conversion-codec"))
+                                .size(11.0)
+                                .color(theme.text_secondary),
+                        );
+                        if let Some(codec) = video_codec_segmented_picker(ui, &theme, prompt.formats.video_codec) {
+                            prompt.formats.video_codec = codec;
                         }
 
                         ui.add_space(3.0);
