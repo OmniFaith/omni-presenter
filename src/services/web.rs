@@ -459,16 +459,16 @@ impl BrowserServer {
 
                 let raw_text = if active && design.is_none() { deck.projected_text() } else { "" };
                 let text = if s.show_comments {
-                    raw_text.to_string()
+                    crate::core::slides::strip_directive_commands(raw_text)
                 } else {
-                    crate::core::slides::strip_comments(raw_text)
+                    crate::core::slides::strip_directive_commands(&crate::core::slides::strip_comments(raw_text))
                 };
 
                 let raw_next = if active { deck.next_projected_text() } else { "" };
                 let next_text = if s.show_comments {
-                    raw_next.to_string()
+                    crate::core::slides::strip_directive_commands(raw_next)
                 } else {
-                    crate::core::slides::strip_comments(raw_next)
+                    crate::core::slides::strip_directive_commands(&crate::core::slides::strip_comments(raw_next))
                 };
 
                 let is_first_song_slide = deck.is_live_song() && deck.live_index() == 0;
@@ -529,6 +529,7 @@ impl BrowserServer {
                     "aspect": settings.service().aspect_ratio,
                     "showClock": s.show_clock,
                     "showNextPreview": s.show_next_preview,
+                    "showComments": s.show_comments,
                     "nextText": next_text,
                 });
                 let slug = crate::core::preferences::screen_url_slug(s, &settings.screens);

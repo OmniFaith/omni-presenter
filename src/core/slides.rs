@@ -780,6 +780,13 @@ pub fn strip_comments(text: &str) -> String {
         .join("\n")
 }
 
+pub fn strip_directive_commands(text: &str) -> String {
+    text.lines()
+        .filter(|line| !crate::core::markup::is_directive_command(line.trim_start()))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// Extrai a etiqueta de cabeçalho da estrofe (#*refrão, #*ponte, etc.) se houver.
 pub fn extract_strophe_tag(strophe: &str) -> Option<String> {
     for line in strophe.lines() {
@@ -966,5 +973,12 @@ mod tests {
         // Update strophe B
         deck.update_slide_text(1, "Estrofe B Modificada");
         assert_eq!(deck.slides()[1], "Estrofe B Modificada");
+    }
+
+    #[test]
+    fn test_strip_directive_commands() {
+        let text = "//t: 60\n//c: #FF0000\n// Intro: G D Em\nBless the Lord, oh my soul\n//f: Inter";
+        let cleaned = strip_directive_commands(text);
+        assert_eq!(cleaned, "// Intro: G D Em\nBless the Lord, oh my soul");
     }
 }

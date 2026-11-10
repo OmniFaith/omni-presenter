@@ -105,33 +105,65 @@ async function loadFont(s) {
   } catch { lyrics.style.fontFamily = JSON.stringify(s.font) + ',Arial,sans-serif'; }
 }
 
+function isDirectiveLine(text) {
+  const t = text.trim();
+  if (t.startsWith('#*')) return true;
+  if (!t.startsWith('//')) return false;
+  const after = t.slice(2).trimStart();
+  return /^(f|fonte|font|c|cor|color|t|s|tamanho|size|sombra|shadow|fundo|box|b|a|alinhar|align|l|linha|line|ls|letra|letter)(:|\s)/i.test(after);
+}
+
 function appendFormattedRuns(parent, text) {
-  // Parses simple markdown tokens: **bold**, *italic*, __underline__, ~~strike~~
-  const regex = /(\*\*.*?\*\*|\*[^*]+?\*|__.*?__|~~.*?~~)/g;
+  // Processa tags inline e esconde comandos de formatação ([t:...], [c:...], etc.)
+  const regex = /(\[(c|cor|color):\s*([^\]]+)\]([\s\S]*?)\[\/(?:c|cor|color)\]|\[(t|s|tamanho|size):\s*([^\]]+)\]([\s\S]*?)\[\/(?:t|s|tamanho|size)\]|\[(f|fonte|font):\s*([^\]]+)\]([\s\S]*?)\[\/(?:f|fonte|font)\]|\[(b|box|sombra|shadow|fundo):\s*([^\]]+)\]([\s\S]*?)\[\/(?:b|box|sombra|shadow|fundo)\]|\[(a|alinhar|align):\s*([^\]]+)\]([\s\S]*?)\[\/(?:a|alinhar|align)\]|\*\*([\s\S]*?)\*\*|\*([^*]+?)\*|__([\s\S]*?)__|~~([\s\S]*?)~~|\[\/?[a-zA-Z]+(?::[^\]]*)?\])/gi;
+
   let lastIndex = 0;
   let match;
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parent.append(document.createTextNode(text.slice(lastIndex, match.index)));
     }
-    const token = match[0];
-    let el;
-    if (token.startsWith('**') && token.endsWith('**')) {
-      el = document.createElement('strong');
-      el.textContent = token.slice(2, -2);
-    } else if (token.startsWith('*') && token.endsWith('*')) {
-      el = document.createElement('em');
-      el.textContent = token.slice(1, -1);
-    } else if (token.startsWith('__') && token.endsWith('__')) {
-      el = document.createElement('u');
-      el.textContent = token.slice(2, -2);
-    } else if (token.startsWith('~~') && token.endsWith('~~')) {
-      el = document.createElement('s');
-      el.textContent = token.slice(2, -2);
+    if (match[2]) {
+      const span = document.createElement('span');
+      span.style.color = match[3].trim();
+      appendFormattedRuns(span, match[4]);
+      parent.append(span);
+    } else if (match[5]) {
+      const span = document.createElement('span');
+      appendFormattedRuns(span, match[7]);
+      parent.append(span);
+    } else if (match[8]) {
+      const span = document.createElement('span');
+      span.style.fontFamily = JSON.stringify(match[9].trim()) + ',Arial,sans-serif';
+      appendFormattedRuns(span, match[10]);
+      parent.append(span);
+    } else if (match[11]) {
+      const span = document.createElement('span');
+      appendFormattedRuns(span, match[13]);
+      parent.append(span);
+    } else if (match[14]) {
+      const span = document.createElement('span');
+      appendFormattedRuns(span, match[16]);
+      parent.append(span);
+    } else if (match[17] !== undefined) {
+      const el = document.createElement('strong');
+      appendFormattedRuns(el, match[17]);
+      parent.append(el);
+    } else if (match[18] !== undefined) {
+      const el = document.createElement('em');
+      appendFormattedRuns(el, match[18]);
+      parent.append(el);
+    } else if (match[19] !== undefined) {
+      const el = document.createElement('u');
+      appendFormattedRuns(el, match[19]);
+      parent.append(el);
+    } else if (match[20] !== undefined) {
+      const el = document.createElement('s');
+      appendFormattedRuns(el, match[20]);
+      parent.append(el);
     } else {
-      el = document.createTextNode(token);
+      // Tags avulsas, não fechadas ou comandos brutos são omitidos da tela
     }
-    parent.append(el);
     lastIndex = regex.lastIndex;
   }
   if (lastIndex < text.length) {
@@ -139,38 +171,67 @@ function appendFormattedRuns(parent, text) {
   }
 }
 
-function render(s) {
-  const o = options(s), changed = !current || current.text !== s.text;
-  let oldLayer = null;
-  if (changed) {
-    layers.querySelectorAll('.previous-layer').forEach(el => el.remove());
-    if (current?.text && !s.hidden) { oldLayer = layer.cloneNode(true); oldLayer.removeAttribute('id'); oldLayer.classList.add('previous-layer'); oldLayer.querySelectorAll('[id]').forEach(el => el.removeAttribute('id')); layers.prepend(oldLayer); }
-    // Only text nodes and safe spans are created. Imported lyrics are never interpreted as arbitrary HTML.
-    lyrics.replaceChildren();
-    s.text.split('\n').forEach((text, index, all) => {
-      if (text.trim().startsWith('#*')) {
-        return;
-      }
-      const p = document.createElement('span');
-      p.className = 'paragraph';
-      if (text.trim().startsWith('//')) {
-        p.classList.add('comment');
-        p.textContent = text;
-      } else if (text.includes('//')) {
-        const commentIdx = text.indexOf('//');
-        const mainPart = text.slice(0, commentIdx);
-        const commentPart = text.slice(commentIdx);
-        appendFormattedRuns(p, mainPart);
+function renderStrophe(container, rawText, isNext, showComments) {
+  if (!rawText) return false;
+  const lines = rawText.split('\n');
+  let count = 0;
+  lines.forEach((line) => {
+    if (isDirectiveLine(line)) return;
+    const trimmed = line.trim();
+    if (!showComments && trimmed.startsWith('//')) return;
+    count++;
+    const p = document.createElement('span');
+    p.className = 'paragraph' + (isNext ? ' next-paragraph' : '');
+    if (trimmed.startsWith('//')) {
+      p.classList.add('comment');
+      p.textContent = trimmed;
+    } else if (line.includes('//')) {
+      const commentIdx = line.indexOf('//');
+      const mainPart = line.slice(0, commentIdx);
+      const commentPart = line.slice(commentIdx);
+      appendFormattedRuns(p, mainPart);
+      if (showComments && !isDirectiveLine(commentPart)) {
         const cSpan = document.createElement('span');
         cSpan.className = 'paragraph comment';
         cSpan.textContent = ' ' + commentPart.trim();
         p.append(cSpan);
-      } else {
-        appendFormattedRuns(p, text || '\u200b');
       }
-      lyrics.append(p);
-      if (index + 1 < all.length) lyrics.append(document.createTextNode('\n'));
-    });
+    } else {
+      appendFormattedRuns(p, line || '\u200b');
+    }
+    container.append(p);
+  });
+  return count > 0;
+}
+
+function render(s) {
+  const o = options(s);
+  const changed = !current || current.text !== s.text || current.nextText !== s.nextText || current.showNextPreview !== s.showNextPreview || current.hidden !== s.hidden;
+  let oldLayer = null;
+  if (changed) {
+    layers.querySelectorAll('.previous-layer').forEach(el => el.remove());
+    if (current?.text && !s.hidden) {
+      oldLayer = layer.cloneNode(true);
+      oldLayer.removeAttribute('id');
+      oldLayer.classList.add('previous-layer');
+      oldLayer.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      layers.prepend(oldLayer);
+    }
+    // Criação segura de nós DOM; textos externos nunca são injetados como HTML arbitrário
+    lyrics.replaceChildren();
+
+    // 1. Estrofe atual
+    renderStrophe(lyrics, s.text, false, s.showComments);
+
+    // 2. Estrofe a seguir (junto com o texto da música, em cor mais fraca)
+    if (s.showNextPreview && s.nextText && s.nextText.trim()) {
+      const nextDiv = document.createElement('div');
+      nextDiv.className = 'next-strophe';
+      const hasNext = renderStrophe(nextDiv, s.nextText, true, s.showComments);
+      if (hasNext) {
+        lyrics.append(nextDiv);
+      }
+    }
   }
   current = s;
   designLayer.hidden = s.hidden || !s.design;
@@ -185,16 +246,7 @@ function render(s) {
     if (s.showClock) updateClock();
   }
   if (nextPreview) {
-    if (s.showNextPreview && s.nextText && s.nextText.trim()) {
-      const firstLine = s.nextText.trim().split('\n')[0];
-      nextPreview.textContent = '';
-      const strong = document.createElement('strong');
-      strong.textContent = 'A seguir:';
-      nextPreview.append(strong, ' ' + firstLine);
-      nextPreview.hidden = false;
-    } else {
-      nextPreview.hidden = true;
-    }
+    nextPreview.hidden = true;
   }
   lyrics.style.whiteSpace = 'normal';
   lyrics.querySelectorAll('.paragraph').forEach(p => p.style.whiteSpace = o.wrap_text ? 'pre-wrap' : 'pre');

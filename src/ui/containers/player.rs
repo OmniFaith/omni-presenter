@@ -1,3 +1,7 @@
+use super::player_widgets::{
+    format_time, render_custom_scrubber, render_custom_volume_slider, render_hero_play_button,
+    render_icon_circle_button,
+};
 use crate::core::i18n::Language;
 use crate::core::layout::ContainerKind;
 use crate::core::slides::SlideDeck;
@@ -6,12 +10,8 @@ use crate::ui::components::render_header_bar;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, RichText, Vec2};
 use egui_phosphor::regular::{
-    ARROWS_IN, ARROWS_LEFT_RIGHT, ARROWS_OUT, ARROW_SQUARE_OUT, MONITOR, MUSIC_NOTE, MUSIC_NOTES,
+    ARROW_SQUARE_OUT, ARROWS_IN, ARROWS_LEFT_RIGHT, ARROWS_OUT, MONITOR, MUSIC_NOTE, MUSIC_NOTES,
     REPEAT, SKIP_BACK, SKIP_FORWARD, SPEAKER_HIGH, SPEAKER_LOW, SPEAKER_SLASH, STOP, VIDEO, X,
-};
-use super::player_widgets::{
-    format_time, render_custom_scrubber, render_custom_volume_slider, render_hero_play_button,
-    render_icon_circle_button,
 };
 
 pub fn render_player_column(
@@ -22,11 +22,14 @@ pub fn render_player_column(
 ) {
     let theme = state.theme.clone();
     let language = state.settings.language;
-    render_header_bar(ui, ContainerKind::Player, language.text("control-player"), &theme);
+    render_header_bar(
+        ui,
+        ContainerKind::Player,
+        language.text("control-player"),
+        &theme,
+    );
     ui.add_space(4.0);
 
-    // Se o vídeo estava sendo projetado mas a apresentação foi fechada ou outro conteúdo foi projetado,
-    // sincroniza o estado do player para não continuar rodando no fundo
     if let Some(media) = &mut state.active_player_media {
         if media.kind == PlayerMediaKind::Video && media.is_projecting {
             let is_still_projecting = *is_presentation_open
@@ -38,7 +41,6 @@ pub fn render_player_column(
         }
     }
 
-    // Atualiza estado do áudio em segundo plano
     state.audio_player.update();
     state.refresh_media_duration();
     if let Some(media) = &mut state.active_player_media {
@@ -46,7 +48,8 @@ pub fn render_player_column(
             media.is_playing = state.audio_player.is_playing();
         }
         if media.is_playing {
-            ui.ctx().request_repaint_after(std::time::Duration::from_millis(33));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(33));
         }
     }
 
@@ -76,9 +79,18 @@ fn render_empty_player(ui: &mut egui::Ui, theme: &AppTheme, language: Language) 
         );
 
         ui.add_space(6.0);
-        ui.label(RichText::new(language.text("control-empty-player")).size(11.5).strong().color(theme.text_secondary));
+        ui.label(
+            RichText::new(language.text("control-empty-player"))
+                .size(11.5)
+                .strong()
+                .color(theme.text_secondary),
+        );
         ui.add_space(2.0);
-        ui.label(RichText::new(language.text("control-player-hint")).size(10.0).color(theme.text_muted));
+        ui.label(
+            RichText::new(language.text("control-player-hint"))
+                .size(10.0)
+                .color(theme.text_muted),
+        );
     });
     ui.add_space(12.0);
 }
@@ -94,7 +106,9 @@ fn render_active_player(
     let language = state.settings.language;
     let is_video = media.kind == PlayerMediaKind::Video;
 
-    let close_anim_id = egui::Id::NULL.with("player_auto_close_fade").with(&media.path);
+    let close_anim_id = egui::Id::NULL
+        .with("player_auto_close_fade")
+        .with(&media.path);
     let mut is_closing = ui
         .ctx()
         .data(|d| d.get_temp::<bool>(close_anim_id).unwrap_or(false));
@@ -131,7 +145,6 @@ fn render_active_player(
     egui::Frame::new()
         .inner_margin(egui::Margin::symmetric(8, 6))
         .show(ui, |ui| {
-
             // Posição e duração total
             let (cur_pos, total_dur) = match media.kind {
                 PlayerMediaKind::Audio => {
@@ -188,17 +201,25 @@ fn render_active_player(
                             .size(9.5)
                             .color(theme.text_muted),
                     )
-                    .on_hover_text(language.format(
-                        "control-remaining",
-                        &[("time", &format_time(remaining))],
-                    ));
+                    .on_hover_text(
+                        language.format("control-remaining", &[("time", &format_time(remaining))]),
+                    );
                 });
             });
 
             ui.add_space(4.0);
 
             // 3. Controles Principais + Volume (Layout Compacto e Adaptável)
-            render_compact_controls_and_volume(ui, state, deck, is_presentation_open, media, cur_pos, total_dur, theme);
+            render_compact_controls_and_volume(
+                ui,
+                state,
+                deck,
+                is_presentation_open,
+                media,
+                cur_pos,
+                total_dur,
+                theme,
+            );
 
             if is_video {
                 ui.add_space(4.0);
@@ -221,8 +242,16 @@ fn render_compact_audio_showcase(
         let center = cover_rect.center();
         painter.rect_filled(cover_rect, 6.0, Color32::from_rgb(24, 28, 38));
         painter.circle_filled(center, 14.5, Color32::from_rgb(14, 16, 22));
-        painter.circle_stroke(center, 12.0, egui::Stroke::new(0.5, Color32::from_rgb(38, 44, 58)));
-        painter.circle_stroke(center, 9.5, egui::Stroke::new(0.5, Color32::from_rgb(30, 36, 48)));
+        painter.circle_stroke(
+            center,
+            12.0,
+            egui::Stroke::new(0.5, Color32::from_rgb(38, 44, 58)),
+        );
+        painter.circle_stroke(
+            center,
+            9.5,
+            egui::Stroke::new(0.5, Color32::from_rgb(30, 36, 48)),
+        );
         painter.circle_filled(center, 5.5, theme.accent);
         painter.circle_filled(center, 1.8, Color32::from_rgb(240, 243, 248));
 
@@ -346,7 +375,13 @@ fn stop_and_close_video(
     is_presentation_open: &mut bool,
     media: &ActivePlayerMedia,
 ) {
-    ctx.data_mut(|d| d.remove::<bool>(egui::Id::NULL.with("player_auto_close_fade").with(&media.path)));
+    ctx.data_mut(|d| {
+        d.remove::<bool>(
+            egui::Id::NULL
+                .with("player_auto_close_fade")
+                .with(&media.path),
+        )
+    });
     crate::services::video::stop(ctx, &media.path);
     if deck.live_media.as_ref().map(|m| &m.path) == Some(&media.path) || media.is_projecting {
         deck.live_media = None;
@@ -384,11 +419,12 @@ fn render_compact_video_showcase(
             theme.accent,
         );
 
-        let right_reserved = if media.path.starts_with("http://") || media.path.starts_with("https://") {
-            72.0
-        } else {
-            50.0
-        };
+        let right_reserved =
+            if media.path.starts_with("http://") || media.path.starts_with("https://") {
+                72.0
+            } else {
+                50.0
+            };
         let title_w = (ui.available_width() - right_reserved).max(30.0);
         ui.add_sized(
             [title_w, 18.0],
@@ -452,11 +488,20 @@ fn render_compact_video_showcase(
 
             // Botão de alternar projeção (Ao Vivo / Projetar)
             let (proj_bg, proj_fg, proj_hint) = if is_live {
-                (theme.accent, theme.text_on_accent, "Deixar de projetar vídeo")
+                (
+                    theme.accent,
+                    theme.text_on_accent,
+                    "Deixar de projetar vídeo",
+                )
             } else {
-                (theme.bg_pill, theme.text_secondary, "Projetar vídeo no ao vivo")
+                (
+                    theme.bg_pill,
+                    theme.text_secondary,
+                    "Projetar vídeo no ao vivo",
+                )
             };
-            let (proj_rect, proj_resp) = ui.allocate_exact_size(Vec2::new(20.0, 18.0), egui::Sense::click());
+            let (proj_rect, proj_resp) =
+                ui.allocate_exact_size(Vec2::new(20.0, 18.0), egui::Sense::click());
             if proj_resp.hovered() {
                 ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
             }
@@ -484,7 +529,11 @@ fn render_compact_video_showcase(
                     crate::services::video::stop(ui.ctx(), &media.path);
                     state.audio_player.pause();
                 } else {
-                    deck.load_custom_content(media.title.clone(), state.settings.language.text("workspace-media").to_string(), String::new());
+                    deck.load_custom_content(
+                        media.title.clone(),
+                        state.settings.language.text("workspace-media").to_string(),
+                        String::new(),
+                    );
                     deck.preview_media = Some(crate::core::slides::MediaOutput {
                         path: media.path.clone(),
                         kind: "video".into(),
@@ -497,7 +546,11 @@ fn render_compact_video_showcase(
                         m.is_projecting = true;
                         m.is_playing = true;
                         let pos = m.video_position();
-                        let _ = state.audio_player.play_video_stream(m.title.clone(), m.path.clone(), pos);
+                        let _ = state.audio_player.play_video_stream(
+                            m.title.clone(),
+                            m.path.clone(),
+                            pos,
+                        );
                     }
                 }
             }
@@ -513,16 +566,37 @@ fn render_video_fit_segmented_bar(
 ) {
     let avail_w = ui.available_width();
     let modes = [
-        ("contain", ARROWS_IN, "Conter", "Conter: preserva proporção original sem cortes"),
-        ("cover", ARROWS_OUT, "Cobrir", "Cobrir: preenche a tela cortando sobras"),
-        ("stretch", ARROWS_LEFT_RIGHT, "Estender", "Estender: estica para preencher toda a tela"),
+        (
+            "contain",
+            ARROWS_IN,
+            "Conter",
+            "Conter: preserva proporção original sem cortes",
+        ),
+        (
+            "cover",
+            ARROWS_OUT,
+            "Cobrir",
+            "Cobrir: preenche a tela cortando sobras",
+        ),
+        (
+            "stretch",
+            ARROWS_LEFT_RIGHT,
+            "Estender",
+            "Estender: estica para preencher toda a tela",
+        ),
     ];
 
     let height = 26.0;
-    let (container_rect, _) = ui.allocate_exact_size(Vec2::new(avail_w, height), egui::Sense::hover());
+    let (container_rect, _) =
+        ui.allocate_exact_size(Vec2::new(avail_w, height), egui::Sense::hover());
 
     ui.painter().rect_filled(container_rect, 6.0, theme.bg_pill);
-    ui.painter().rect_stroke(container_rect, 6.0, egui::Stroke::new(1.0, theme.border_subtle), egui::StrokeKind::Inside);
+    ui.painter().rect_stroke(
+        container_rect,
+        6.0,
+        egui::Stroke::new(1.0, theme.border_subtle),
+        egui::StrokeKind::Inside,
+    );
 
     let pad = 2.0;
     let seg_w = (container_rect.width() - pad * 2.0) / modes.len() as f32;
@@ -531,13 +605,24 @@ fn render_video_fit_segmented_bar(
     let is_neutral_dark = theme.accent.r() == theme.accent.g()
         && theme.accent.g() == theme.accent.b()
         && theme.accent.r() < 120;
-    let sel_text = if is_neutral_dark { theme.text_primary } else { theme.accent };
-    let sel_border = if is_neutral_dark { theme.border_active } else { theme.accent };
+    let sel_text = if is_neutral_dark {
+        theme.text_primary
+    } else {
+        theme.accent
+    };
+    let sel_border = if is_neutral_dark {
+        theme.border_active
+    } else {
+        theme.accent
+    };
 
     for (i, (fit_key, icon, label, tooltip)) in modes.iter().enumerate() {
         let is_selected = media.video_fit == *fit_key;
         let seg_rect = egui::Rect::from_min_size(
-            egui::pos2(container_rect.left() + pad + i as f32 * seg_w, container_rect.top() + pad),
+            egui::pos2(
+                container_rect.left() + pad + i as f32 * seg_w,
+                container_rect.top() + pad,
+            ),
             Vec2::new(seg_w, seg_h),
         );
         let id = ui.auto_id_with(fit_key);
@@ -549,13 +634,22 @@ fn render_video_fit_segmented_bar(
 
         if is_selected {
             ui.painter().rect_filled(seg_rect, 5.0, theme.bg_card_hover);
-            ui.painter().rect_stroke(seg_rect, 5.0, egui::Stroke::new(1.0, sel_border), egui::StrokeKind::Inside);
+            ui.painter().rect_stroke(
+                seg_rect,
+                5.0,
+                egui::Stroke::new(1.0, sel_border),
+                egui::StrokeKind::Inside,
+            );
         } else if resp.hovered() {
-            ui.painter().rect_filled(seg_rect, 5.0, theme.bg_card_hover.linear_multiply(0.5));
+            ui.painter()
+                .rect_filled(seg_rect, 5.0, theme.bg_card_hover.linear_multiply(0.5));
         } else if i > 0 && media.video_fit != modes[i - 1].0 {
             let div_x = seg_rect.left();
             ui.painter().line_segment(
-                [egui::pos2(div_x, seg_rect.top() + 4.0), egui::pos2(div_x, seg_rect.bottom() - 4.0)],
+                [
+                    egui::pos2(div_x, seg_rect.top() + 4.0),
+                    egui::pos2(div_x, seg_rect.bottom() - 4.0),
+                ],
                 egui::Stroke::new(1.0, theme.border_subtle),
             );
         }
@@ -606,7 +700,16 @@ fn render_compact_controls_and_volume(
     if is_wide {
         // Modo uma única linha: controles à esquerda e volume à direita
         ui.horizontal(|ui| {
-            render_playback_buttons(ui, state, deck, is_presentation_open, media, cur_pos, total_dur, theme);
+            render_playback_buttons(
+                ui,
+                state,
+                deck,
+                is_presentation_open,
+                media,
+                cur_pos,
+                total_dur,
+                theme,
+            );
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 render_volume_controls(ui, state, 50.0, theme);
@@ -619,7 +722,16 @@ fn render_compact_controls_and_volume(
                 let controls_width = 148.0;
                 let lead_space = ((ui.available_width() - controls_width) * 0.5).max(0.0);
                 ui.add_space(lead_space);
-                render_playback_buttons(ui, state, deck, is_presentation_open, media, cur_pos, total_dur, theme);
+                render_playback_buttons(
+                    ui,
+                    state,
+                    deck,
+                    is_presentation_open,
+                    media,
+                    cur_pos,
+                    total_dur,
+                    theme,
+                );
             });
         });
 
