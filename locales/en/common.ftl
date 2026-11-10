@@ -4,6 +4,14 @@ common-add-playlist = Add to playlist
 
 common-cancel = Cancel
 
+common-paste = Paste
+
+common-copy = Copy
+
+common-cut = Cut
+
+common-select-all = Select all
+
 common-clear-selection = Clear selection
 
 common-close = Close

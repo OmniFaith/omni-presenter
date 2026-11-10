@@ -16,7 +16,10 @@ use crate::render::{paint_theme_bg, render_theme_lyrics};
 use crate::services::db::AppDb;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, RichText, Stroke, StrokeKind, Vec2};
-use egui_phosphor::regular::{ARROW_U_UP_LEFT, ARROW_U_UP_RIGHT, EYE, EYE_SLASH, FLOPPY_DISK, LINK};
+use egui_phosphor::regular::{
+    ARROW_U_UP_LEFT, ARROW_U_UP_RIGHT, CLIPBOARD, COPY, EYE, EYE_SLASH, FLOPPY_DISK, LINK,
+    SCISSORS, TEXT_T,
+};
 
 const TOOLBAR_HEIGHT: f32 = 44.0;
 const SIDEBAR_MIN: f32 = 260.0;
@@ -389,6 +392,7 @@ fn render_sidebar(
                             .id(egui::Id::unique(editing::TEXT_EDIT_ID))
                             .frame(egui::Frame::NONE)
                             .desired_width(f32::INFINITY)
+                            .min_size(Vec2::new(ui.available_width(), content_h))
                             .hint_text(
                                 crate::ui::i18n::text(ui, "workspace-enter-the-lyrics-here-separate-stanzas-with-a-blank-line"),
                             )
@@ -402,6 +406,86 @@ fn render_sidebar(
                                 state.song_editor.selection = (range.start.0, range.end.0);
                             }
                         }
+
+                        if !output.response.has_focus() && ui.input(|i| i.pointer.primary_clicked()) {
+                            if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
+                                if ui.max_rect().contains(pos) {
+                                    output.response.request_focus();
+                                }
+                            }
+                        }
+
+                        output.response.context_menu(|ui| {
+                            crate::ui::components::context_menu_header(ui);
+                            if crate::ui::components::context_menu_item(
+                                ui,
+                                CLIPBOARD,
+                                crate::ui::i18n::text(ui, "common-paste"),
+                                tokens,
+                            )
+                            .clicked()
+                            {
+                                ui.ctx().send_viewport_cmd(egui::ViewportCommand::RequestPaste);
+                                output.response.request_focus();
+                                ui.close();
+                            }
+                            let (start, end) = state.song_editor.selection;
+                            let has_sel = start != end;
+                            if has_sel {
+                                let (s, e) = if start < end { (start, end) } else { (end, start) };
+                                let byte_start = state.song_editor.text.char_indices().nth(s).map(|(i, _)| i).unwrap_or(state.song_editor.text.len());
+                                let byte_end = state.song_editor.text.char_indices().nth(e).map(|(i, _)| i).unwrap_or(state.song_editor.text.len());
+                                if byte_start < byte_end {
+                                    let selected_text = state.song_editor.text[byte_start..byte_end].to_string();
+                                    if crate::ui::components::context_menu_item(
+                                        ui,
+                                        COPY,
+                                        crate::ui::i18n::text(ui, "common-copy"),
+                                        tokens,
+                                    )
+                                    .clicked()
+                                    {
+                                        ui.ctx().copy_text(selected_text.clone());
+                                        ui.close();
+                                    }
+                                    if crate::ui::components::context_menu_item(
+                                        ui,
+                                        SCISSORS,
+                                        crate::ui::i18n::text(ui, "common-cut"),
+                                        tokens,
+                                    )
+                                    .clicked()
+                                    {
+                                        ui.ctx().copy_text(selected_text);
+                                        state.song_editor.text.replace_range(byte_start..byte_end, "");
+                                        state.song_editor.selection = (s, s);
+                                        ui.close();
+                                    }
+                                }
+                            }
+                            crate::ui::components::context_menu_separator(ui);
+                            if crate::ui::components::context_menu_item(
+                                ui,
+                                TEXT_T,
+                                crate::ui::i18n::text(ui, "common-select-all"),
+                                tokens,
+                            )
+                            .clicked()
+                            {
+                                let char_count = state.song_editor.text.chars().count();
+                                state.song_editor.selection = (0, char_count);
+                                let id = egui::Id::unique(editing::TEXT_EDIT_ID);
+                                if let Some(mut edit) = egui::TextEdit::load_state(ui.ctx(), id) {
+                                    edit.cursor.set_char_range(Some(egui::text_selection::CCursorRange::two(
+                                        egui::text::CCursor::new(0),
+                                        egui::text::CCursor::new(char_count),
+                                    )));
+                                    edit.store(ui.ctx(), id);
+                                }
+                                output.response.request_focus();
+                                ui.close();
+                            }
+                        });
                     });
             });
     });

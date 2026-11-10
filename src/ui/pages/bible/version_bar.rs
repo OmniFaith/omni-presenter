@@ -1,7 +1,7 @@
 use crate::core::bible::version_code;
 use crate::core::state::ControlPanelState;
 use eframe::egui::{self, Color32, FontId, Rect, RichText, Stroke};
-use egui_phosphor::regular::{BOOKS, CHECK_CIRCLE, GLOBE, MAGNIFYING_GLASS, PLUS, STAR, X};
+use egui_phosphor::regular::{BOOK_OPEN, BOOKS, CHECK_CIRCLE, GLOBE, MAGNIFYING_GLASS, PLUS, STAR, X};
 
 pub(super) fn version_bar(
     ui: &mut egui::Ui,
@@ -25,7 +25,9 @@ pub(super) fn version_bar(
                             state.bible_shortcuts.push(current.clone());
                         }
                         let shortcuts = state.bible_shortcuts.clone();
-                        for version in shortcuts {
+                        let mut reorder = None;
+                        for version in &shortcuts {
+                            let version = version.clone();
                             let Some((_, name)) = catalog.iter().find(|(id, _)| id == &version)
                             else {
                                 continue;
@@ -45,10 +47,29 @@ pub(super) fn version_bar(
                                 label.to_owned(), font.clone(), theme.text_primary,
                             ).size().x;
                             let (rect, response) = ui
-                                .allocate_exact_size(egui::vec2((text_width + 18.0).max(36.0), 27.0), egui::Sense::click());
+                                .allocate_exact_size(egui::vec2((text_width + 18.0).max(36.0), 27.0), egui::Sense::click_and_drag());
                             let response = response
                                 .on_hover_cursor(egui::CursorIcon::PointingHand)
-                                .on_hover_text(name);
+                                .on_hover_text(name.clone());
+
+                            crate::ui::components::drag_drop::source(ui, &response, || {
+                                crate::ui::components::drag_drop::DragPayload::new(
+                                    crate::ui::components::drag_drop::DragSource::BibleVersions(vec![version.clone()]),
+                                    label,
+                                    &name,
+                                    BOOK_OPEN,
+                                )
+                            });
+
+                            if let Some((payload, after)) = crate::ui::components::drag_drop::reorder_target(
+                                ui,
+                                response.rect,
+                                theme,
+                                true,
+                                |source| matches!(source, crate::ui::components::drag_drop::DragSource::BibleVersions(ids) if !ids.contains(&version)),
+                            ) && let crate::ui::components::drag_drop::DragSource::BibleVersions(ids) = &payload.source {
+                                reorder = Some((ids.clone(), version.clone(), after));
+                            }
 
                             let hover = ui.ctx().animate_bool(id.with("hover"), response.hovered());
                             let down = ui.ctx().animate_bool(
@@ -112,6 +133,24 @@ pub(super) fn version_bar(
                                 state.bible.preview_key.clear();
                                 state.bible.search_key.clear();
                                 state.bible.scroll_to_verse = true;
+                            }
+                        }
+
+                        if let Some((ids, target, after)) = reorder {
+                            crate::core::interaction::move_items(
+                                &mut state.bible_shortcuts,
+                                &ids,
+                                &target,
+                                after,
+                                |id| id,
+                            );
+                            if let Some(service) = state
+                                .settings
+                                .services
+                                .iter_mut()
+                                .find(|s| s.id == state.settings.active_service)
+                            {
+                                service.bible_shortcuts = state.bible_shortcuts.clone();
                             }
                         }
                         let picker_open_id = ui.make_persistent_id("bible_version_picker_window_open");

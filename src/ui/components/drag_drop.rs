@@ -15,6 +15,7 @@ pub enum DragSource {
     Layers { document: String, ids: Vec<String> },
     Playlist(Vec<String>),
     QuickBar(Vec<String>),
+    BibleVersions(Vec<String>),
     Library,
     ChatMessage(u64),
 }
