@@ -1,4 +1,5 @@
 use crate::core::preferences::AppSettings;
+use crate::core::state::ControlPanelState;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, RichText, Stroke};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, CHAT_CIRCLE_TEXT, GLOBE, LAYOUT, SLIDERS};
@@ -8,7 +9,12 @@ use super::components::{
     ButtonTone,
 };
 
-pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppTheme) {
+pub(super) fn interface(
+    ui: &mut egui::Ui,
+    draft: &mut AppSettings,
+    state: &mut ControlPanelState,
+    theme: &AppTheme,
+) {
     let language = draft.language;
 
     // --- Language Selection ---
@@ -253,7 +259,11 @@ pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppT
                 )
                 .clicked()
                 {
-                    operator.layout = crate::core::layout::LayoutTree::default();
+                    let def = crate::core::layout::LayoutTree::default();
+                    operator.layout = def.clone();
+                    state.layout = def;
+                    state.settings.operator_mut().layout = operator.layout.clone();
+                    state.notify(language.text("settings-layout-restored"));
                 }
             });
         });
@@ -296,7 +306,11 @@ pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppT
                 )
                 .clicked()
                 {
-                    operator.bible_layout = crate::core::layout::LayoutTree::bible_workspace();
+                    let def = crate::core::layout::LayoutTree::bible_workspace();
+                    operator.bible_layout = def.clone();
+                    state.bible_layout = def;
+                    state.settings.operator_mut().bible_layout = operator.bible_layout.clone();
+                    state.notify(language.text("settings-bible-layout-restored"));
                 }
             });
         });
@@ -339,7 +353,11 @@ pub(super) fn interface(ui: &mut egui::Ui, draft: &mut AppSettings, theme: &AppT
                 )
                 .clicked()
                 {
-                    operator.chat_layout = crate::core::layout::LayoutTree::default_chat();
+                    let def = crate::core::layout::LayoutTree::default_chat();
+                    operator.chat_layout = def.clone();
+                    state.chat_layout = def;
+                    state.settings.operator_mut().chat_layout = operator.chat_layout.clone();
+                    state.notify(language.text("settings-chat-layout-restored"));
                 }
             });
         });

@@ -479,7 +479,7 @@ pub fn render_settings_modal(
                     SettingsTab::Outputs => {
                         outputs::outputs(ui, &mut draft, state, monitors, &theme, db)
                     }
-                    SettingsTab::Interface => interface::interface(ui, &mut draft, &theme),
+                    SettingsTab::Interface => interface::interface(ui, &mut draft, state, &theme),
                     SettingsTab::Shortcuts => shortcuts::shortcuts(
                         ui,
                         &mut draft,

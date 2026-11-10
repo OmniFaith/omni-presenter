@@ -78,6 +78,7 @@ pub fn render_node(
             child_ui.set_clip_rect(rect);
             state.theme.container_frame().show(&mut child_ui, |ui| {
                 ui.set_min_height(ui.available_height());
+                ui.set_max_height(ui.available_height());
                 render_container(ui, *kind, state, slide_deck, is_presentation_open, db);
             });
         }

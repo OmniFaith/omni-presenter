@@ -434,6 +434,14 @@ settings-resources = Features
 
 settings-resources-title = Workspace features
 
+settings-restore = Restore
+
+settings-layout-restored = Panel layout restored to default.
+
+settings-bible-layout-restored = Bible panel layout restored to default.
+
+settings-chat-layout-restored = Team chat layout restored to default.
+
 settings-restore-the-book-chapter-and-verse-columns = Restore the book, chapter and verse columns.
 
 settings-restore-the-default-channel-and-message-layout = Restore the default channel and message layout.

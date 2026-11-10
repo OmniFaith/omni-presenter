@@ -434,6 +434,14 @@ settings-resources = Recursos
 
 settings-resources-title = Recursos do painel
 
+settings-restore = Restaurar
+
+settings-layout-restored = Organização dos painéis restaurada para o padrão.
+
+settings-bible-layout-restored = Painel da Bíblia restaurado para o padrão.
+
+settings-chat-layout-restored = Painel do Chat da Equipe restaurado para o padrão.
+
 settings-restore-the-book-chapter-and-verse-columns = Restaura as colunas de livros, capítulos e versículos.
 
 settings-restore-the-default-channel-and-message-layout = Restaura os canais e mensagens para a visualização padrão.

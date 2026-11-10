@@ -196,9 +196,7 @@ impl eframe::App for PresentationApp {
         self.draw_presentation_dock(ui, &theme);
 
         // Central workspace (page-dependent)
-        ui.add_enabled_ui(!self.global_search.open, |ui| {
-            self.draw_workspace(ui, &theme)
-        });
+        self.draw_workspace(ui, &theme);
         self.design_editor.flush(
             &self.db,
             &mut self.slide_deck,

@@ -183,13 +183,19 @@ impl GlobalSearch {
                 egui::Align2::CENTER_TOP,
                 egui::vec2(0.0, (screen.height() * 0.18).max(32.0)),
             ))
-            .backdrop_color(egui::Color32::from_black_alpha(65))
+            .backdrop_color(egui::Color32::TRANSPARENT)
             .frame(
                 egui::Frame::new()
                     .fill(theme.bg_panel)
                     .stroke(egui::Stroke::new(1.0, theme.border_default))
                     .corner_radius(12.0)
-                    .inner_margin(12),
+                    .inner_margin(12)
+                    .shadow(egui::epaint::Shadow {
+                        offset: [0, 8],
+                        blur: 24,
+                        spread: 0,
+                        color: egui::Color32::from_black_alpha(70),
+                    }),
             )
             .show(ctx, |ui| {
                 ui.set_width(560.0_f32.min(screen.width() - 48.0));

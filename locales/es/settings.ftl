@@ -434,6 +434,14 @@ settings-resources = Funciones
 
 settings-resources-title = Funciones del panel
 
+settings-restore = Restaurar
+
+settings-layout-restored = Disposición de paneles restablecida a la predeterminada.
+
+settings-bible-layout-restored = Panel de la Biblia restablecido al predeterminado.
+
+settings-chat-layout-restored = Panel de chat del equipo restablecido al predeterminado.
+
 settings-restore-the-book-chapter-and-verse-columns = Restablece las columnas de libros, capítulos y versículos.
 
 settings-restore-the-default-channel-and-message-layout = Restablece la vista predeterminada de canales y mensajes.

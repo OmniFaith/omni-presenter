@@ -47,11 +47,11 @@ pub fn render_stage_column(
     };
     let hidden = deck.is_content_hidden();
     let has_subtitle = !live_subtitle.is_empty() && *presenting && !hidden;
-    let subtitle_reserve = if has_subtitle { 22.0 } else { 0.0 };
+    let subtitle_reserve = if has_subtitle { 24.0 } else { 4.0 };
 
     let aspect = state.presentation_aspect_ratio.clamp(0.5, 3.5);
     let width = (ui.available_width() - 1.0).max(40.0);
-    let avail_h = (ui.available_height() - subtitle_reserve - 8.0).max(35.0);
+    let avail_h = (ui.available_height() - subtitle_reserve).max(10.0);
     let height = (width / aspect).min(avail_h);
     let live_theme = crate::services::media::live_theme(state, deck);
     let animate = !state.settings.operator().reduce_motion;
@@ -131,23 +131,22 @@ pub fn render_stage_column(
     );
 
     if has_subtitle {
-        ui.add_space(2.0);
-        ui.horizontal(|ui| {
-            ui.with_layout(
-                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-                |ui| {
-                    ui.add(
-                        egui::Label::new(
-                            egui::RichText::new(live_subtitle)
-                                .size(10.5)
-                                .color(theme.text_secondary),
-                        )
-                        .truncate(),
-                    );
-                },
-            );
-        });
-        ui.add_space(2.0);
+        ui.add_space(3.0);
+        let avail_w = ui.available_width();
+        let (label_rect, _) = ui.allocate_exact_size(
+            egui::vec2(avail_w, 16.0),
+            egui::Sense::hover(),
+        );
+        let text_galley = ui.painter().layout_no_wrap(
+            live_subtitle,
+            egui::FontId::proportional(10.5),
+            theme.text_secondary,
+        );
+        let text_pos = egui::pos2(
+            (label_rect.center().x - text_galley.size().x / 2.0).max(label_rect.left()),
+            label_rect.center().y - text_galley.size().y / 2.0,
+        );
+        ui.painter().galley(text_pos, text_galley, theme.text_secondary);
     }
 }
 
@@ -171,11 +170,11 @@ pub fn render_preview_column(
         artist.to_string()
     };
     let has_subtitle = !subtitle.is_empty();
-    let subtitle_reserve = if has_subtitle { 22.0 } else { 0.0 };
+    let subtitle_reserve = if has_subtitle { 24.0 } else { 4.0 };
 
     let aspect = state.presentation_aspect_ratio.clamp(0.5, 3.5);
     let width = (ui.available_width() - 1.0).max(40.0);
-    let avail_h = (ui.available_height() - subtitle_reserve - 8.0).max(35.0);
+    let avail_h = (ui.available_height() - subtitle_reserve).max(10.0);
     let height = (width / aspect).min(avail_h);
     let preview_theme = crate::services::media::preview_theme(state, deck);
     let animate = !state.settings.operator().reduce_motion;
@@ -270,23 +269,22 @@ pub fn render_preview_column(
         }
     }
     if has_subtitle {
-        ui.add_space(2.0);
-        ui.horizontal(|ui| {
-            ui.with_layout(
-                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-                |ui| {
-                    ui.add(
-                        egui::Label::new(
-                            egui::RichText::new(subtitle)
-                                .size(10.5)
-                                .color(theme.text_secondary),
-                        )
-                        .truncate(),
-                    );
-                },
-            );
-        });
-        ui.add_space(2.0);
+        ui.add_space(3.0);
+        let avail_w = ui.available_width();
+        let (label_rect, _) = ui.allocate_exact_size(
+            egui::vec2(avail_w, 16.0),
+            egui::Sense::hover(),
+        );
+        let text_galley = ui.painter().layout_no_wrap(
+            subtitle,
+            egui::FontId::proportional(10.5),
+            theme.text_secondary,
+        );
+        let text_pos = egui::pos2(
+            (label_rect.center().x - text_galley.size().x / 2.0).max(label_rect.left()),
+            label_rect.center().y - text_galley.size().y / 2.0,
+        );
+        ui.painter().galley(text_pos, text_galley, theme.text_secondary);
     }
 }
 
