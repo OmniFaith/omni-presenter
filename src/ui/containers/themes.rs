@@ -419,13 +419,20 @@ pub fn render_themes_column(
 
             if let Some(idx) = action_delete
                 && state.themes.len() > 1 && idx < state.themes.len() {
-                    let to_del = state.themes.remove(idx);
-                    if let Some(app_db) = db {
-                        let _ = app_db.delete_theme(&to_del.id);
-                    }
-                    if state.selected_theme_index >= state.themes.len() {
-                        state.selected_theme_index = state.themes.len().saturating_sub(1);
-                    }
+                    let to_del = &state.themes[idx];
+                    let theme_name = to_del.name.clone();
+                    let theme_id = to_del.id.clone();
+                    let language = state.settings.language;
+                    let title = language.text("workspace-delete-theme");
+                    let message = language.format("common-confirm-delete-theme", &[("name", &theme_name)]);
+                    state.confirm_dialog = Some(crate::core::state::ConfirmDialogState::new(
+                        title,
+                        message,
+                        crate::core::state::ConfirmAction::DeleteTheme {
+                            id: theme_id,
+                            name: theme_name,
+                        },
+                    ));
                 }
 
             if action_restore_defaults {

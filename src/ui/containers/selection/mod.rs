@@ -91,7 +91,7 @@ pub fn render_selection_column(
         if ui.input(|input| input.key_pressed(egui::Key::Delete))
             && !kind.selected(state).is_empty()
         {
-            action = Some(LibraryAction::Delete(
+            action = Some(LibraryAction::RequestDelete(
                 kind.selected(state).iter().copied().collect(),
             ));
         }
@@ -335,7 +335,7 @@ pub fn render_selection_column(
                     )
                     .clicked()
                     {
-                        action = Some(LibraryAction::DeleteFolder(folder.clone()));
+                        action = Some(LibraryAction::RequestDeleteFolder(folder.clone()));
                         ui.close();
                     }
                 });
@@ -606,7 +606,7 @@ fn selection_bar(
             .on_hover_text(language.text("common-delete"))
             .clicked()
         {
-            *action = Some(LibraryAction::Delete(ids.clone()));
+            *action = Some(LibraryAction::RequestDelete(ids.clone()));
         }
         let response = ui
             .button(FOLDER)
@@ -859,7 +859,7 @@ fn row(
         });
         context_menu_separator(ui);
         if context_menu_danger_item(ui, TRASH, language.text("common-delete"), &theme).clicked() {
-            *action = Some(LibraryAction::Delete(ids));
+            *action = Some(LibraryAction::RequestDelete(ids));
             ui.close();
         }
     });

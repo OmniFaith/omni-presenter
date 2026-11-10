@@ -55,3 +55,23 @@ common-text = Text
 common-title = Title
 
 common-all = All
+
+common-confirm-title = Confirm Deletion
+
+common-confirm-delete = Delete
+
+common-confirm-delete-theme = Are you sure you want to delete the theme "{ $name }"? This action cannot be undone.
+
+common-confirm-delete-song = Are you sure you want to delete the song "{ $title }"? This action cannot be undone.
+
+common-confirm-delete-media = Are you sure you want to delete the media "{ $title }"? This action cannot be undone.
+
+common-confirm-delete-text = Are you sure you want to delete the text "{ $title }"? This action cannot be undone.
+
+common-confirm-delete-verse = Are you sure you want to delete the saved verse "{ $title }"? This action cannot be undone.
+
+common-confirm-delete-multiple = Are you sure you want to delete the { $count } selected items? This action cannot be undone.
+
+common-confirm-delete-folder = Are you sure you want to delete the folder "{ $name }"? Items will be moved out of the folder.
+
+common-confirm-clear-playlist = Are you sure you want to clear the entire playlist?

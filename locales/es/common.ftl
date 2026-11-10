@@ -55,3 +55,23 @@ common-text = Texto
 common-title = Título
 
 common-all = Todos
+
+common-confirm-title = Confirmar Eliminación
+
+common-confirm-delete = Eliminar
+
+common-confirm-delete-theme = ¿Está seguro de que desea eliminar el tema "{ $name }"? Esta acción no se puede deshacer.
+
+common-confirm-delete-song = ¿Está seguro de que desea eliminar la canción "{ $title }"? Esta acción no se puede deshacer.
+
+common-confirm-delete-media = ¿Está seguro de que desea eliminar el medio "{ $title }"? Esta acción no se puede deshacer.
+
+common-confirm-delete-text = ¿Está seguro de que desea eliminar el texto "{ $title }"? Esta acción no se puede deshacer.
+
+common-confirm-delete-verse = ¿Está seguro de que desea eliminar el versículo guardado "{ $title }"? Esta acción no se puede deshacer.
+
+common-confirm-delete-multiple = ¿Está seguro de que desea eliminar los { $count } elementos seleccionados? Esta acción no se puede deshacer.
+
+common-confirm-delete-folder = ¿Está seguro de que desea eliminar la carpeta "{ $name }"? Los elementos se moverán fuera de la carpeta.
+
+common-confirm-clear-playlist = ¿Está seguro de que desea vaciar toda la lista de reproducción?

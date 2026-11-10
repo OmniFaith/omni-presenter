@@ -12,13 +12,17 @@ pub(super) enum LibraryAction {
     Preview(i64),
     Present(i64),
     Edit(i64),
+    #[allow(dead_code)]
     Delete(Vec<i64>),
+    RequestDelete(Vec<i64>),
     Move(Vec<i64>, String),
     Playlist(Vec<i64>),
     Pin(Vec<i64>),
     Convert(i64),
     Info(i64),
+    #[allow(dead_code)]
     DeleteFolder(String),
+    RequestDeleteFolder(String),
     Create(Option<String>),
 }
 
@@ -354,6 +358,9 @@ fn execute_inner(
             kind.clear(state);
             reload(kind, state, deck, db);
         }
+        LibraryAction::RequestDelete(ids) => {
+            prompt_delete(kind, &ids, entries, state);
+        }
         LibraryAction::Move(ids, folder) => {
             for id in ids {
                 if let Some(db) = db {
@@ -391,8 +398,63 @@ fn execute_inner(
             }
             kind.folders_mut(state).remove(&folder);
         }
+        LibraryAction::RequestDeleteFolder(folder) => {
+            prompt_delete_folder(kind, &folder, state);
+        }
     }
     Ok(())
+}
+
+pub(super) fn prompt_delete(
+    kind: LibraryKind,
+    ids: &[i64],
+    entries: &[LibraryEntry],
+    state: &mut ControlPanelState,
+) {
+    let language = state.settings.language;
+    let title = language.text("common-confirm-title");
+    let message = if ids.len() == 1 {
+        let item_title = entries
+            .iter()
+            .find(|it| it.id == ids[0])
+            .map(|it| it.title.as_str())
+            .unwrap_or("");
+        match kind {
+            LibraryKind::Song => language.format("common-confirm-delete-song", &[("title", item_title)]),
+            LibraryKind::Media => language.format("common-confirm-delete-media", &[("title", item_title)]),
+            LibraryKind::Text => language.format("common-confirm-delete-text", &[("title", item_title)]),
+            LibraryKind::Verse => language.format("common-confirm-delete-verse", &[("title", item_title)]),
+        }
+    } else {
+        language.count("common-confirm-delete-multiple", "common-confirm-delete-multiple", ids.len())
+    };
+
+    let action = match kind {
+        LibraryKind::Song => crate::core::state::ConfirmAction::DeleteSongs { ids: ids.to_vec() },
+        LibraryKind::Media => crate::core::state::ConfirmAction::DeleteMedia { ids: ids.to_vec() },
+        LibraryKind::Text => crate::core::state::ConfirmAction::DeleteTexts { ids: ids.to_vec() },
+        LibraryKind::Verse => crate::core::state::ConfirmAction::DeleteSavedVerses { ids: ids.to_vec() },
+    };
+
+    state.confirm_dialog = Some(crate::core::state::ConfirmDialogState::new(title, message, action));
+}
+
+pub(super) fn prompt_delete_folder(
+    kind: LibraryKind,
+    folder: &str,
+    state: &mut ControlPanelState,
+) {
+    let language = state.settings.language;
+    let title = language.text("common-delete-folder");
+    let message = language.format("common-confirm-delete-folder", &[("name", folder)]);
+    state.confirm_dialog = Some(crate::core::state::ConfirmDialogState::new(
+        title,
+        message,
+        crate::core::state::ConfirmAction::DeleteFolder {
+            category: kind.category().to_owned(),
+            folder: folder.to_owned(),
+        },
+    ));
 }
 
 pub(super) fn append_items(

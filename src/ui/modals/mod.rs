@@ -1,3 +1,4 @@
+pub mod confirm;
 pub mod editor;
 pub mod event_editor;
 pub mod folder_creator;
@@ -14,6 +15,7 @@ pub mod web_lyrics;
 pub mod web_media;
 pub mod welcome_profile;
 
+pub use confirm::render_confirm_dialog;
 pub use editor::render_editor_modal;
 pub use event_editor::render_event_editor_modal;
 pub use folder_creator::render_folder_creator_modal;

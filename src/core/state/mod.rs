@@ -20,6 +20,8 @@ pub use lyrics_search::WebLyricsSearchState;
 pub use player::{ActivePlayerMedia, PlayerMediaKind};
 pub use setup_wizard::SetupWizardState;
 pub use web_media::WebMediaModalState;
+mod confirm;
+pub use confirm::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SidebarPage {
@@ -244,6 +246,7 @@ pub struct ControlPanelState {
     pub media_conversion_progress: Option<std::sync::Arc<std::sync::Mutex<crate::services::media_conversion::ConversionProgress>>>,
     pub media_conversion_running: bool,
     pub media_info_dialog: Option<crate::services::media_info::MediaDetails>,
+    pub confirm_dialog: Option<ConfirmDialogState>,
     pub open_media_folders: std::collections::HashSet<String>,
     pub selected_media_ids: std::collections::HashSet<i64>,
     pub media_selection_anchor: Option<i64>,
@@ -414,6 +417,7 @@ impl Default for ControlPanelState {
 
             audio_player: crate::services::audio::AudioPlayer::default(),
             active_player_media: None,
+            confirm_dialog: None,
         }
     }
 }

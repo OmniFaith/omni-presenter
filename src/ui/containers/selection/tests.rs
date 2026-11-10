@@ -432,3 +432,34 @@ fn test_drag_and_drop_song_to_folder() {
     assert_eq!(deck.library()[0].folder, "Cantor Cristão");
     assert!(state.open_folders.contains("Cantor Cristão"));
 }
+
+#[test]
+fn test_request_delete_opens_confirmation_dialog() {
+    let mut state = ControlPanelState::default();
+    let mut deck = SlideDeck::default();
+    let mut song = crate::core::models::Song::new("Te Agradeço", "Kleber Lucas", "Letra");
+    song.id = Some(202);
+    deck.library_mut().push(song);
+
+    let entries = model::entries(LibraryKind::Song, &state, &deck);
+    let mut presenting = false;
+    assert!(state.confirm_dialog.is_none());
+
+    actions::execute(
+        LibraryAction::RequestDelete(vec![202]),
+        LibraryKind::Song,
+        &entries,
+        &mut state,
+        &mut deck,
+        &mut presenting,
+        None,
+    );
+
+    assert!(state.confirm_dialog.is_some());
+    let dialog = state.confirm_dialog.as_ref().unwrap();
+    assert!(dialog.message.contains("Te Agradeço"));
+    assert_eq!(
+        dialog.action,
+        crate::core::state::ConfirmAction::DeleteSongs { ids: vec![202] }
+    );
+}

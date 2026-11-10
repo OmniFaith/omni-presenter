@@ -131,6 +131,14 @@ impl PresentationApp {
         // Global QR Code modal dialog for sharing links
         crate::ui::components::render_active_qr_dialog(ctx, &self.control_state.theme);
 
+        // Confirmation Modal Dialog (delete themes, songs, media, texts, verses, folders, playlist)
+        crate::ui::render_confirm_dialog(
+            ctx,
+            &mut self.control_state,
+            &mut self.slide_deck,
+            Some(&self.db),
+        );
+
         monitor_changed_to
     }
 }

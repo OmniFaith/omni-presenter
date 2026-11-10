@@ -568,9 +568,15 @@ pub fn render_playlist_column(
                     it.played = false;
                 }
             }
-            if action_clear_playlist {
-                state.playlist.clear();
-                state.selected_playlist_index = None;
+            if action_clear_playlist && !state.playlist.is_empty() {
+                let language = state.settings.language;
+                let title = language.text("workspace-clear-playlist");
+                let message = language.text("common-confirm-clear-playlist");
+                state.confirm_dialog = Some(crate::core::state::ConfirmDialogState::new(
+                    title,
+                    message,
+                    crate::core::state::ConfirmAction::ClearPlaylist,
+                ));
             }
 
             if ui.memory(|m| m.focused().is_none()) {

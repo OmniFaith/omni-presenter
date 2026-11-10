@@ -81,7 +81,8 @@ impl PresentationApp {
             || self.control_state.chat.show_channels
             || self.control_state.chat.show_bible
             || self.control_state.chat.show_songs
-            || self.control_state.chat.show_access;
+            || self.control_state.chat.show_access
+            || self.control_state.confirm_dialog.is_some();
         (ctx, modal_was_open)
     }
 
