@@ -361,6 +361,21 @@ impl SlideDeck {
         self.is_song = false;
     }
 
+    pub fn load_custom_slides(&mut self, title: String, artist: String, slides: Vec<String>) {
+        self.preview_design = None;
+        self.preview_media = None;
+        self.title = title;
+        self.artist = artist;
+        self.raw_text = slides.join("\n\n");
+        self.slides = if slides.is_empty() {
+            vec![String::new()]
+        } else {
+            slides
+        };
+        self.preview_slide_index = 0;
+        self.is_song = false;
+    }
+
     pub fn project_custom_content(&mut self, title: String, artist: String, text: String) {
         self.load_custom_content(title, artist, text);
         self.project_preview();

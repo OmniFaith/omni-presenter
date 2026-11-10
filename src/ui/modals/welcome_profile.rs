@@ -156,23 +156,11 @@ pub fn render_welcome_profile_modal(
                                 );
 
                                 // Layout perfeitamente centralizado verticalmente
-                                let (avatar_center, name_y, status_y) = if is_active {
-                                    let cy = rect.top() + 52.0;
-                                    (
-                                        egui::pos2(rect.center().x, cy),
-                                        cy + avatar_size / 2.0 + 13.0,
-                                        Some(cy + avatar_size / 2.0 + 13.0 + 18.0),
-                                    )
-                                } else {
-                                    let content_h = avatar_size + 14.0 + 16.0;
-                                    let start_y = rect.top() + (card_h - content_h) / 2.0;
-                                    let cy = start_y + avatar_size / 2.0;
-                                    (
-                                        egui::pos2(rect.center().x, cy),
-                                        cy + avatar_size / 2.0 + 14.0,
-                                        None,
-                                    )
-                                };
+                                let content_h = avatar_size + 14.0 + 16.0;
+                                let start_y = rect.top() + (card_h - content_h) / 2.0;
+                                let cy = start_y + avatar_size / 2.0;
+                                let avatar_center = egui::pos2(rect.center().x, cy);
+                                let name_y = cy + avatar_size / 2.0 + 14.0;
 
                                 let avatar_rect = egui::Rect::from_center_size(
                                     avatar_center,
@@ -220,34 +208,6 @@ pub fn render_welcome_profile_modal(
                                     egui::FontId::new(14.0, egui::FontFamily::Name("inter_bold".into())),
                                     if is_active { theme.accent } else { theme.text_primary },
                                 );
-
-                                // Indicador de perfil ativo usando o accent do tema
-                                if let Some(sy) = status_y {
-                                    let pill_w = 56.0;
-                                    let pill_h = 18.0;
-                                    let pill_rect = egui::Rect::from_center_size(
-                                        egui::pos2(rect.center().x, sy),
-                                        Vec2::new(pill_w, pill_h),
-                                    );
-                                    ui.painter().rect_filled(
-                                        pill_rect,
-                                        9.0,
-                                        theme.accent_soft,
-                                    );
-                                    ui.painter().rect_stroke(
-                                        pill_rect,
-                                        9.0,
-                                        Stroke::new(1.0, theme.accent.linear_multiply(0.4)),
-                                        egui::StrokeKind::Inside,
-                                    );
-                                    ui.painter().text(
-                                        egui::pos2(rect.center().x, sy),
-                                        egui::Align2::CENTER_CENTER,
-                                        language.text("workspace-profile-active"),
-                                        egui::FontId::proportional(10.5),
-                                        theme.accent,
-                                    );
-                                }
                             }
                         });
                         ui.add_space(8.0);

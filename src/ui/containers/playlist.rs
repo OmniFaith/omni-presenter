@@ -31,11 +31,9 @@ pub fn render_playlist_column(
 
     // Botões embaixo da barra de título (centralizados)
     centered_horizontal(ui, "playlist_toolbar", 160.0, |ui| {
-        if toolbar_icon_button(ui, PLAY, language.text("workspace-play-selected-item"), &theme).clicked()
-            && let Some(idx) = state.selected_playlist_index
-                && idx < state.playlist.len() {
-                    activate_item(state, slide_deck, is_presentation_open, idx, true);
-                }
+        if toolbar_icon_button(ui, PLAY, language.text("workspace-play-selected-item"), &theme).clicked() {
+            activate_selected_playlist_items(state, slide_deck, is_presentation_open, true);
+        }
         let reorder = toolbar_icon_button(ui, LIST, language.text("workspace-reorder-playlist"), &theme);
         egui::Popup::menu(&reorder).show(|ui| {
             let selected = state.selected_playlist_index;
@@ -115,12 +113,17 @@ pub fn render_playlist_column(
                         state.notify(state.settings.language.text("workspace-only-songs-can-be-edited-here"));
                     }
                 }
-        if toolbar_icon_button(ui, TRASH, crate::ui::i18n::text(ui, "workspace-remove-from-playlist"), &theme).clicked()
-            && let Some(idx) = state.selected_playlist_index
+        if toolbar_icon_button(ui, TRASH, crate::ui::i18n::text(ui, "workspace-remove-from-playlist"), &theme).clicked() {
+            if !state.playlist_selection.selected.is_empty() {
+                state.playlist.retain(|it| !state.playlist_selection.selected.contains(&it.id));
+                state.playlist_selection.clear();
+                state.selected_playlist_index = None;
+            } else if let Some(idx) = state.selected_playlist_index
                 && idx < state.playlist.len() {
                     state.playlist.remove(idx);
                     state.selected_playlist_index = None;
                 }
+        }
         if toolbar_icon_button(ui, HEART, crate::ui::i18n::text(ui, "workspace-save-playlist"), &theme).clicked() {
             state.capture_profiles();
             state.notify(state.settings.language.text("workspace-playlist-saved-in-preferences"));
@@ -139,28 +142,38 @@ pub fn render_playlist_column(
         .max_height(scroll_h)
         .show(ui, |ui| {
             let mut toggled_played_idx = None;
-            let mut clicked_idx = None;
-            let mut play_item_idx = None;
+            let mut play_selection = false;
+            let mut preview_selection = false;
             let mut action_move_up = None;
             let mut action_move_down = None;
             let mut action_add_to_shortcuts = None;
             let mut action_edit_song = None;
-            let mut action_remove = None;
+            let mut action_remove_idx = None;
             let mut action_mark_all_played = false;
             let mut action_mark_all_unplayed = false;
             let mut action_clear_playlist = false;
             let mut reorder = None;
 
+            let order: Vec<String> = state.playlist.iter().map(|item| item.id.clone()).collect();
+            state.playlist_selection.retain(&order);
+
             let total_items = state.playlist.len();
 
             for (idx, item) in state.playlist.iter().enumerate() {
-                let is_selected = state.selected_playlist_index == Some(idx);
+                let is_selected = state.playlist_selection.selected.contains(&item.id)
+                    || (state.playlist_selection.selected.is_empty() && state.selected_playlist_index == Some(idx));
                 let row_w = ui.available_width();
                 let (rect, resp) =
                     ui.allocate_exact_size(Vec2::new(row_w, 28.0), egui::Sense::click_and_drag());
 
                 crate::ui::components::interaction::row_emphasis(ui, &resp, is_selected, &theme);
-                if resp.drag_started() { state.selected_playlist_index = Some(idx); }
+                if resp.drag_started() {
+                    if !state.playlist_selection.selected.contains(&item.id) {
+                        state.playlist_selection.clear();
+                        state.playlist_selection.click(item.id.clone(), &order, false, false);
+                    }
+                    state.selected_playlist_index = Some(idx);
+                }
 
                 let circle_rect = egui::Rect::from_center_size(
                     egui::pos2(rect.max.x - 14.0, rect.center().y),
@@ -211,15 +224,21 @@ pub fn render_playlist_column(
                     PlaylistItemKind::Text => FILE_TEXT,
                     PlaylistItemKind::Design => egui_phosphor::regular::STACK,
                 };
+                let drag_ids = state.playlist_selection.drag_ids(&item.id, &order);
                 crate::ui::components::drag_drop::source(ui, &resp, || {
                     use crate::ui::components::drag_drop::{DragPayload, DragSource};
-                    let mut payload = DragPayload::new(DragSource::Playlist(vec![item.id.clone()]), &item.title, &item.subtitle, kind_icon);
-                    let mut quick = crate::core::models::QuickItem::from_playlist(item);
-                    if quick.kind == QuickItemKind::Song && quick.content.is_empty() {
-                        quick.content = slide_deck.library().iter().find(|song| song.title == item.title && song.artist == item.subtitle).map(|song| song.text.clone()).unwrap_or_default();
+                    let mut payload = DragPayload::new(DragSource::Playlist(drag_ids.clone()), &item.title, &item.subtitle, kind_icon);
+                    for did in &drag_ids {
+                        if let Some(ditem) = state.playlist.iter().find(|it| &it.id == did) {
+                            let mut quick = crate::core::models::QuickItem::from_playlist(ditem);
+                            if quick.kind == QuickItemKind::Song && quick.content.is_empty() {
+                                quick.content = slide_deck.library().iter().find(|song| song.title == ditem.title && song.artist == ditem.subtitle).map(|song| song.text.clone()).unwrap_or_default();
+                            }
+                            if quick.kind == QuickItemKind::Design { payload.design = slide_deck.designs.iter().find(|scene| scene.id == ditem.content).cloned(); }
+                            payload.items.push(quick);
+                        }
                     }
-                    if quick.kind == QuickItemKind::Design { payload.design = slide_deck.designs.iter().find(|scene| scene.id == item.content).cloned(); }
-                    payload.items.push(quick); payload
+                    payload
                 });
                 if let Some((payload, after)) = crate::ui::components::drag_drop::reorder_target(ui, resp.rect, &theme, false, |source| matches!(source, crate::ui::components::drag_drop::DragSource::Playlist(ids) if !ids.contains(&item.id)))
                     && let crate::ui::components::drag_drop::DragSource::Playlist(ids) = &payload.source { reorder = Some((ids.clone(), item.id.clone(), after)); }
@@ -266,21 +285,35 @@ pub fn render_playlist_column(
                     ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
                 }
                 if resp.clicked() && !circle_resp.clicked() {
-                    clicked_idx = Some(idx);
+                    let (shift, ctrl) = ui.input(|i| (i.modifiers.shift, i.modifiers.ctrl || i.modifiers.command));
+                    state.playlist_selection.click(item.id.clone(), &order, shift, ctrl);
+                    state.selected_playlist_index = Some(idx);
+                    preview_selection = true;
                 }
                 if resp.double_clicked() {
-                    play_item_idx = Some(idx);
+                    let (shift, ctrl) = ui.input(|i| (i.modifiers.shift, i.modifiers.ctrl || i.modifiers.command));
+                    if !shift && !ctrl && !state.playlist_selection.selected.contains(&item.id) {
+                        state.playlist_selection.clear();
+                        state.playlist_selection.click(item.id.clone(), &order, false, false);
+                        state.selected_playlist_index = Some(idx);
+                    }
+                    play_selection = true;
                 }
 
                 // Menu de contexto com clique com o botão direito
                 resp.context_menu(|ui| {
+                    if !state.playlist_selection.selected.contains(&item.id) {
+                        state.playlist_selection.clear();
+                        state.playlist_selection.click(item.id.clone(), &order, false, false);
+                        state.selected_playlist_index = Some(idx);
+                    }
                     context_menu_header(ui);
                     if context_menu_item(ui, PLAY, "workspace-present-now", &theme).clicked() {
-                        play_item_idx = Some(idx);
+                        play_selection = true;
                         ui.close();
                     }
                     if context_menu_item(ui, EYE, "workspace-preview", &theme).clicked() {
-                        clicked_idx = Some(idx);
+                        preview_selection = true;
                         ui.close();
                     }
                     let status_label = if item.played {
@@ -331,7 +364,7 @@ pub fn render_playlist_column(
                     context_menu_separator(ui);
 
                     if context_menu_danger_item(ui, TRASH, "workspace-remove-from-playlist", &theme).clicked() {
-                        action_remove = Some(idx);
+                        action_remove_idx = Some(idx);
                         ui.close();
                     }
                 });
@@ -510,8 +543,12 @@ pub fn render_playlist_column(
                     state.song_editor.tags = s.tags.clone();
                     state.song_editor.open = true;
                 }
-            if let Some(idx) = action_remove
-                && idx < state.playlist.len() {
+            if let Some(idx) = action_remove_idx {
+                if idx < state.playlist.len() && state.playlist_selection.selected.contains(&state.playlist[idx].id) && state.playlist_selection.selected.len() > 1 {
+                    state.playlist.retain(|it| !state.playlist_selection.selected.contains(&it.id));
+                    state.playlist_selection.clear();
+                    state.selected_playlist_index = None;
+                } else if idx < state.playlist.len() {
                     state.playlist.remove(idx);
                     if state.selected_playlist_index == Some(idx) {
                         state.selected_playlist_index = None;
@@ -520,6 +557,7 @@ pub fn render_playlist_column(
                             state.selected_playlist_index = Some(sel - 1);
                         }
                 }
+            }
             if action_mark_all_played {
                 for it in &mut state.playlist {
                     it.played = true;
@@ -535,14 +573,44 @@ pub fn render_playlist_column(
                 state.selected_playlist_index = None;
             }
 
+            if ui.memory(|m| m.focused().is_none()) {
+                if ui.input(|i| i.key_pressed(egui::Key::Enter))
+                    && (!state.playlist_selection.selected.is_empty() || state.selected_playlist_index.is_some())
+                {
+                    play_selection = true;
+                }
+                if ui.input(|i| (i.modifiers.ctrl || i.modifiers.command) && i.key_pressed(egui::Key::A)) {
+                    state.playlist_selection.selected = order.into_iter().collect();
+                    preview_selection = true;
+                }
+                if ui.input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace))
+                    && !state.playlist_selection.selected.is_empty()
+                {
+                    state.playlist.retain(|it| !state.playlist_selection.selected.contains(&it.id));
+                    state.playlist_selection.clear();
+                    state.selected_playlist_index = None;
+                }
+            }
+
             if let Some(idx) = toggled_played_idx {
-                state.playlist[idx].played = !state.playlist[idx].played;
+                if let Some(target_item) = state.playlist.get(idx) {
+                    let target_id = target_item.id.clone();
+                    if state.playlist_selection.selected.contains(&target_id) && state.playlist_selection.selected.len() > 1 {
+                        let new_played = !target_item.played;
+                        for it in &mut state.playlist {
+                            if state.playlist_selection.selected.contains(&it.id) {
+                                it.played = new_played;
+                            }
+                        }
+                    } else {
+                        state.playlist[idx].played = !state.playlist[idx].played;
+                    }
+                }
             }
-            if let Some(idx) = clicked_idx {
-                activate_item(state, slide_deck, is_presentation_open, idx, false);
-            }
-            if let Some(idx) = play_item_idx {
-                activate_item(state, slide_deck, is_presentation_open, idx, true);
+            if play_selection {
+                activate_selected_playlist_items(state, slide_deck, is_presentation_open, true);
+            } else if preview_selection {
+                activate_selected_playlist_items(state, slide_deck, is_presentation_open, false);
             }
             if let Some((ids, target, after)) = reorder {
                 let selected = state.selected_playlist_index.and_then(|index| state.playlist.get(index)).map(|item| item.id.clone());
@@ -578,6 +646,121 @@ pub fn render_playlist_column(
 
     ui.add_space(2.0);
     render_event_footer(ui, state, &theme);
+}
+
+pub fn activate_selected_playlist_items(
+    state: &mut ControlPanelState,
+    deck: &mut SlideDeck,
+    presenting: &mut bool,
+    project: bool,
+) {
+    let order: Vec<String> = state.playlist.iter().map(|item| item.id.clone()).collect();
+    state.playlist_selection.retain(&order);
+
+    let selected_count = state.playlist_selection.selected.len();
+    if selected_count <= 1 {
+        let index = if let Some(id) = state.playlist_selection.selected.iter().next() {
+            state.playlist.iter().position(|it| &it.id == id)
+        } else {
+            state.selected_playlist_index
+        };
+        if let Some(idx) = index {
+            activate_item(state, deck, presenting, idx, project);
+        }
+        return;
+    }
+
+    let selected_items: Vec<&crate::core::models::PlaylistItem> = state
+        .playlist
+        .iter()
+        .filter(|item| state.playlist_selection.selected.contains(&item.id))
+        .collect();
+
+    if selected_items.is_empty() {
+        return;
+    }
+
+    let mut all_slides = Vec::new();
+
+    for item in &selected_items {
+        match item.kind {
+            PlaylistItemKind::Song => {
+                let text = deck
+                    .library()
+                    .iter()
+                    .find(|s| s.title == item.title && (item.subtitle.is_empty() || s.artist == item.subtitle))
+                    .map(|s| s.text.as_str())
+                    .unwrap_or(if !item.content.is_empty() { &item.content } else { &item.title });
+                let song_slides = crate::core::slides::build_song_slides(&item.title, &item.subtitle, text);
+                for slide in song_slides {
+                    if !slide.trim().is_empty() {
+                        all_slides.push(slide);
+                    }
+                }
+            }
+            PlaylistItemKind::Bible | PlaylistItemKind::Text => {
+                let text = if !item.content.is_empty() {
+                    &item.content
+                } else {
+                    &item.title
+                };
+                let parsed = crate::core::slides::parse_slides_from_text(text);
+                if parsed.is_empty() {
+                    all_slides.push(text.to_string());
+                } else {
+                    all_slides.extend(parsed);
+                }
+            }
+            PlaylistItemKind::Design => {
+                if !item.content.is_empty() {
+                    let parsed = crate::core::slides::parse_slides_from_text(&item.content);
+                    if parsed.is_empty() {
+                        all_slides.push(item.content.clone());
+                    } else {
+                        all_slides.extend(parsed);
+                    }
+                } else {
+                    all_slides.push(item.title.clone());
+                }
+            }
+            PlaylistItemKind::Media => {
+                all_slides.push(item.title.clone());
+            }
+        }
+    }
+
+    if all_slides.is_empty() {
+        all_slides.push(String::new());
+    }
+
+    let titles_joined = selected_items
+        .iter()
+        .map(|it| it.title.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let combined_title = if titles_joined.len() <= 45 {
+        titles_joined
+    } else {
+        format!("{} (+{} itens)", selected_items[0].title, selected_items.len() - 1)
+    };
+    let combined_artist = selected_items
+        .first()
+        .map(|it| it.subtitle.clone())
+        .unwrap_or_default();
+
+    deck.load_custom_slides(combined_title, combined_artist, all_slides);
+    if project {
+        deck.project_preview();
+        if !deck
+            .preview_design
+            .as_ref()
+            .is_some_and(|scene| scene.overlay)
+        {
+            state.apply_theme_to_live();
+        }
+        *presenting = true;
+        state.show_presentation_dock = state.settings.operator().show_dock;
+    }
 }
 
 fn activate_item(

@@ -187,4 +187,63 @@ fn test_hero_play_button_uses_text_on_accent_contrast() {
     assert_eq!(theme_darker_pro.text_on_accent, Color32::WHITE);
 }
 
+#[test]
+fn test_playlist_multiselection_and_sequential_projection() {
+    let mut state = ControlPanelState::default();
+    let mut deck = SlideDeck::default();
+    let mut presenting = false;
+
+    state.playlist = vec![
+        crate::core::models::PlaylistItem {
+            id: "item1".into(),
+            title: "Colossenses 1:1".into(),
+            subtitle: "ARA".into(),
+            kind: crate::core::models::PlaylistItemKind::Bible,
+            played: false,
+            content: "Paulo, apóstolo de Cristo Jesus...\nColossenses 1:1".into(),
+        },
+        crate::core::models::PlaylistItem {
+            id: "item2".into(),
+            title: "Colossenses 1:2".into(),
+            subtitle: "ARA".into(),
+            kind: crate::core::models::PlaylistItemKind::Bible,
+            played: false,
+            content: "Aos santos e irmãos fiéis...\nColossenses 1:2".into(),
+        },
+        crate::core::models::PlaylistItem {
+            id: "item3".into(),
+            title: "Colossenses 1:3".into(),
+            subtitle: "ARA".into(),
+            kind: crate::core::models::PlaylistItemKind::Bible,
+            played: false,
+            content: "Damos sempre graças a Deus...\nColossenses 1:3".into(),
+        },
+    ];
+
+    let order = vec!["item1".to_string(), "item2".to_string(), "item3".to_string()];
+    state.playlist_selection.click("item1".to_string(), &order, false, false);
+    state.playlist_selection.click("item2".to_string(), &order, true, false);
+
+    assert_eq!(state.playlist_selection.selected.len(), 2);
+    assert!(state.playlist_selection.selected.contains("item1"));
+    assert!(state.playlist_selection.selected.contains("item2"));
+
+    crate::ui::containers::playlist::activate_selected_playlist_items(&mut state, &mut deck, &mut presenting, true);
+
+    assert!(presenting);
+    assert_eq!(deck.slides().len(), 2);
+    assert_eq!(deck.live_slides().len(), 2);
+    assert_eq!(deck.current_index(), 0);
+    assert_eq!(deck.projected_text(), "Paulo, apóstolo de Cristo Jesus...\nColossenses 1:1");
+
+    // Advancing slide goes straight to the next item's slides
+    assert!(deck.next_slide());
+    assert_eq!(deck.current_index(), 1);
+    assert_eq!(deck.projected_text(), "Aos santos e irmãos fiéis...\nColossenses 1:2");
+
+    let drag_ids = state.playlist_selection.drag_ids(&"item1".to_string(), &order);
+    assert_eq!(drag_ids, vec!["item1".to_string(), "item2".to_string()]);
+}
+
+
 

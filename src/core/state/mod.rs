@@ -206,6 +206,7 @@ pub struct ControlPanelState {
     // Playlist state
     pub playlist: Vec<PlaylistItem>,
     pub selected_playlist_index: Option<usize>,
+    pub playlist_selection: crate::core::interaction::Selection<String>,
     pub show_event_editor_modal: bool,
     pub event_editor_draft: Option<EventEditorDraft>,
     pub open_folders: std::collections::HashSet<String>,
@@ -336,6 +337,7 @@ impl Default for ControlPanelState {
 
             playlist: Vec::new(),
             selected_playlist_index: None,
+            playlist_selection: crate::core::interaction::Selection::default(),
             show_event_editor_modal: false,
             event_editor_draft: None,
             open_folders: std::collections::HashSet::new(),
