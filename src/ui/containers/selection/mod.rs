@@ -556,6 +556,18 @@ pub fn render_selection_column(
                 }
             });
         });
+
+    if state.focused_container == Some(crate::core::layout::ContainerKind::Selection)
+        && ui.memory(|m| m.focused().is_none())
+        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter))
+    {
+        if let Some(&first_id) = kind.selected(state).iter().next() {
+            action = Some(LibraryAction::Present(first_id));
+        } else if let Some(&first_id) = visible.first() {
+            action = Some(LibraryAction::Present(first_id));
+        }
+    }
+
     if let Some(action) = action {
         actions::execute(action, kind, &entries, state, deck, presenting, db);
     }

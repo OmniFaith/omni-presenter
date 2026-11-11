@@ -225,6 +225,7 @@ pub struct ControlPanelState {
     pub presentation_started_at: Option<std::time::Instant>,
     pub presentation_timer_seconds_mode: bool,
     pub focus_dock_jump_input: bool,
+    pub focused_container: Option<ContainerKind>,
     pub show_search: bool,
     pub presentation_aspect_ratio: f32,
     /// Render slide-card previews with the presentation theme background.
@@ -359,6 +360,7 @@ impl Default for ControlPanelState {
             presentation_started_at: None,
             presentation_timer_seconds_mode: false,
             focus_dock_jump_input: false,
+            focused_container: Some(ContainerKind::Selection),
             show_search: false,
             presentation_aspect_ratio: 16.0 / 9.0,
             dock_preview_bg: false,

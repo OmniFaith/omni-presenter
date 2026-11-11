@@ -68,17 +68,18 @@ pub fn render_chat_channels(ui: &mut egui::Ui, state: &mut ControlPanelState) {
                 .iter()
                 .filter(|p| p.id != state.settings.active_operator)
             {
+                let photo = state
+                    .settings
+                    .operators
+                    .iter()
+                    .find(|p| p.id == profile.id || p.name.eq_ignore_ascii_case(&profile.name))
+                    .and_then(|p| p.avatar.as_deref());
                 if nav_button(
                     ui,
                     &profile.name,
                     state.chat.peer.as_deref() == Some(&profile.id),
                     Some(profile.online),
-                    state
-                        .settings
-                        .operators
-                        .iter()
-                        .find(|p| p.id == profile.id)
-                        .and_then(|p| p.avatar.as_deref()),
+                    photo,
                     snapshot
                         .notifications
                         .private
@@ -158,7 +159,10 @@ pub(super) fn nav_button(
     tokens: &crate::ui::theme::AppTheme,
 ) -> egui::Response {
     let (rect, response) = ui.allocate_exact_size(
-        Vec2::new((ui.available_width() - 2.0).max(50.0), 34.0),
+        Vec2::new(
+            (ui.available_width() - 2.0).max(50.0),
+            if online.is_some() { 36.0 } else { 34.0 },
+        ),
         if online.is_none() {
             egui::Sense::click_and_drag()
         } else {
@@ -168,27 +172,48 @@ pub(super) fn nav_button(
     crate::ui::components::interaction::row_emphasis(ui, &response, active, tokens);
     let mut left = rect.left() + 10.0;
     if let Some(online) = online {
-        if photo.is_some() {
-            let rect = egui::Rect::from_center_size(
-                egui::pos2(left + 9.0, rect.center().y),
-                Vec2::splat(24.0),
-            );
-            crate::ui::components::avatar::paint(ui, rect, photo, "", tokens, false);
-            left += 18.0;
-        }
+        let avatar_rect = egui::Rect::from_center_size(
+            egui::pos2(rect.left() + 20.0, rect.center().y),
+            Vec2::splat(24.0),
+        );
+        let initials: String = label
+            .split_whitespace()
+            .filter_map(|s| s.chars().next())
+            .take(2)
+            .collect::<String>()
+            .to_uppercase();
+        let fallback = if initials.is_empty() {
+            "•".to_string()
+        } else {
+            initials
+        };
+        crate::ui::components::avatar::paint(ui, avatar_rect, photo, &fallback, tokens, active);
+
+        let status_center = avatar_rect.right_bottom() - egui::vec2(2.5, 2.5);
         ui.painter().circle_filled(
-            egui::pos2(left + 3.0, rect.center().y),
-            3.5,
+            status_center,
+            4.5,
+            if active {
+                tokens.accent_soft
+            } else {
+                tokens.bg_panel
+            },
+        );
+        ui.painter().circle_filled(
+            status_center,
+            3.0,
             if online {
                 tokens.status_success_fg
             } else {
                 tokens.icon_muted
             },
         );
-        left += 15.0;
+        left = avatar_rect.right() + 10.0;
     }
     let color = if active {
         tokens.accent
+    } else if online.is_some() {
+        tokens.text_primary
     } else {
         tokens.text_secondary
     };

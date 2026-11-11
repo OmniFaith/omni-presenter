@@ -15,6 +15,49 @@ impl PresentationApp {
             }
             return;
         }
+
+        // Ctrl+Tab / Cmd+Tab to cycle interface pages (Home, Bible, Chat, Design)
+        if !modal_was_open && !self.global_search.open {
+            let ctrl_shift_tab = ctx.input_mut(|i| {
+                i.consume_key(egui::Modifiers::CTRL | egui::Modifiers::SHIFT, egui::Key::Tab)
+                    || i.consume_key(
+                        egui::Modifiers::COMMAND | egui::Modifiers::SHIFT,
+                        egui::Key::Tab,
+                    )
+            });
+            let ctrl_tab = !ctrl_shift_tab
+                && ctx.input_mut(|i| {
+                    i.consume_key(egui::Modifiers::CTRL, egui::Key::Tab)
+                        || i.consume_key(egui::Modifiers::COMMAND, egui::Key::Tab)
+                });
+
+            if ctrl_tab || ctrl_shift_tab {
+                let mut pages = vec![SidebarPage::Home];
+                if self.control_state.settings.bible_enabled {
+                    pages.push(SidebarPage::Bible);
+                }
+                if self.control_state.settings.chat_enabled {
+                    pages.push(SidebarPage::Chat);
+                }
+                pages.push(SidebarPage::Design);
+
+                let current_pos = pages
+                    .iter()
+                    .position(|&p| p == self.control_state.active_sidebar_page)
+                    .unwrap_or(0);
+                let next_pos = if ctrl_tab {
+                    (current_pos + 1) % pages.len()
+                } else if current_pos == 0 {
+                    pages.len() - 1
+                } else {
+                    current_pos - 1
+                };
+                self.control_state.active_sidebar_page = pages[next_pos];
+                ctx.request_repaint();
+                return;
+            }
+        }
+
         if self.global_search.open
             || modal_was_open
             || is_text_focused

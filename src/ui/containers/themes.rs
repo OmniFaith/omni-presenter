@@ -385,6 +385,13 @@ pub fn render_themes_column(
                 applied = (true, false);
             }
 
+            if state.focused_container == Some(ContainerKind::Themes)
+                && ui.memory(|m| m.focused().is_none())
+                && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter))
+            {
+                action_apply_live = Some(state.selected_theme_index);
+            }
+
             if let Some(idx) = action_apply_live {
                 state.selected_theme_index = idx;
                 state.apply_theme_to_live();

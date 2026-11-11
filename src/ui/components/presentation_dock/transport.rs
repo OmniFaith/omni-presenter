@@ -135,8 +135,8 @@ pub(crate) fn jump_input(
         ui.ctx().request_repaint();
     }
 
-    let enter_pressed =
-        (focused || response.lost_focus()) && ui.input(|i| i.key_pressed(egui::Key::Enter));
+    let enter_pressed = (focused || response.lost_focus())
+        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
 
     if enter_pressed {
         let trimmed = buffer.trim();
@@ -145,16 +145,20 @@ pub(crate) fn jump_input(
                 deck.select_live_slide(0);
             } else if trimmed == "-" || trimmed == "—" || trimmed.eq_ignore_ascii_case("b") {
                 deck.select_live_slide(total.saturating_sub(1));
-            } else if let Ok(n) = trimmed.parse::<usize>()
-                && n >= 1 && n < total {
+            } else if let Ok(n) = trimmed.parse::<usize>() {
+                if n < total {
                     deck.select_live_slide(n);
+                } else if n <= total && total > 0 {
+                    deck.select_live_slide(total - 1);
                 }
+            }
         } else if trimmed == "-" || trimmed == "—" || trimmed.eq_ignore_ascii_case("b") {
             deck.select_live_slide(total.saturating_sub(1));
-        } else if let Ok(n) = trimmed.parse::<usize>()
-            && n >= 1 && n <= total {
+        } else if let Ok(n) = trimmed.parse::<usize>() {
+            if n >= 1 && n <= total {
                 deck.select_live_slide(n - 1);
             }
+        }
         crate::services::media::sync_live_media_playback(state, deck, false);
         ui.ctx().data_mut(|d| d.remove_temp::<String>(id));
         ui.memory_mut(|m| m.surrender_focus(id));

@@ -7,8 +7,8 @@ use crate::ui::components::{
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, Margin, Stroke};
 use egui_phosphor::regular::{
-    ARROWS_CLOCKWISE, CARET_DOWN, CHECK, CHURCH, EYE, MONITOR, PENCIL_SIMPLE, PLAY, PLUS, TRASH,
-    USER,
+    ARROWS_CLOCKWISE, CARET_DOWN, CHECK, CHURCH, EYE, MONITOR, PENCIL_SIMPLE, PLAY, PLUS,
+    PUSH_PIN, TRASH, USER,
 };
 
 pub fn render_top_bar(
@@ -19,43 +19,56 @@ pub fn render_top_bar(
 ) {
     let language = state.settings.language;
     let mut pin_rect = None;
-    ui.horizontal(|ui| {
-        let mut remove_id = None;
-        let mut select_item = None;
-        let mut project_item = None;
-        let mut add_to_playlist_item = None;
-        let mut edit_song_item = None;
-        let mut clear_all_shortcuts = false;
-        let mut reset_layout = false;
-        let mut reorder = None;
-
-        // 1. "Atalhos" Header Label (Left)
-        let header_resp = ui.add(
-            egui::Label::new(
-                egui::RichText::new(language.text("quick-title"))
-                    .size(13.0)
-                    .strong()
-                    .color(state.theme.text_primary),
-            )
-            .sense(egui::Sense::click()),
-        );
-        header_resp.context_menu(|ui| {
-            context_menu_header(ui);
-            let theme = &state.theme;
-            if context_menu_item(ui, ARROWS_CLOCKWISE, language.text("quick-reset"), theme)
-                .clicked()
-            {
-                reset_layout = true;
-                ui.close();
-            }
-            if !state.quick_bar.items.is_empty()
-                && context_menu_danger_item(ui, TRASH, language.text("quick-clear"), theme).clicked()
-            {
-                clear_all_shortcuts = true;
-                ui.close();
-            }
+    let is_dragging = egui::DragAndDrop::payload::<super::drag_drop::DragPayload>(ui.ctx())
+        .is_some_and(|payload| {
+            !matches!(payload.source, super::drag_drop::DragSource::QuickBar(_))
+                && (!payload.items.is_empty()
+                    || matches!(payload.source, super::drag_drop::DragSource::ChatMessage(_)))
         });
-        ui.add_space(8.0);
+
+    let bar_height = 30.0;
+    ui.allocate_ui_with_layout(
+        egui::vec2(ui.available_width(), bar_height),
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            ui.spacing_mut().item_spacing.y = 0.0;
+            let mut remove_id = None;
+            let mut select_item = None;
+            let mut project_item = None;
+            let mut add_to_playlist_item = None;
+            let mut edit_song_item = None;
+            let mut clear_all_shortcuts = false;
+            let mut reset_layout = false;
+            let mut reorder = None;
+
+            // 1. "Atalhos" Header Label (Left)
+            let header_resp = ui.add(
+                egui::Label::new(
+                    egui::RichText::new(language.text("quick-title"))
+                        .size(12.5)
+                        .strong()
+                        .color(state.theme.text_primary),
+                )
+                .sense(egui::Sense::click()),
+            );
+            header_resp.context_menu(|ui| {
+                context_menu_header(ui);
+                let theme = &state.theme;
+                if context_menu_item(ui, ARROWS_CLOCKWISE, language.text("quick-reset"), theme)
+                    .clicked()
+                {
+                    reset_layout = true;
+                    ui.close();
+                }
+                if !state.quick_bar.items.is_empty()
+                    && context_menu_danger_item(ui, TRASH, language.text("quick-clear"), theme)
+                        .clicked()
+                {
+                    clear_all_shortcuts = true;
+                    ui.close();
+                }
+            });
+            ui.add_space(8.0);
 
         // 2. Right-side options cluster (operador, culto, telas web, status)
         let operators: Vec<(String, String)> = state
@@ -98,25 +111,59 @@ pub fn render_top_bar(
 
         // 3. Middle area: Horizontal ScrollArea for shortcut items
         let scroll_width = (ui.available_width() - right_reserve).max(0.0);
-        pin_rect = Some(egui::Rect::from_min_size(header_resp.rect.min, egui::vec2((header_resp.rect.width() + scroll_width + 8.0).max(100.0), 32.0)));
+        let items_start_x = header_resp.rect.max.x + 8.0;
+        let pin_zone_rect = egui::Rect::from_min_size(
+            egui::pos2(items_start_x, header_resp.rect.center().y - bar_height * 0.5),
+            egui::vec2(scroll_width.max(80.0), bar_height),
+        );
+        pin_rect = Some(pin_zone_rect);
+
+        let is_hovering_drop = is_dragging
+            && ui
+                .ctx()
+                .pointer_interact_pos()
+                .is_some_and(|p| pin_zone_rect.contains(p));
 
         ui.allocate_ui_with_layout(
-            egui::vec2(scroll_width, ui.available_height()),
+            egui::vec2(scroll_width, bar_height),
             egui::Layout::left_to_right(egui::Align::Center),
             |ui| {
                 if state.quick_bar.items.is_empty() {
-                    ui.label(
-                        egui::RichText::new(language.text("quick-empty"))
-                            .size(11.5)
-                            .italics()
-                            .color(state.theme.text_secondary.linear_multiply(0.6)),
-                    );
+                    if is_dragging {
+                        let drop_frame = egui::Frame::new()
+                            .fill(if is_hovering_drop {
+                                state.theme.accent_soft
+                            } else {
+                                state.theme.bg_pill
+                            })
+                            .stroke(Stroke::new(1.0, state.theme.accent))
+                            .corner_radius(state.theme.radius_sm)
+                            .inner_margin(Margin::symmetric(10, 4));
+                        drop_frame.show(ui, |ui| {
+                            ui.label(
+                                egui::RichText::new(format!(
+                                    "{PUSH_PIN}  {}",
+                                    language.text("chat-pin-to-quick-bar")
+                                ))
+                                .size(11.5)
+                                .strong()
+                                .color(state.theme.accent),
+                            );
+                        });
+                    } else {
+                        ui.label(
+                            egui::RichText::new(language.text("quick-empty"))
+                                .size(11.5)
+                                .italics()
+                                .color(state.theme.text_secondary.linear_multiply(0.6)),
+                        );
+                    }
                 } else {
                     egui::ScrollArea::horizontal()
                         .id_salt("quick_items_top_scroll")
                         .auto_shrink([true, false])
                         .show(ui, |ui| {
-                            ui.horizontal(|ui| {
+                            ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                                 for item in &state.quick_bar.items {
                                     let is_active = state.quick_bar.active_id.as_deref()
                                         == Some(&item.id);
@@ -147,13 +194,13 @@ pub fn render_top_bar(
                                         .inner_margin(Margin::symmetric(8, 3));
 
                                     item_frame.show(ui, |ui| {
-                                        ui.horizontal(|ui| {
+                                        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                                             ui.spacing_mut().item_spacing.x = 4.0;
 
                                             let label_text = format!("{} {}", icon, item.title);
                                             let item_btn = egui::Button::new(
                                                 egui::RichText::new(label_text)
-                                                    .size(12.0)
+                                                    .size(11.5)
                                                     .strong()
                                                     .color(if is_active {
                                                         state.theme.text_primary
@@ -231,6 +278,29 @@ pub fn render_top_bar(
                                     });
 
                                     ui.add_space(3.0);
+                                }
+
+                                if is_dragging {
+                                    let drop_frame = egui::Frame::new()
+                                        .fill(if is_hovering_drop {
+                                            state.theme.accent_soft
+                                        } else {
+                                            state.theme.bg_pill
+                                        })
+                                        .stroke(Stroke::new(1.0, state.theme.accent))
+                                        .corner_radius(state.theme.radius_sm)
+                                        .inner_margin(Margin::symmetric(8, 3));
+                                    drop_frame.show(ui, |ui| {
+                                        ui.label(
+                                            egui::RichText::new(format!(
+                                                "{PUSH_PIN}  {}",
+                                                language.text("chat-pin-to-quick-bar")
+                                            ))
+                                            .size(11.0)
+                                            .strong()
+                                            .color(state.theme.accent),
+                                        );
+                                    });
                                 }
                             });
                         });
@@ -418,25 +488,47 @@ pub fn render_top_bar(
             }
         }
     });
-    if !egui::DragAndDrop::payload::<super::drag_drop::DragPayload>(ui.ctx())
-        .is_some_and(|payload| matches!(payload.source, super::drag_drop::DragSource::QuickBar(_)))
-        && let Some(payload) = pin_rect.and_then(|rect| {
-            super::drag_drop::content_target(ui, rect, &state.theme, "drag-drop-pin")
-        }) {
-            if let super::drag_drop::DragSource::ChatMessage(id) = payload.source
-                && let Some(service) = &state.chat.service
-                    && let Err(error) = service.request_action(&state.chat.token, id, "shortcut") {
+    if is_dragging && let Some(rect) = pin_rect {
+        let is_hovered = ui
+            .ctx()
+            .pointer_interact_pos()
+            .is_some_and(|p| rect.contains(p));
+        if is_hovered {
+            ui.painter().rect_filled(
+                rect,
+                state.theme.radius_sm,
+                state.theme.accent.linear_multiply(0.08),
+            );
+            ui.painter().rect_stroke(
+                rect,
+                state.theme.radius_sm,
+                egui::Stroke::new(1.0, state.theme.accent.linear_multiply(0.4)),
+                egui::StrokeKind::Inside,
+            );
+            if ui.input(|i| i.pointer.any_released()) {
+                if let Some(payload) =
+                    egui::DragAndDrop::payload::<super::drag_drop::DragPayload>(ui.ctx())
+                {
+                    if let super::drag_drop::DragSource::ChatMessage(id) = payload.source
+                        && let Some(service) = &state.chat.service
+                        && let Err(error) =
+                            service.request_action(&state.chat.token, id, "shortcut")
+                    {
                         state.chat.error = error;
                     }
-            for item in &payload.items {
-                state.add_quick_item(
-                    item.title.clone(),
-                    item.subtitle.clone(),
-                    item.kind.clone(),
-                    item.content.clone(),
-                );
+                    for item in &payload.items {
+                        state.add_quick_item(
+                            item.title.clone(),
+                            item.subtitle.clone(),
+                            item.kind.clone(),
+                            item.content.clone(),
+                        );
+                    }
+                    egui::DragAndDrop::clear_payload(ui.ctx());
+                }
             }
         }
+    }
 }
 
 const PILL_H: f32 = 26.0;

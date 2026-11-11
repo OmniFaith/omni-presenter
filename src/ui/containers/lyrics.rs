@@ -558,6 +558,13 @@ pub fn render_lyrics_column(
 
             ui.add_space(16.0);
 
+            if state.focused_container == Some(ContainerKind::Lyrics)
+                && ui.memory(|m| m.focused().is_none())
+                && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter))
+            {
+                action_project = Some(slide_deck.preview_slide_index());
+            }
+
             // Executa as ações acionadas pelo menu de contexto
             if let Some(idx) = action_project {
                 slide_deck.set_is_song(true);

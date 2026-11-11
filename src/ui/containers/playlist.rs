@@ -579,8 +579,9 @@ pub fn render_playlist_column(
                 ));
             }
 
-            if ui.memory(|m| m.focused().is_none()) {
-                if ui.input(|i| i.key_pressed(egui::Key::Enter))
+            let is_playlist_focused = state.focused_container == Some(ContainerKind::Playlist);
+            if is_playlist_focused && ui.memory(|m| m.focused().is_none()) {
+                if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter))
                     && (!state.playlist_selection.selected.is_empty() || state.selected_playlist_index.is_some())
                 {
                     play_selection = true;
