@@ -15,8 +15,8 @@ fn new_services_use_language_defaults_but_saved_versions_are_preserved() {
 
     for (language, expected) in [
         (Language::Portuguese, "ARA"),
-        (Language::English, "EN_KJV"),
-        (Language::Spanish, "ES_RVR1960"),
+        (Language::English, "KJV"),
+        (Language::Spanish, "RVR1960"),
     ] {
         let mut state = ControlPanelState::default();
         state.settings.language = language;
@@ -25,10 +25,14 @@ fn new_services_use_language_defaults_but_saved_versions_are_preserved() {
         assert_eq!(state.bible_shortcuts, vec![expected]);
         assert!(state.bible.library.get(expected).is_some());
 
-        state.settings.service_mut().bible_version = "EN_NKJV".into();
+        state.settings.service_mut().bible_version = "NKJV".into();
         state.apply_profiles();
-        assert_eq!(state.bible_version, "EN_NKJV");
+        assert_eq!(state.bible_version, "NKJV");
     }
+
+    let lib = crate::core::bible::BibleLibrary::default();
+    assert!(lib.get("EN_KJV").is_some());
+    assert!(lib.get("KJV").is_some());
 }
 
 #[test]
@@ -463,4 +467,240 @@ fn test_pressing_enter_projects_selected_verse() {
 
     assert!(presenting, "Pressing enter must project the selected verse");
     assert!(!deck.projected_text().is_empty(), "Projected text should not be empty");
+}
+
+#[test]
+fn test_bible_settings_reference_position_and_formatting() {
+    use crate::core::bible::{
+        BibleReferencePosition, BibleSeparator, BibleSettings, format_bible_slide,
+    };
+
+    let mut settings = BibleSettings::default();
+    let sample = "No princípio criou Deus os céus e a terra.".to_string();
+
+    // Default: Bottom position, no version tag, full name, colon separator
+    let (reference, content) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(reference, "Gênesis 1:1");
+    assert_eq!(content, format!("//ref-pos: bottom\n//ref-align: right\n{sample}\nGênesis 1:1"));
+
+    // Top position
+    settings.reference_position = BibleReferencePosition::Top;
+    let (_, content_top) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(content_top, format!("//ref-pos: top\n//ref-align: right\nGênesis 1:1\n{sample}"));
+
+    // Hidden position
+    settings.reference_position = BibleReferencePosition::Hidden;
+    let (_, content_hidden) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(content_hidden, sample);
+
+    // BelowVerse position
+    settings.reference_position = BibleReferencePosition::BelowVerse;
+    let (_, content_below) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(content_below, format!("//ref-pos: below\n//ref-align: right\n{sample}\nGênesis 1:1"));
+
+    // EndOfVerse position
+    settings.reference_position = BibleReferencePosition::EndOfVerse;
+    let (_, content_end) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(content_end, format!("{sample} (Gênesis 1:1)"));
+
+    // Abbreviation and Version Tag
+    settings.reference_position = BibleReferencePosition::Bottom;
+    settings.use_abbreviation = true;
+    settings.show_version = true;
+    settings.separator = BibleSeparator::Dot;
+    let (ref_abbrev, content_abbrev) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        1,
+        std::slice::from_ref(&sample),
+    );
+    assert_eq!(ref_abbrev, "Gn 1.1 (ARA)");
+    assert_eq!(content_abbrev, format!("//ref-pos: bottom\n//ref-align: right\n{sample}\nGn 1.1 (ARA)"));
+
+    // Multi-verse numbering
+    let v2 = "E a terra era sem forma e vazia.".to_string();
+    let verses = vec![sample.clone(), v2.clone()];
+    settings.show_verse_numbers = true;
+    let (ref_multi, content_multi) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ARA",
+        1,
+        1,
+        2,
+        &verses,
+    );
+    assert_eq!(ref_multi, "Gn 1.1–2 (ARA)");
+    assert_eq!(content_multi, format!("//ref-pos: bottom\n//ref-align: right\n[1] {sample}\n[2] {v2}\nGn 1.1–2 (ARA)"));
+    // Quotes and Uppercase reference
+    settings.quotes_around_verse = true;
+    settings.uppercase_reference = true;
+    settings.version_style = crate::core::bible::BibleVersionStyle::Hyphen;
+    settings.verse_number_style = crate::core::bible::BibleVerseNumberStyle::Superscript;
+    let (ref_stylized, content_stylized) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ara",
+        1,
+        1,
+        2,
+        &verses,
+    );
+    assert_eq!(ref_stylized, "GN 1.1–2 - ARA");
+    assert!(content_stylized.contains("GN 1.1–2 - ARA"));
+    assert!(content_stylized.contains("//ref-pos:"));
+    assert!(content_stylized.contains("“¹ No princípio"));
+    assert!(content_stylized.contains("² E a terra"));
+
+    settings.reference_size = crate::core::bible::BibleReferenceSize::Compact;
+    let (_, content_compact) = format_bible_slide(
+        &settings,
+        "Gênesis",
+        "Gn",
+        "ara",
+        1,
+        1,
+        2,
+        &verses,
+    );
+    assert!(content_compact.contains("//ref-size: compact"));
+
+    // Range number only (intermediate slides display verse number; last displays full range)
+    settings.range_number_only = true;
+    settings.verse_number_style = crate::core::bible::BibleVerseNumberStyle::Bracket;
+    let num_16 = crate::core::bible::format_verse_number(16, settings.verse_number_style);
+    assert_eq!(num_16, "[16]");
+    let full_range = crate::core::bible::format_bible_reference(&settings, "João", "Jo", "NVI", 3, 16, 20);
+    assert_eq!(full_range, "JO 3.16–20 - NVI");
+
+    // Version codes with language prefix must be cleaned (EN_KJV -> KJV, ES_RVR1960 -> RVR1960)
+    let en_ref = crate::core::bible::format_bible_reference(&settings, "João", "Jo", "EN_KJV", 3, 16, 16);
+    assert_eq!(en_ref, "JO 3.16 - KJV");
+    let es_ref = crate::core::bible::format_bible_reference(&settings, "João", "Jo", "ES_RVR1960", 3, 16, 16);
+    assert_eq!(es_ref, "JO 3.16 - RVR1960");
+
+    // Single verse never hides reference even if range_number_only is true
+    let mut state = ControlPanelState::default();
+    state.settings.bible_settings.range_number_only = true;
+    state.bible_verse = 3;
+    state.bible.verse_end = 3;
+    let single_passages = super::selection::selection_passages(&state);
+    assert_eq!(single_passages.len(), 1);
+    assert!(single_passages[0].content.contains("1:3"));
+    assert!(!single_passages[0].content.starts_with("[3]"));
+
+    // Multi-verse with range_number_only: intermediate hides ref and shows [verse], last shows full range
+    state.bible_verse = 1;
+    state.bible.verse_end = 3;
+    let multi_passages = super::selection::selection_passages(&state);
+    assert_eq!(multi_passages.len(), 3);
+    assert!(multi_passages[0].content.contains("[1]"));
+    assert!(!multi_passages[0].content.contains("//ref-pos:")); // ref omitted
+    assert!(multi_passages[1].content.contains("[2]"));
+    assert!(!multi_passages[1].content.contains("//ref-pos:")); // ref omitted
+    assert!(multi_passages[2].content.contains("[3]"));
+    assert!(multi_passages[2].content.contains("//ref-pos:")); // full range on last slide
+    assert!(multi_passages[2].content.contains("1:1–3"));
+}
+
+#[test]
+fn test_bible_settings_modal_renders_without_panicking() {
+    let mut state = ControlPanelState::default();
+    state.bible.show_settings = true;
+    let ctx = egui::Context::default();
+    let raw_input = egui::RawInput {
+        screen_rect: Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            egui::vec2(1280.0, 1024.0),
+        )),
+        ..Default::default()
+    };
+    let mut output = ctx.run_ui(raw_input, |_ui| {
+        super::render_bible_settings_modal(&ctx, &mut state);
+    });
+    output.textures_delta.clear();
+    assert!(state.bible.show_settings);
+}
+
+#[test]
+fn test_bible_vertical_alignment_directives_and_parsing() {
+    use crate::core::bible::{BibleSettings, BibleVerticalAlignment, format_bible_slide};
+    use crate::core::markup::parse_slide_directives;
+
+    let mut settings = BibleSettings::default();
+    let sample = "No princípio criou Deus os céus e a terra.".to_string();
+
+    // Default is Center -> no directive emitted (inherits theme)
+    let (_, content_center) = format_bible_slide(&settings, "Gênesis", "Gn", "ARA", 1, 1, 1, std::slice::from_ref(&sample));
+    assert!(!content_center.contains("//valign:"));
+
+    // Top emits //valign: top
+    settings.vertical_alignment = BibleVerticalAlignment::Top;
+    let (_, content_top) = format_bible_slide(&settings, "Gênesis", "Gn", "ARA", 1, 1, 1, std::slice::from_ref(&sample));
+    assert!(content_top.starts_with("//valign: top\n"));
+    let dirs_top = parse_slide_directives(&content_top);
+    assert_eq!(dirs_top.valign.as_deref(), Some("top"));
+
+    // Bottom emits //valign: bottom
+    settings.vertical_alignment = BibleVerticalAlignment::Bottom;
+    let (_, content_bottom) = format_bible_slide(&settings, "Gênesis", "Gn", "ARA", 1, 1, 1, std::slice::from_ref(&sample));
+    assert!(content_bottom.starts_with("//valign: bottom\n"));
+    let dirs_bottom = parse_slide_directives(&content_bottom);
+    assert_eq!(dirs_bottom.valign.as_deref(), Some("bottom"));
+
+    // Portuguese aliases in markup
+    let custom_pt = "//valinhar: terço inferior\nTexto";
+    let dirs_pt = parse_slide_directives(custom_pt);
+    assert_eq!(dirs_pt.valign.as_deref(), Some("bottom"));
 }

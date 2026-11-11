@@ -3,7 +3,7 @@ use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
 use crate::ui::components::{centered_horizontal, render_header_bar, toolbar_icon_button};
 use eframe::egui::{self, RichText, Stroke};
-use egui_phosphor::regular::{FUNNEL, LIST_BULLETS, MAGNIFYING_GLASS, SQUARES_FOUR, X};
+use egui_phosphor::regular::{FUNNEL, GEAR, LIST_BULLETS, MAGNIFYING_GLASS, SQUARES_FOUR, X};
 
 use super::cards::cards_body;
 use super::search::{close_bible_search, matching_books, prepare_search, split_reference};
@@ -23,7 +23,7 @@ pub fn render_bible_navigation(
 ) {
     let theme = state.theme.clone();
     render_header_bar(ui, ContainerKind::Selection, "workspace-bible", &theme);
-    centered_horizontal(ui, "bible_navigation_toolbar", 108.0, |ui| {
+    centered_horizontal(ui, "bible_navigation_toolbar", 144.0, |ui| {
         let search_active = state.bible.show_search || !state.bible.search.is_empty();
         if theme
             .icon_button(
@@ -69,6 +69,20 @@ pub fn render_bible_navigation(
             .clicked()
         {
             toggle_layout(state);
+        }
+        let settings_active = state.bible.show_settings;
+        if state
+            .theme
+            .icon_button(
+                ui,
+                GEAR,
+                crate::ui::i18n::text(ui, "workspace-bible-settings-title"),
+                settings_active,
+                egui::vec2(28.0, 28.0),
+            )
+            .clicked()
+        {
+            state.bible.show_settings = !state.bible.show_settings;
         }
     });
     ui.add_space(8.0);

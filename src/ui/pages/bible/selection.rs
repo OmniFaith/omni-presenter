@@ -1,4 +1,7 @@
-use crate::core::bible::{BiblePassage, BibleTranslation, version_code};
+use crate::core::bible::{
+    BiblePassage, BibleTranslation, format_bible_reference, format_bible_slide,
+    format_bible_slide_with_custom_ref, format_verse_number, version_code,
+};
 use crate::core::models::{PlaylistItem, PlaylistItemKind, QuickItemKind};
 use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
@@ -10,12 +13,31 @@ use super::helpers::current_book;
 
 pub fn selected_passage(state: &ControlPanelState) -> Option<BiblePassage> {
     let bible = state.bible.library.get(&state.bible_version)?;
-    bible.passage(
-        current_book(state, &bible),
+    let book = current_book(state, &bible);
+    let start = state.bible_verse;
+    let end = state.bible.verse_end.max(state.bible_verse);
+    if start == 0 || end < start {
+        return None;
+    }
+    let verses = bible.chapter(book, state.bible_chapter)?.get(start - 1..end)?;
+    if verses.iter().any(|v| v.is_empty()) {
+        return None;
+    }
+    let (reference, content) = format_bible_slide(
+        &state.settings.bible_settings,
+        &bible.books[book].name,
+        &bible.books[book].abbrev,
+        &bible.id,
         state.bible_chapter,
-        state.bible_verse,
-        state.bible.verse_end.max(state.bible_verse),
-    )
+        start,
+        end,
+        verses,
+    );
+    Some(BiblePassage {
+        reference,
+        version: bible.id.clone(),
+        content,
+    })
 }
 
 /// Every passage the current selection represents.
@@ -30,15 +52,165 @@ pub fn selection_passages(state: &ControlPanelState) -> Vec<BiblePassage> {
     let book = current_book(state, &bible);
     let start = state.bible_verse.min(state.bible.verse_end).max(1);
     let end = state.bible_verse.max(state.bible.verse_end);
-    if state.bible.merge_selection || start == end {
-        bible
-            .passage(book, state.bible_chapter, start, end)
-            .into_iter()
-            .collect()
+    let Some(chapter_verses) = bible.chapter(book, state.bible_chapter) else {
+        return Vec::new();
+    };
+    if (state.bible.merge_selection && !state.settings.bible_settings.one_verse_per_slide)
+        || start == end
+    {
+        let Some(verses) = chapter_verses.get(start - 1..end) else {
+            return Vec::new();
+        };
+        if verses.iter().any(|v| v.is_empty()) {
+            return Vec::new();
+        }
+
+        if start == end
+            && state.settings.bible_settings.auto_split_long_verses
+            && state.settings.bible_settings.split_action
+                == crate::core::bible::BibleSplitAction::MultipleSlides
+            && verses[0].chars().count() > state.settings.bible_settings.max_chars_per_slide
+        {
+            let chunks = crate::core::bible::split_verse_text(
+                &verses[0],
+                state.settings.bible_settings.max_chars_per_slide,
+                state.settings.bible_settings.split_punctuation
+                    == crate::core::bible::BibleSplitPunctuation::NaturalPunctuation,
+                state.settings.bible_settings.split_ellipsis,
+            );
+            let total = chunks.len();
+            chunks
+                .into_iter()
+                .enumerate()
+                .map(|(i, chunk)| {
+                    let (ref_str, content) = crate::core::bible::format_bible_slide(
+                        &state.settings.bible_settings,
+                        &bible.books[book].name,
+                        &bible.books[book].abbrev,
+                        &bible.id,
+                        state.bible_chapter,
+                        start,
+                        end,
+                        std::slice::from_ref(&chunk),
+                    );
+                    let reference = if total > 1 {
+                        format!("{ref_str} ({}/{})", i + 1, total)
+                    } else {
+                        ref_str
+                    };
+                    BiblePassage {
+                        reference,
+                        version: bible.id.clone(),
+                        content,
+                    }
+                })
+                .collect()
+        } else {
+            let (reference, content) = crate::core::bible::format_bible_slide(
+                &state.settings.bible_settings,
+                &bible.books[book].name,
+                &bible.books[book].abbrev,
+                &bible.id,
+                state.bible_chapter,
+                start,
+                end,
+                verses,
+            );
+            vec![BiblePassage {
+                reference,
+                version: bible.id.clone(),
+                content,
+            }]
+        }
     } else {
-        (start..=end)
-            .filter_map(|verse| bible.passage(book, state.bible_chapter, verse, verse))
-            .collect()
+        let mut passages = Vec::new();
+        let is_multi = state.bible_verse != state.bible.verse_end && start < end;
+        let full_range_ref = if is_multi && state.settings.bible_settings.range_number_only {
+            Some(format_bible_reference(
+                &state.settings.bible_settings,
+                &bible.books[book].name,
+                &bible.books[book].abbrev,
+                &bible.id,
+                state.bible_chapter,
+                start,
+                end,
+            ))
+        } else {
+            None
+        };
+
+        for verse in start..=end {
+            let Some(v) = chapter_verses.get(verse - 1) else { continue; };
+            if v.is_empty() { continue; }
+
+            let is_last_verse = verse == end;
+            let (display_ref, verse_body) = if let Some(ref full_ref) = full_range_ref {
+                let num_str = format_verse_number(verse, state.settings.bible_settings.verse_number_style);
+                let text_with_num = format!("{num_str} {v}");
+                if is_last_verse {
+                    (full_ref.clone(), text_with_num)
+                } else {
+                    (String::new(), text_with_num)
+                }
+            } else {
+                let r = format_bible_reference(
+                    &state.settings.bible_settings,
+                    &bible.books[book].name,
+                    &bible.books[book].abbrev,
+                    &bible.id,
+                    state.bible_chapter,
+                    verse,
+                    verse,
+                );
+                (r, v.clone())
+            };
+
+            if state.settings.bible_settings.auto_split_long_verses
+                && state.settings.bible_settings.split_action
+                    == crate::core::bible::BibleSplitAction::MultipleSlides
+                && verse_body.chars().count() > state.settings.bible_settings.max_chars_per_slide
+            {
+                let chunks = crate::core::bible::split_verse_text(
+                    &verse_body,
+                    state.settings.bible_settings.max_chars_per_slide,
+                    state.settings.bible_settings.split_punctuation
+                        == crate::core::bible::BibleSplitPunctuation::NaturalPunctuation,
+                    state.settings.bible_settings.split_ellipsis,
+                );
+                let total = chunks.len();
+                for (chunk_idx, chunk) in chunks.into_iter().enumerate() {
+                    let slide_ref = if !display_ref.is_empty() && total > 1 {
+                        format!("{display_ref} ({}/{})", chunk_idx + 1, total)
+                    } else {
+                        display_ref.clone()
+                    };
+                    let (_, content) = format_bible_slide_with_custom_ref(
+                        &state.settings.bible_settings,
+                        slide_ref.clone(),
+                        verse,
+                        std::slice::from_ref(&chunk),
+                    );
+                    passages.push(BiblePassage {
+                        reference: if slide_ref.is_empty() { format_verse_number(verse, state.settings.bible_settings.verse_number_style) } else { slide_ref },
+                        version: bible.id.clone(),
+                        content,
+                    });
+                }
+            } else {
+                let (_, content) = format_bible_slide_with_custom_ref(
+                    &state.settings.bible_settings,
+                    display_ref.clone(),
+                    verse,
+                    std::slice::from_ref(&verse_body),
+                );
+                passages.push(BiblePassage {
+                    reference: if display_ref.is_empty() { format_verse_number(verse, state.settings.bible_settings.verse_number_style) } else { display_ref },
+                    version: bible.id.clone(),
+                    content,
+                });
+            }
+        }
+        passages
     }
 }
 
@@ -72,19 +244,53 @@ fn chapter_slides(
     let Some(verses) = bible.chapter(book, chapter) else {
         return Vec::new();
     };
+    let is_multi = state.bible_verse != state.bible.verse_end && start < end;
+    let full_range_ref = if is_multi && state.settings.bible_settings.range_number_only {
+        Some(format_bible_reference(
+            &state.settings.bible_settings,
+            &bible.books[book].name,
+            &bible.books[book].abbrev,
+            &bible.id,
+            chapter,
+            start,
+            end,
+        ))
+    } else {
+        None
+    };
+
     (start..=end)
         .filter(|&verse| verse >= 1 && verse <= verses.len() && !verses[verse - 1].is_empty())
         .map(|verse| {
-            (
-                verse,
-                format!(
-                    "{}\n{} {}:{}",
-                    verses[verse - 1],
-                    state.bible_book,
+            let is_last_verse = verse == end;
+            let (display_ref, verse_body) = if let Some(ref full_ref) = full_range_ref {
+                let num_str = format_verse_number(verse, state.settings.bible_settings.verse_number_style);
+                let text_with_num = format!("{num_str} {}", &verses[verse - 1]);
+                if is_last_verse {
+                    (full_ref.clone(), text_with_num)
+                } else {
+                    (String::new(), text_with_num)
+                }
+            } else {
+                let r = format_bible_reference(
+                    &state.settings.bible_settings,
+                    &bible.books[book].name,
+                    &bible.books[book].abbrev,
+                    &bible.id,
                     chapter,
-                    verse
-                ),
-            )
+                    verse,
+                    verse,
+                );
+                (r, verses[verse - 1].clone())
+            };
+
+            let (_, content) = format_bible_slide_with_custom_ref(
+                &state.settings.bible_settings,
+                display_ref,
+                verse,
+                std::slice::from_ref(&verse_body),
+            );
+            (verse, content)
         })
         .collect()
 }
@@ -115,11 +321,21 @@ pub fn sync_preview(state: &mut ControlPanelState, deck: &mut SlideDeck, force: 
         .verse_end
         .clamp(state.bible_verse, chapter.len());
     let key = format!(
-        "{code}:{book}:{}:{}:{}:{}",
+        "{code}:{book}:{}:{}:{}:{}:{:?}:{:?}:{:?}:{:?}:{:?}:{}:{}:{}:{}:{}",
         state.bible_chapter,
         state.bible_verse,
         state.bible.verse_end,
-        state.bible.merge_selection as u8
+        state.bible.merge_selection as u8,
+        state.settings.bible_settings.reference_position,
+        state.settings.bible_settings.reference_alignment,
+        state.settings.bible_settings.alignment,
+        state.settings.bible_settings.vertical_alignment,
+        state.settings.bible_settings.verse_number_style,
+        state.settings.bible_settings.quotes_around_verse,
+        state.settings.bible_settings.use_abbreviation,
+        state.settings.bible_settings.show_version,
+        state.settings.bible_settings.range_number_only as u8,
+        state.settings.bible_settings.reference_size as u8,
     );
     if !force && state.bible.preview_key == key {
         return;
@@ -181,7 +397,12 @@ pub(super) fn select_reference(
     start: usize,
     end: usize,
 ) {
-    state.bible_book = crate::core::bible::BOOK_NAMES[book].into();
+    let bible = state.bible.library.get(&state.bible_version);
+    if let Some(b) = bible.as_ref().and_then(|lib| lib.books.get(book)) {
+        state.bible_book = b.name.clone();
+    } else {
+        state.bible_book = crate::core::bible::book_names_for_language(state.settings.language)[book].into();
+    }
     state.bible_chapter = chapter;
     state.bible_verse = start;
     state.bible.verse_end = end;

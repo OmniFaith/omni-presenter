@@ -1,7 +1,10 @@
 //! Core domain layer: data structures, state and pure logic.
 
 pub mod bible;
+pub mod bible_books;
+pub mod bible_format;
 pub mod bible_search;
+pub mod bible_split;
 pub mod breaks;
 pub mod commands;
 pub mod design;

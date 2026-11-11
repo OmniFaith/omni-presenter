@@ -11,6 +11,8 @@ mod import;
 mod navigation;
 mod search;
 mod selection;
+mod settings_dialog;
+mod settings_preview;
 mod text;
 mod version_bar;
 
@@ -18,6 +20,7 @@ pub use import::render_import_dialog;
 pub use navigation::render_bible_navigation;
 pub use search::render_bible_search_overlay;
 pub use selection::{selected_passage, selection_passages, sync_preview};
+pub use settings_dialog::render_bible_settings_modal;
 pub use text::render_bible_text;
 
 #[cfg(test)]

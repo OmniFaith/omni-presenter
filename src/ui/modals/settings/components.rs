@@ -145,7 +145,7 @@ pub fn segmented_picker<T: PartialEq + Copy>(
         );
 
         let is_selected = *selected == *val;
-        let id = ui.make_persistent_id(format!("seg_{}", i));
+        let id = ui.auto_id_with(("seg_picker", i));
         let response = ui.interact(seg_rect, id, egui::Sense::click());
 
         if response.clicked() && !is_selected {
@@ -157,11 +157,11 @@ pub fn segmented_picker<T: PartialEq + Copy>(
         let active = ui.ctx().animate_bool(id.with("active"), is_selected);
 
         if active > 0.0 {
-            ui.painter().rect_filled(seg_rect, 6.0, theme.bg_panel);
+            ui.painter().rect_filled(seg_rect, 6.0, theme.bg_card_active);
             ui.painter().rect_stroke(
                 seg_rect,
                 6.0,
-                Stroke::new(1.0, theme.border_active),
+                Stroke::new(1.0, theme.accent),
                 egui::StrokeKind::Inside,
             );
         } else if hover > 0.0 {

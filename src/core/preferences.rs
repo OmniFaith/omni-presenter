@@ -626,6 +626,7 @@ pub struct AppSettings {
     pub last_bible_chapter: usize,
     pub last_bible_verse: usize,
     pub last_bible_verse_end: usize,
+    pub bible_settings: crate::core::bible::BibleSettings,
     pub first_run_completed: bool,
     #[serde(default = "default_true")]
     pub show_profile_picker_on_startup: bool,
@@ -669,6 +670,7 @@ impl Default for AppSettings {
             last_bible_chapter: 1,
             last_bible_verse: 1,
             last_bible_verse_end: 1,
+            bible_settings: Default::default(),
             first_run_completed: false,
             show_profile_picker_on_startup: true,
         }

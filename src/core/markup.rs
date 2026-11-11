@@ -26,6 +26,11 @@ pub struct SlideDirectives {
     pub align: Option<String>,
     pub line_spacing: Option<f32>,
     pub letter_spacing: Option<f32>,
+    pub ref_text: Option<String>,
+    pub ref_pos: Option<String>,
+    pub ref_align: Option<String>,
+    pub ref_size: Option<String>,
+    pub valign: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -97,6 +102,9 @@ pub fn is_directive_command(trimmed: &str) -> bool {
         "alinhar:", "align:", "a:", "a ", "alinhar ", "align ",
         "linha:", "line:", "l:",
         "letra:", "letter:", "ls:", "ls ", "letra ", "letter ",
+        "ref:", "ref ", "ref-pos:", "ref-pos ", "ref-alinhar:", "ref-align:", "ref-alinhar ", "ref-align ",
+        "ref-size:", "ref-size ", "ref-tamanho:", "ref-tamanho ",
+        "valign:", "valign ", "valinhar:", "valinhar ", "va:", "va ",
     ] {
         if after_slash.len() >= prefix.len()
             && after_slash.is_char_boundary(prefix.len())
@@ -212,6 +220,44 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
             if let Ok(val) = letter_str.trim().parse::<f32>() {
                 dirs.letter_spacing = Some(val);
             }
+        }
+        if let Some(r) = strip_command_prefix(trimmed, "ref") {
+            if !r.is_empty() {
+                dirs.ref_text = Some(r.to_string());
+            }
+        }
+        if let Some(rp) = strip_command_prefix(trimmed, "ref-pos") {
+            dirs.ref_pos = Some(rp.to_lowercase());
+        }
+        if let Some(ra) = strip_command_prefix(trimmed, "ref-alinhar")
+            .or_else(|| strip_command_prefix(trimmed, "ref-align"))
+        {
+            let lower = ra.to_lowercase();
+            let norm = match lower.as_str() {
+                "centro" | "center" | "c" => "center",
+                "direita" | "right" | "r" | "d" => "right",
+                "esquerda" | "left" | "l" | "e" => "left",
+                _ => ra.trim(),
+            };
+            dirs.ref_align = Some(norm.to_string());
+        }
+        if let Some(rs) = strip_command_prefix(trimmed, "ref-size")
+            .or_else(|| strip_command_prefix(trimmed, "ref-tamanho"))
+        {
+            dirs.ref_size = Some(rs.to_lowercase());
+        }
+        if let Some(va) = strip_command_prefix(trimmed, "valign")
+            .or_else(|| strip_command_prefix(trimmed, "valinhar"))
+            .or_else(|| strip_command_prefix(trimmed, "va"))
+        {
+            let lower = va.to_lowercase();
+            let norm = match lower.as_str() {
+                "topo" | "top" | "t" | "cima" => "top",
+                "centro" | "center" | "c" | "meio" => "center",
+                "inferior" | "bottom" | "b" | "baixo" | "terço inferior" | "terco inferior" => "bottom",
+                _ => va.trim(),
+            };
+            dirs.valign = Some(norm.to_string());
         }
     }
     dirs

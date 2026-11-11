@@ -73,31 +73,32 @@ pub fn find_next_break(text: &str) -> Option<(usize, usize, BreakToken)> {
 
         // 2. Bracket format checks: `[4:3]`, `[16:9]`, `[9:16]`, `[21:9]`, `[br]`, `[quebra: ...]`
         if bytes[idx] == b'[' {
-            let slice = &text[idx..];
-            if slice.len() >= 5 {
-                let tag5 = &slice[..5];
-                if tag5.eq_ignore_ascii_case("[4:3]") || tag5.eq_ignore_ascii_case("[4x3]") {
+            let slice_bytes = &bytes[idx..];
+            if let Some(tag5) = slice_bytes.get(..5) {
+                if tag5.eq_ignore_ascii_case(b"[4:3]") || tag5.eq_ignore_ascii_case(b"[4x3]") {
                     return Some((idx, idx + 5, BreakToken::Ratio43));
                 }
             }
-            if slice.len() >= 6 {
-                let tag6 = &slice[..6];
-                if tag6.eq_ignore_ascii_case("[16:9]") || tag6.eq_ignore_ascii_case("[16x9]") {
+            if let Some(tag6) = slice_bytes.get(..6) {
+                if tag6.eq_ignore_ascii_case(b"[16:9]") || tag6.eq_ignore_ascii_case(b"[16x9]") {
                     return Some((idx, idx + 6, BreakToken::Ratio169));
                 }
-                if tag6.eq_ignore_ascii_case("[9:16]") || tag6.eq_ignore_ascii_case("[9x16]") {
+                if tag6.eq_ignore_ascii_case(b"[9:16]") || tag6.eq_ignore_ascii_case(b"[9x16]") {
                     return Some((idx, idx + 6, BreakToken::Ratio916));
                 }
-                if tag6.eq_ignore_ascii_case("[21:9]") || tag6.eq_ignore_ascii_case("[21x9]") {
+                if tag6.eq_ignore_ascii_case(b"[21:9]") || tag6.eq_ignore_ascii_case(b"[21x9]") {
                     return Some((idx, idx + 6, BreakToken::Ratio219));
                 }
             }
-            if slice.len() >= 4 && slice[..4].eq_ignore_ascii_case("[br]") {
-                return Some((idx, idx + 4, BreakToken::SoftBreak));
+            if let Some(tag4) = slice_bytes.get(..4) {
+                if tag4.eq_ignore_ascii_case(b"[br]") {
+                    return Some((idx, idx + 4, BreakToken::SoftBreak));
+                }
             }
             // Extended syntax `[quebra: 4:3]`, `[quebra: 16:9]`, `[quebra: 9:16]`
+            let slice = &text[idx..];
             if let Some(close) = slice.find(']') {
-                let inside = &slice[1..close].trim();
+                let inside = slice[1..close].trim();
                 if let Some(arg) = inside.strip_prefix("quebra:") {
                     let clean_arg = arg.trim();
                     if clean_arg == "4:3" || clean_arg == "4x3" {
@@ -226,5 +227,20 @@ mod tests {
         let input = "Santo [quebra: 4:3] Poderoso";
         assert_eq!(resolve_conditional_breaks(input, 4.0 / 3.0), "Santo\nPoderoso");
         assert_eq!(resolve_conditional_breaks(input, 16.0 / 9.0), "Santo Poderoso");
+    }
+
+    #[test]
+    fn test_multibyte_utf8_bracket_no_panic() {
+        let input1 = "[JÓ] No princípio Deus criou os céus e a terra";
+        let out1 = resolve_conditional_breaks(input1, 16.0 / 9.0);
+        assert_eq!(out1, "[JÓ] No princípio Deus criou os céus e a terra");
+
+        let input2 = "[16] JOÃO 3.16";
+        let out2 = resolve_conditional_breaks(input2, 16.0 / 9.0);
+        assert_eq!(out2, "[16] JOÃO 3.16");
+
+        let input3 = "[Ó]";
+        let out3 = resolve_conditional_breaks(input3, 16.0 / 9.0);
+        assert_eq!(out3, "[Ó]");
     }
 }

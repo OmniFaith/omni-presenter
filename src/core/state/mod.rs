@@ -662,16 +662,14 @@ impl ControlPanelState {
         } else if !self.settings.last_bible_book.trim().is_empty() {
             self.settings.last_bible_book.clone()
         } else {
-            "Gênesis".to_string()
+            crate::core::bible::book_names_for_language(self.settings.language)[0].to_string()
         };
         self.bible_book = last_book;
         self.bible_chapter = service.last_bible_chapter.max(1);
         self.bible_verse = service.last_bible_verse.max(1);
         self.bible.verse_end = service.last_bible_verse_end.max(self.bible_verse);
         self.bible.selection_anchor = self.bible_verse;
-        let book_index = crate::core::bible::BOOK_NAMES
-            .iter()
-            .position(|&name| name == self.bible_book)
+        let book_index = crate::core::bible::book_canonical_index("", &self.bible_book)
             .unwrap_or(0);
         self.bible.expanded_book = Some(book_index);
         self.selected_theme_index = self

@@ -155,8 +155,15 @@ fn main() {
                     }
                     let stem = name.trim_end_matches(".json").to_owned();
                     let is_pt = stem.starts_with("pt_");
-                    let id = if is_pt {
-                        stem.trim_start_matches("pt_").to_uppercase()
+                    let id = if let Some((lang, rest)) = stem.split_once('_') {
+                        if (2..=4).contains(&lang.len())
+                            && lang.chars().all(|c| c.is_ascii_alphabetic())
+                            && !rest.is_empty()
+                        {
+                            rest.to_uppercase()
+                        } else {
+                            stem.to_uppercase()
+                        }
                     } else {
                         stem.to_uppercase()
                     };

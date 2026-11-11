@@ -1,82 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex, OnceLock};
 
-pub const BOOK_NAMES: [&str; 66] = [
-    "Gênesis",
-    "Êxodo",
-    "Levítico",
-    "Números",
-    "Deuteronômio",
-    "Josué",
-    "Juízes",
-    "Rute",
-    "1 Samuel",
-    "2 Samuel",
-    "1 Reis",
-    "2 Reis",
-    "1 Crônicas",
-    "2 Crônicas",
-    "Esdras",
-    "Neemias",
-    "Ester",
-    "Jó",
-    "Salmos",
-    "Provérbios",
-    "Eclesiastes",
-    "Cânticos",
-    "Isaías",
-    "Jeremias",
-    "Lamentações",
-    "Ezequiel",
-    "Daniel",
-    "Oseias",
-    "Joel",
-    "Amós",
-    "Obadias",
-    "Jonas",
-    "Miqueias",
-    "Naum",
-    "Habacuque",
-    "Sofonias",
-    "Ageu",
-    "Zacarias",
-    "Malaquias",
-    "Mateus",
-    "Marcos",
-    "Lucas",
-    "João",
-    "Atos",
-    "Romanos",
-    "1 Coríntios",
-    "2 Coríntios",
-    "Gálatas",
-    "Efésios",
-    "Filipenses",
-    "Colossenses",
-    "1 Tessalonicenses",
-    "2 Tessalonicenses",
-    "1 Timóteo",
-    "2 Timóteo",
-    "Tito",
-    "Filemom",
-    "Hebreus",
-    "Tiago",
-    "1 Pedro",
-    "2 Pedro",
-    "1 João",
-    "2 João",
-    "3 João",
-    "Judas",
-    "Apocalipse",
-];
-
-pub const BOOK_ABBREVS: [&str; 66] = [
-    "gn", "ex", "lv", "nm", "dt", "js", "jz", "rt", "1sm", "2sm", "1rs", "2rs", "1cr", "2cr", "ed",
-    "ne", "et", "jó", "sl", "pv", "ec", "ct", "is", "jr", "lm", "ez", "dn", "os", "jl", "am", "ob",
-    "jn", "mq", "na", "hc", "sf", "ag", "zc", "ml", "mt", "mc", "lc", "jo", "at", "rm", "1co",
-    "2co", "gl", "ef", "fp", "cl", "1ts", "2ts", "1tm", "2tm", "tt", "fm", "hb", "tg", "1pe",
-    "2pe", "1jo", "2jo", "3jo", "jd", "ap",
-];
+pub use crate::core::bible_books::*;
+pub use crate::core::bible_split::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BibleBook {
@@ -96,51 +22,11 @@ pub struct BibleTranslation {
 #[derive(Deserialize)]
 struct FastBook {
     #[serde(default)]
+    name: String,
+    #[serde(default)]
+    abbrev: String,
+    #[serde(default)]
     chapters: Vec<Vec<String>>,
-}
-
-fn book_canonical_index(abbrev: &str, name: &str) -> Option<usize> {
-    let a = abbrev.trim().to_lowercase();
-    for (i, canon) in BOOK_ABBREVS.iter().enumerate() {
-        if canon.eq_ignore_ascii_case(&a) {
-            return Some(i);
-        }
-    }
-    match a.as_str() {
-        "job" => Some(17),
-        "ps" => Some(18),
-        "prv" => Some(19),
-        "so" => Some(21),
-        "ho" => Some(27),
-        "mi" => Some(32),
-        "hk" => Some(34),
-        "zp" => Some(35),
-        "hg" => Some(36),
-        "mk" => Some(40),
-        "lk" => Some(41),
-        "jhn" => Some(42),
-        "act" | "atos" => Some(43),
-        "eph" => Some(48),
-        "ph" => Some(49),
-        "phm" => Some(56),
-        "jm" => Some(58),
-        "re" => Some(65),
-        "1ch" => Some(12),
-        "2ch" => Some(13),
-        "1kgs" => Some(10),
-        "2kgs" => Some(11),
-        "jud" => Some(6),
-        "ezr" => Some(14),
-        _ => {
-            let n = fold(name);
-            for (i, canon_name) in BOOK_NAMES.iter().enumerate() {
-                if fold(canon_name) == n {
-                    return Some(i);
-                }
-            }
-            None
-        }
-    }
 }
 
 impl BibleTranslation {
@@ -155,6 +41,9 @@ impl BibleTranslation {
             && !name.trim().is_empty()
             && let Ok(fast_books) = serde_json::from_slice::<Vec<FastBook>>(bytes)
                 && fast_books.len() == 66 {
+                    let lang = detect_bible_language(&code_clean, name);
+                    let canon_names = book_names_for_language(lang);
+                    let canon_abbrevs = book_abbrevs_for_language(lang);
                     let mut valid = true;
                     let mut books = Vec::with_capacity(66);
                     for (index, fb) in fast_books.into_iter().enumerate() {
@@ -171,9 +60,19 @@ impl BibleTranslation {
                         if !valid {
                             break;
                         }
+                        let book_name = if !fb.name.trim().is_empty() {
+                            fb.name.trim().to_string()
+                        } else {
+                            canon_names[index].into()
+                        };
+                        let book_abbrev = if !fb.abbrev.trim().is_empty() {
+                            fb.abbrev.trim().to_lowercase()
+                        } else {
+                            canon_abbrevs[index].into()
+                        };
                         books.push(BibleBook {
-                            name: BOOK_NAMES[index].into(),
-                            abbrev: BOOK_ABBREVS[index].into(),
+                            name: book_name,
+                            abbrev: book_abbrev,
                             chapters: fb.chapters,
                         });
                     }
@@ -218,10 +117,14 @@ impl BibleTranslation {
             return Err("Informe o nome da tradução.".into());
         }
 
+        let lang = detect_bible_language(&id, &name);
+        let canon_names = book_names_for_language(lang);
+        let canon_abbrevs = book_abbrevs_for_language(lang);
+
         let mut books: Vec<BibleBook> = (0..66)
             .map(|i| BibleBook {
-                name: BOOK_NAMES[i].into(),
-                abbrev: BOOK_ABBREVS[i].into(),
+                name: canon_names[i].into(),
+                abbrev: canon_abbrevs[i].into(),
                 chapters: Vec::new(),
             })
             .collect();
@@ -279,6 +182,12 @@ impl BibleTranslation {
                 }
                 parsed_chapters.push(parsed);
             }
+            if let Some(n) = book.get("name").and_then(|v| v.as_str()).filter(|s| !s.trim().is_empty()) {
+                books[canon_idx].name = n.trim().to_string();
+            }
+            if let Some(a) = book.get("abbrev").and_then(|v| v.as_str()).filter(|s| !s.trim().is_empty()) {
+                books[canon_idx].abbrev = a.trim().to_lowercase();
+            }
             books[canon_idx].chapters = parsed_chapters;
         }
         Ok(Self { id, name, books })
@@ -332,7 +241,7 @@ impl BibleTranslation {
             .iter()
             .enumerate()
             .flat_map(|(index, b)| {
-                [
+                let mut v = vec![
                     (
                         index,
                         fold(&b.name).replace(' ', ""),
@@ -343,7 +252,24 @@ impl BibleTranslation {
                         fold(&b.abbrev).replace(' ', ""),
                         original.starts_with(&b.abbrev.to_lowercase().replace(' ', "")),
                     ),
-                ]
+                ];
+                if index < 66 {
+                    for name in [BOOK_NAMES_PT[index], BOOK_NAMES_EN[index], BOOK_NAMES_ES[index]] {
+                        v.push((
+                            index,
+                            fold(name).replace(' ', ""),
+                            original.starts_with(&name.to_lowercase().replace(' ', "")),
+                        ));
+                    }
+                    for abbrev in [BOOK_ABBREVS_PT[index], BOOK_ABBREVS_EN[index], BOOK_ABBREVS_ES[index]] {
+                        v.push((
+                            index,
+                            fold(abbrev).replace(' ', ""),
+                            original.starts_with(&abbrev.to_lowercase().replace(' ', "")),
+                        ));
+                    }
+                }
+                v
             })
             .collect();
         candidates.sort_by_key(|(_, name, exact)| std::cmp::Reverse((name.len(), *exact)));
@@ -393,16 +319,34 @@ pub const DEFAULT_BIBLE: &str = "ARA";
 pub fn default_for_language(language: crate::core::i18n::Language) -> &'static str {
     match language {
         crate::core::i18n::Language::Portuguese => "ARA",
-        crate::core::i18n::Language::English => "EN_KJV",
-        crate::core::i18n::Language::Spanish => "ES_RVR1960",
+        crate::core::i18n::Language::English => "KJV",
+        crate::core::i18n::Language::Spanish => "RVR1960",
     }
 }
 
+pub fn clean_version_id(stem_or_id: &str) -> String {
+    let trimmed = stem_or_id.trim();
+    if let Some((lang, rest)) = trimmed.split_once('_') {
+        if (2..=4).contains(&lang.len())
+            && lang.chars().all(|c| c.is_ascii_alphabetic())
+            && !rest.is_empty()
+        {
+            return rest.to_uppercase();
+        }
+    }
+    trimmed.to_uppercase()
+}
+
 fn bundled_name(id: &str) -> &'static str {
-    if let Some(meta) = BUNDLED_BIBLES_META.iter().find(|m| m.id.eq_ignore_ascii_case(id)) {
+    let clean = clean_version_id(id);
+    if let Some(meta) = BUNDLED_BIBLES_META.iter().find(|m| {
+        m.id.eq_ignore_ascii_case(id)
+            || m.id.eq_ignore_ascii_case(&clean)
+            || m.stem.eq_ignore_ascii_case(id)
+    }) {
         return meta.name;
     }
-    match id {
+    match clean.as_str() {
         "AA" => "Almeida Atualizada",
         "ACF" => "Almeida Corrigida Fiel",
         "ARA" => "Almeida Revista e Atualizada",
@@ -416,12 +360,19 @@ fn bundled_name(id: &str) -> &'static str {
         "NVT" => "Nova Versão Transformadora",
         "TB" => "Tradução Brasileira",
         "VFL" => "Versão Fácil de Ler",
+        "KJV" => "King James Version",
+        "RVR1960" => "Reina-Valera 1960",
         _ => "Bíblia",
     }
 }
 
 pub fn bundled_meta(id: &str) -> Option<&'static BundledBibleMeta> {
-    BUNDLED_BIBLES_META.iter().find(|m| m.id.eq_ignore_ascii_case(id))
+    let clean = clean_version_id(id);
+    BUNDLED_BIBLES_META.iter().find(|m| {
+        m.id.eq_ignore_ascii_case(id)
+            || m.id.eq_ignore_ascii_case(&clean)
+            || m.stem.eq_ignore_ascii_case(id)
+    })
 }
 
 pub fn bible_language(id: &str) -> &'static str {
@@ -435,11 +386,7 @@ pub fn is_pt_bible(id: &str) -> bool {
 }
 
 fn bundled_id(stem: &str) -> String {
-    if stem.starts_with("pt_") {
-        stem.trim_start_matches("pt_").to_uppercase()
-    } else {
-        stem.to_uppercase()
-    }
+    clean_version_id(stem)
 }
 
 impl Default for BibleLibrary {
@@ -467,7 +414,9 @@ impl BibleLibrary {
 
     pub fn get(&self, id: &str) -> Option<Arc<BibleTranslation>> {
         let code = version_code(id);
-        if let Some(found) = self.translations.iter().find(|t| t.id == code) {
+        if let Some(found) = self.translations.iter().find(|t| {
+            t.id.eq_ignore_ascii_case(&code) || t.id.eq_ignore_ascii_case(id)
+        }) {
             return Some(found.clone());
         }
         static CACHE: OnceLock<Mutex<std::collections::HashMap<String, Arc<BibleTranslation>>>> =
@@ -480,7 +429,9 @@ impl BibleLibrary {
             .iter()
             .find(|(stem, _)| {
                 bundled_id(stem) == code
-                    || stem.to_uppercase() == code
+                    || bundled_id(stem).eq_ignore_ascii_case(id)
+                    || stem.eq_ignore_ascii_case(&code)
+                    || stem.eq_ignore_ascii_case(id)
                     || stem.strip_prefix("pt_").unwrap_or(stem).to_uppercase() == code
             })?;
         let name = bundled_name(&code);
@@ -536,12 +487,12 @@ impl BibleLibrary {
 }
 
 pub fn version_code(version: &str) -> String {
-    version
+    let raw = version
         .rsplit_once('(')
         .map(|(_, code)| code.trim_end_matches(')'))
         .unwrap_or(version)
-        .trim()
-        .to_uppercase()
+        .trim();
+    clean_version_id(raw)
 }
 
 pub fn fold(text: &str) -> String {
@@ -585,6 +536,7 @@ pub struct BibleState {
     pub scroll_to_book: bool,
     pub scroll_to_verse: bool,
     pub show_import: bool,
+    pub show_settings: bool,
     pub import_code: String,
     pub import_name: String,
     pub import_path: Option<std::path::PathBuf>,
@@ -611,6 +563,7 @@ impl Default for BibleState {
             scroll_to_book: true,
             scroll_to_verse: true,
             show_import: false,
+            show_settings: false,
             import_code: String::new(),
             import_name: String::new(),
             import_path: None,
@@ -619,69 +572,283 @@ impl Default for BibleState {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BibleReferencePosition {
+    Top,
+    Bottom,
+    BelowVerse,
+    EndOfVerse,
+    Hidden,
+}
 
-    #[test]
-    fn bundled_chapters_references_and_ranges_are_real() {
-        let bible = BibleLibrary::default()
-            .get(DEFAULT_BIBLE)
-            .unwrap();
-        assert_eq!(bible.books.len(), 66);
-        assert_eq!(bible.chapter(16, 10).unwrap().len(), 3);
-        let ester = bible.passage(16, 10, 2, 2).unwrap();
-        assert!(ester.content.contains("Mardoqueu") || ester.content.contains("Mordecai"));
-        assert!(ester.content.ends_with("Ester 10:2"));
-        assert_ne!(ester.content, bible.passage(42, 3, 16, 16).unwrap().content);
-        assert_eq!(bible.reference("1 João 2:1-3"), Some((61, 2, 1, 3)));
-        assert_eq!(bible.reference("Jo3.16"), Some((42, 3, 16, 16)));
-        assert!(bible.reference("Livro inexistente 1:1").is_none());
+impl Default for BibleReferencePosition {
+    fn default() -> Self {
+        Self::Bottom
     }
+}
 
-    #[test]
-    fn imports_reject_invalid_content_and_accept_nested_arrays() {
-        assert!(BibleTranslation::from_json(br#"{"books":[]}"#, "NAA", "Nova Almeida").is_err());
-        let books: Vec<_> = BOOK_NAMES.iter().map(|name| serde_json::json!({"name":name,"chapters":[["Um versículo", "Outro versículo"]]})).collect();
-        let translation = BibleTranslation::from_json(
-            &serde_json::to_vec(&books).unwrap(),
-            "TESTE",
-            "Tradução teste",
-        )
-        .unwrap();
-        assert_eq!(
-            translation.passage(16, 1, 1, 2).unwrap().content,
-            "Um versículo\nOutro versículo\nEster 1:1–2"
-        );
-        let mut broken = serde_json::to_value(&books).unwrap();
-        broken[0]["chapters"][0][0] = serde_json::json!(42);
-        assert!(
-            BibleTranslation::from_json(&serde_json::to_vec(&broken).unwrap(), "TESTE", "Teste")
-                .is_err()
-        );
-
-        // Test UTF-8 BOM stripping
-        let mut bom_bytes = vec![0xef, 0xbb, 0xbf];
-        bom_bytes.extend(serde_json::to_vec(&books).unwrap());
-        let bom_res = BibleTranslation::from_json(&bom_bytes, "PT_AA", "Almeida Atualizada");
-        assert!(bom_res.is_ok());
-        assert_eq!(bom_res.unwrap().id, "PT_AA");
-    }
-
-    #[test]
-    fn bundled_bibles_load_cleanly_with_metadata() {
-        let lib = BibleLibrary::default();
-        let catalog = lib.catalog();
-        assert!(!catalog.is_empty());
-        let ara = lib.get("ARA");
-        assert!(ara.is_some(), "Default bible ARA must load successfully");
-        let kjv = lib.get("EN_KJV");
-        assert!(kjv.is_some(), "English KJV bible must load successfully");
-        for (id, name) in &catalog {
-            assert!(!id.is_empty());
-            assert!(!name.is_empty());
-            assert_ne!(name, "Bíblia em português", "Bibles should have real translation names: {}", id);
+impl BibleReferencePosition {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Top => "top",
+            Self::Bottom => "bottom",
+            Self::BelowVerse => "below",
+            Self::EndOfVerse => "end",
+            Self::Hidden => "hidden",
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BibleReferenceAlignment {
+    Left,
+    Center,
+    Right,
+}
+
+impl Default for BibleReferenceAlignment {
+    fn default() -> Self {
+        Self::Right
+    }
+}
+
+impl BibleReferenceAlignment {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Left => "left",
+            Self::Center => "center",
+            Self::Right => "right",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BibleSeparator {
+    Colon,
+    Dot,
+}
+
+impl Default for BibleSeparator {
+    fn default() -> Self {
+        Self::Colon
+    }
+}
+
+impl BibleSeparator {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Colon => ":",
+            Self::Dot => ".",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BibleVerseAlignment {
+    Center,
+    Left,
+    Justified,
+}
+
+impl Default for BibleVerseAlignment {
+    fn default() -> Self {
+        Self::Center
+    }
+}
+
+impl BibleVerseAlignment {
+    pub fn as_markup_directive(&self) -> Option<&'static str> {
+        match self {
+            Self::Center => None,
+            Self::Left => Some("//alinhar: esquerda\n"),
+            Self::Justified => Some("//alinhar: justificado\n"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleVerticalAlignment {
+    #[default]
+    Center,
+    Top,
+    Bottom,
+}
+
+impl BibleVerticalAlignment {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Top => "top",
+            Self::Center => "center",
+            Self::Bottom => "bottom",
+        }
+    }
+
+    pub fn as_markup_directive(&self) -> Option<&'static str> {
+        match self {
+            Self::Top => Some("//valign: top\n"),
+            Self::Center => None,
+            Self::Bottom => Some("//valign: bottom\n"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleFontScale {
+    Compact, // 85%
+    #[default]
+    Normal,  // 100%
+    Large,   // 115%
+    ExtraLarge, // 130%
+}
+
+impl BibleFontScale {
+    pub fn multiplier(&self) -> f32 {
+        match self {
+            Self::Compact => 0.85,
+            Self::Normal => 1.0,
+            Self::Large => 1.15,
+            Self::ExtraLarge => 1.30,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleReferenceHighlight {
+    Discreet,
+    #[default]
+    Accent,
+    Badge,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleVerseNumberStyle {
+    #[default]
+    Bracket,     // [16]
+    Superscript, // ¹⁶
+    Dot,         // 16.
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleVersionStyle {
+    #[default]
+    Parentheses, // (NVI)
+    Hyphen,      // - NVI
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleLineSpacing {
+    Compact,
+    #[default]
+    Normal,
+    Spacious,
+}
+
+impl BibleLineSpacing {
+    pub fn as_markup_directive(&self) -> Option<&'static str> {
+        match self {
+            Self::Compact => Some("//linha: 1.15\n"),
+            Self::Normal => None,
+            Self::Spacious => Some("//linha: 1.6\n"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BibleReferenceSize {
+    #[default]
+    Normal,
+    Compact,
+}
+
+impl BibleReferenceSize {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Compact => "compact",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct BibleSettings {
+    pub reference_position: BibleReferencePosition,
+    #[serde(default)]
+    pub reference_alignment: BibleReferenceAlignment,
+    #[serde(default)]
+    pub reference_size: BibleReferenceSize,
+    pub show_version: bool,
+    pub version_style: BibleVersionStyle,
+    pub use_abbreviation: bool,
+    pub uppercase_reference: bool,
+    pub italic_reference: bool,
+    pub show_verse_numbers: bool,
+    pub verse_number_style: BibleVerseNumberStyle,
+    pub separator: BibleSeparator,
+    pub alignment: BibleVerseAlignment,
+    pub vertical_alignment: BibleVerticalAlignment,
+    pub font_scale: BibleFontScale,
+    pub reference_highlight: BibleReferenceHighlight,
+    pub line_spacing: BibleLineSpacing,
+    pub quotes_around_verse: bool,
+    pub auto_split_long_verses: bool,
+    #[serde(default = "crate::core::bible_split::default_max_chars")]
+    pub max_chars_per_slide: usize,
+    #[serde(default)]
+    pub split_action: BibleSplitAction,
+    #[serde(default)]
+    pub split_punctuation: BibleSplitPunctuation,
+    #[serde(default = "crate::core::bible_split::default_true")]
+    pub split_ellipsis: bool,
+    pub one_verse_per_slide: bool,
+    #[serde(default)]
+    pub range_number_only: bool,
+}
+
+impl Default for BibleSettings {
+    fn default() -> Self {
+        Self {
+            reference_position: BibleReferencePosition::Bottom,
+            reference_alignment: BibleReferenceAlignment::Right,
+            reference_size: BibleReferenceSize::Normal,
+            show_version: false,
+            version_style: BibleVersionStyle::Parentheses,
+            use_abbreviation: false,
+            uppercase_reference: false,
+            italic_reference: false,
+            show_verse_numbers: true,
+            verse_number_style: BibleVerseNumberStyle::Bracket,
+            separator: BibleSeparator::Colon,
+            alignment: BibleVerseAlignment::Center,
+            vertical_alignment: BibleVerticalAlignment::Center,
+            font_scale: BibleFontScale::Normal,
+            reference_highlight: BibleReferenceHighlight::Accent,
+            line_spacing: BibleLineSpacing::Normal,
+            quotes_around_verse: false,
+            auto_split_long_verses: false,
+            max_chars_per_slide: 120,
+            split_action: BibleSplitAction::MultipleSlides,
+            split_punctuation: BibleSplitPunctuation::NaturalPunctuation,
+            split_ellipsis: true,
+            one_verse_per_slide: false,
+            range_number_only: false,
+        }
+    }
+}
+
+pub use super::bible_format::{
+    format_bible_reference, format_bible_slide, format_bible_slide_with_custom_ref,
+    format_verse_number, to_superscript,
+};
+
+#[cfg(test)]
+#[path = "bible_tests.rs"]
+mod tests;
 

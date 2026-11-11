@@ -78,6 +78,7 @@ impl PresentationApp {
             || self.control_state.show_presentation_settings_modal
             || self.is_preview_modal_open
             || self.control_state.bible.show_import
+            || self.control_state.bible.show_settings
             || self.control_state.chat.show_channels
             || self.control_state.chat.show_bible
             || self.control_state.chat.show_songs

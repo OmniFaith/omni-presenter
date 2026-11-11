@@ -51,6 +51,19 @@ impl PresentationApp {
             &mut self.slide_deck,
         );
 
+        // Bible Projection & Display Settings Modal Dialog
+        let prev_bible_settings = self.control_state.settings.bible_settings.clone();
+        crate::ui::pages::bible::render_bible_settings_modal(ctx, &mut self.control_state);
+        if self.control_state.settings.bible_settings != prev_bible_settings {
+            let _ = self.db.save_settings(&self.control_state.settings);
+            self.last_saved_settings =
+                serde_json::to_string(&self.control_state.settings).unwrap_or_default();
+            crate::ui::pages::bible::sync_preview(&mut self.control_state, &mut self.slide_deck, true);
+            if !self.slide_deck.is_live_song() {
+                self.slide_deck.project_preview();
+            }
+        }
+
         // Lyrics Editor Modal Dialog (with SQLite DB persistence!)
         crate::ui::render_editor_modal(
             ctx,

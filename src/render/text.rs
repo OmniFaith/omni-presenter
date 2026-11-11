@@ -315,30 +315,116 @@ fn render_internal(
         .max(0.0)
         .min(box_rect.width().min(box_rect.height()) * 0.45);
     let inner = box_rect.shrink(padding);
-    let text_layout = layout(painter, theme, text, inner.size());
+    let directives = crate::core::markup::parse_slide_directives(text);
+    let (verse_text, ref_text_opt) = if let Some(ref pos) = directives.ref_pos {
+        let lines: Vec<&str> = text
+            .lines()
+            .filter(|l| !crate::core::markup::is_directive_command(l.trim_start()))
+            .collect();
+        if lines.len() > 1 {
+            match pos.as_str() {
+                "top" => {
+                    let r = lines[0].trim().to_string();
+                    let v = lines[1..].join("\n");
+                    (v, Some(r))
+                }
+                "bottom" | "below" => {
+                    let r = lines[lines.len() - 1].trim().to_string();
+                    let v = lines[..lines.len() - 1].join("\n");
+                    (v, Some(r))
+                }
+                _ => (text.to_string(), None),
+            }
+        } else {
+            (text.to_string(), directives.ref_text.clone())
+        }
+    } else {
+        (text.to_string(), directives.ref_text.clone())
+    };
+
     let to_view = |position: Pos2| rect.min + position.to_vec2() * view_scale;
     let view_box = Rect::from_min_size(to_view(box_rect.min), box_rect.size() * view_scale);
+
+    let ref_layout_opt = if let Some(ref ref_str) = ref_text_opt {
+        let ref_align = directives.ref_align.as_deref().unwrap_or("right");
+        let ref_size_mult = match directives.ref_size.as_deref() {
+            Some("compact") | Some("small") | Some("pequeno") | Some("reduzido") => 0.70,
+            _ => 1.0, // Default: normal (same size as verse text)
+        };
+        let ref_theme = {
+            let mut t = theme.clone();
+            t.font_size = (theme.font_size * ref_size_mult).clamp(16.0, 72.0);
+            t.align_h = ref_align.to_string();
+            t
+        };
+        Some(layout(painter, &ref_theme, ref_str, inner.size()))
+    } else {
+        None
+    };
+
+    let screen_top = 28.0;
+    let screen_bottom = design_size.y - 28.0;
+
+    let (verse_inner, ref_pos_and_data) = if let Some(ref_layout) = ref_layout_opt {
+        let ref_x = inner.left();
+        let ref_pos_str = directives.ref_pos.as_deref().unwrap_or("bottom");
+        match ref_pos_str {
+            "top" => {
+                let ref_y = screen_top;
+                let v_top = (screen_top + ref_layout.size.y + 16.0).max(inner.top());
+                let v_inner = Rect::from_min_max(Pos2::new(inner.left(), v_top), inner.max);
+                let ref_pos = to_view(egui::pos2(ref_x, ref_y));
+                let ref_scale = ref_layout.scale * view_scale;
+                (v_inner, Some((ref_layout, ref_pos, ref_scale, false)))
+            }
+            "bottom" => {
+                let ref_y = screen_bottom - ref_layout.size.y;
+                let v_bottom = (ref_y - 16.0).min(inner.bottom());
+                let v_inner = Rect::from_min_max(inner.min, Pos2::new(inner.right(), v_bottom));
+                let ref_pos = to_view(egui::pos2(ref_x, ref_y));
+                let ref_scale = ref_layout.scale * view_scale;
+                (v_inner, Some((ref_layout, ref_pos, ref_scale, false)))
+            }
+            _ => {
+                let v_bottom = (inner.bottom() - ref_layout.size.y - 12.0).max(inner.top() + 20.0);
+                let v_inner = Rect::from_min_max(inner.min, Pos2::new(inner.right(), v_bottom));
+                (v_inner, Some((ref_layout, Pos2::ZERO, 0.0, true)))
+            }
+        }
+    } else {
+        (inner, None)
+    };
+
+    let text_layout = layout(painter, theme, &verse_text, verse_inner.size());
     let mut clipped =
         painter.with_clip_rect(painter.clip_rect().intersect(rect).intersect(view_box));
-    let directives = if theme.options.show_song_effects {
-        crate::core::markup::parse_slide_directives(text)
-    } else {
-        crate::core::markup::SlideDirectives::default()
-    };
     let align_h = directives.align.as_deref().unwrap_or(theme.align_h.as_str());
     let x = match align_h {
-        "center" => inner.center().x,
-        "right" => inner.right(),
-        _ => inner.left(),
+        "center" => verse_inner.center().x,
+        "right" => verse_inner.right(),
+        _ => verse_inner.left(),
     };
-    let y = match theme.align_v.as_str() {
-        "top" => inner.top(),
-        "bottom" => inner.bottom() - text_layout.size.y,
-        _ => inner.center().y - text_layout.size.y * 0.5,
+    let align_v = directives.valign.as_deref().unwrap_or(theme.align_v.as_str());
+    let y = match align_v {
+        "top" => verse_inner.top(),
+        "bottom" => (verse_inner.bottom() - text_layout.size.y).max(verse_inner.top()),
+        _ => (verse_inner.center().y - text_layout.size.y * 0.5).max(verse_inner.top()),
     };
     let position = to_view(egui::pos2(x, y));
     let scale = text_layout.scale * view_scale;
     let angle = theme.options.text_rotation.to_radians();
+
+    let ref_render_data = match ref_pos_and_data {
+        Some((layout, _, _, true)) => {
+            let ref_x = inner.left();
+            let ref_y = (y + text_layout.size.y + 12.0).min(screen_bottom - layout.size.y);
+            let ref_pos = to_view(egui::pos2(ref_x, ref_y));
+            let ref_scale = layout.scale * view_scale;
+            Some((layout, ref_pos, ref_scale))
+        }
+        Some((layout, pos, sc, false)) => Some((layout, pos, sc)),
+        None => None,
+    };
 
     if let Some(color) = override_color {
         clipped.add(text_shape(
@@ -349,6 +435,16 @@ fn render_internal(
             angle,
             Some(color),
         ));
+        if let Some((ref_layout, ref_pos, ref_scale)) = ref_render_data {
+            clipped.add(text_shape(
+                ref_layout.galley,
+                ref_pos,
+                ref_scale,
+                color,
+                angle,
+                Some(color),
+            ));
+        }
         return;
     }
 
@@ -382,6 +478,19 @@ fn render_internal(
             shadow_color,
             theme.options.text_opacity,
         );
+        if let Some((ref ref_layout, ref_pos, ref_scale)) = ref_render_data {
+            render_shadow(
+                &mut clipped,
+                ref_layout.galley.clone(),
+                ref_pos,
+                offset,
+                shadow_blur,
+                ref_scale,
+                angle,
+                shadow_color,
+                theme.options.text_opacity,
+            );
+        }
     }
 
     let blur = blur_radius * view_scale;
@@ -500,6 +609,18 @@ fn render_internal(
                 ));
             }
         }
+    }
+
+    if let Some((ref ref_layout, ref_pos, ref_scale)) = ref_render_data {
+        let ref_color = base_color.linear_multiply(0.88);
+        clipped.add(text_shape(
+            ref_layout.galley.clone(),
+            ref_pos,
+            ref_scale,
+            ref_color,
+            angle,
+            None,
+        ));
     }
 }
 
