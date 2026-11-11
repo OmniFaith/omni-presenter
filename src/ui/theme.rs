@@ -232,12 +232,15 @@ impl AppTheme {
         visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, self.border_default);
         visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0, self.text_primary);
         visuals.widgets.inactive.bg_fill = self.bg_pill;
+        visuals.widgets.inactive.weak_bg_fill = self.bg_pill;
         visuals.widgets.inactive.bg_stroke = Stroke::new(1.0, self.border_default);
         visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, self.text_primary);
         visuals.widgets.hovered.bg_fill = self.bg_card_hover;
+        visuals.widgets.hovered.weak_bg_fill = self.bg_card_hover;
         visuals.widgets.hovered.bg_stroke = Stroke::new(1.0, self.border_active);
         visuals.widgets.hovered.fg_stroke = Stroke::new(1.0, self.text_primary);
         visuals.widgets.active.bg_fill = self.bg_pill_active;
+        visuals.widgets.active.weak_bg_fill = self.bg_pill_active;
         visuals.widgets.active.bg_stroke = Stroke::new(1.0, self.accent);
         visuals.widgets.active.fg_stroke = Stroke::new(1.0, self.text_primary);
         visuals.selection.bg_fill = self.accent_soft;

@@ -89,6 +89,108 @@ fn make_date_time_layout_job(
     job
 }
 
+fn action_item_button(
+    ui: &mut egui::Ui,
+    label: &str,
+    is_primary: bool,
+    theme: &AppTheme,
+) -> egui::Response {
+    let desired_w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(
+        egui::vec2(desired_w, 26.0),
+        egui::Sense::click(),
+    );
+
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+
+    let (bg, stroke, text_color) = if is_primary {
+        if resp.is_pointer_button_down_on() {
+            (theme.bg_card_active, egui::Stroke::new(1.0, theme.accent), theme.accent)
+        } else if resp.hovered() {
+            (theme.bg_card_hover, egui::Stroke::new(1.0, theme.border_active), theme.accent)
+        } else {
+            (theme.bg_card, egui::Stroke::new(1.0, theme.border_default), theme.text_primary)
+        }
+    } else {
+        if resp.is_pointer_button_down_on() {
+            (theme.bg_card_active, egui::Stroke::new(1.0, theme.accent.linear_multiply(0.4)), theme.accent)
+        } else if resp.hovered() {
+            (theme.bg_card_hover, egui::Stroke::new(1.0, theme.border_active), theme.accent)
+        } else {
+            (egui::Color32::TRANSPARENT, egui::Stroke::NONE, theme.text_secondary)
+        }
+    };
+
+    ui.painter().rect(
+        rect,
+        6.0,
+        bg,
+        stroke,
+        egui::StrokeKind::Inside,
+    );
+
+    ui.painter().text(
+        egui::pos2(rect.min.x + 8.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        label,
+        egui::FontId::proportional(11.5),
+        text_color,
+    );
+
+    resp
+}
+
+fn service_item_button(
+    ui: &mut egui::Ui,
+    job: egui::text::LayoutJob,
+    theme: &AppTheme,
+) -> egui::Response {
+    let desired_w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(
+        egui::vec2(desired_w, 26.0),
+        egui::Sense::click(),
+    );
+
+    let is_hovered = resp.hovered();
+    let is_active = resp.is_pointer_button_down_on();
+
+    if is_hovered {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+
+    let (bg, stroke) = if is_active {
+        (
+            theme.bg_card_active,
+            egui::Stroke::new(1.0, theme.accent.linear_multiply(0.4)),
+        )
+    } else if is_hovered {
+        (
+            theme.bg_card_hover,
+            egui::Stroke::new(1.0, theme.border_active),
+        )
+    } else {
+        (egui::Color32::TRANSPARENT, egui::Stroke::NONE)
+    };
+
+    if bg != egui::Color32::TRANSPARENT || stroke != egui::Stroke::NONE {
+        ui.painter().rect(
+            rect,
+            6.0,
+            bg,
+            stroke,
+            egui::StrokeKind::Inside,
+        );
+    }
+
+    let galley = ui.fonts_mut(|f| f.layout_job(job));
+    let text_pos = egui::pos2(rect.min.x + 8.0, rect.center().y - galley.size().y * 0.5);
+    ui.painter().galley(text_pos, galley, theme.text_primary);
+
+    resp
+}
+
 pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, theme: &AppTheme) {
     let lang = crate::ui::i18n::language(ui.ctx());
     let active_service_id = state.settings.active_service.clone();
@@ -503,19 +605,13 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                     ui.spacing_mut().item_spacing = egui::vec2(4.0, 5.0);
 
                     // Ação de ir para o culto de hoje
-                    if ui
-                        .add(
-                            egui::Button::new(
-                                RichText::new(crate::ui::i18n::text(ui, "workspace-nearest-service"))
-                                    .size(11.5)
-                                    .strong(),
-                            )
-                            .fill(theme.bg_card)
-                            .stroke(egui::Stroke::new(1.0, theme.border_default))
-                            .corner_radius(6.0)
-                            .min_size(egui::vec2(ui.available_width(), 26.0)),
-                        )
-                        .clicked()
+                    if action_item_button(
+                        ui,
+                        crate::ui::i18n::text(ui, "workspace-nearest-service"),
+                        true,
+                        theme,
+                    )
+                    .clicked()
                     {
                         state.auto_select_nearest_service();
                         ui.close();
@@ -534,15 +630,13 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                             crate::core::state::events::format_date_display_localized(&prev_d, lang);
                         let copy_label = lang
                             .format("workspace-copy-previous-with-date", &[("date", &prev_fmt)]);
-                        if ui
-                            .add(
-                                egui::Button::new(
-                                    RichText::new(format!("{COPY_SIMPLE}  {copy_label}")).size(11.0),
-                                )
-                                .fill(egui::Color32::TRANSPARENT)
-                                .min_size(egui::vec2(ui.available_width(), 24.0)),
-                            )
-                            .clicked()
+                        if action_item_button(
+                            ui,
+                            &format!("{COPY_SIMPLE}  {copy_label}"),
+                            false,
+                            theme,
+                        )
+                        .clicked()
                         {
                             state.copy_items_from_previous_service();
                             ui.close();
@@ -579,14 +673,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                                 theme,
                                 11.5,
                             );
-                            if ui
-                                .add(
-                                    egui::Button::new(job)
-                                        .fill(egui::Color32::TRANSPARENT)
-                                        .min_size(egui::vec2(ui.available_width(), 24.0)),
-                                )
-                                .clicked()
-                            {
+                            if service_item_button(ui, job, theme).clicked() {
                                 switch_date = Some(s.date.clone());
                                 ui.close();
                             }
@@ -653,14 +740,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                                 theme,
                                 11.5,
                             );
-                            if ui
-                                .add(
-                                    egui::Button::new(job)
-                                        .fill(egui::Color32::TRANSPARENT)
-                                        .min_size(egui::vec2(ui.available_width(), 24.0)),
-                                )
-                                .clicked()
-                            {
+                            if service_item_button(ui, job, theme).clicked() {
                                 switch_service_to = Some(s.id.clone());
                                 ui.close();
                             }
@@ -697,14 +777,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
                             theme,
                             11.5,
                         );
-                        if ui
-                            .add(
-                                egui::Button::new(job)
-                                    .fill(egui::Color32::TRANSPARENT)
-                                    .min_size(egui::vec2(ui.available_width(), 24.0)),
-                            )
-                            .clicked()
-                        {
+                        if service_item_button(ui, job, theme).clicked() {
                             switch_date = Some(up_date);
                             ui.close();
                         }
