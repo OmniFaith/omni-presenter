@@ -1,5 +1,5 @@
 use crate::ui::AppTheme;
-use eframe::egui::{self, RichText};
+use eframe::egui::{self, Margin, RichText};
 
 pub fn search_field(
     ui: &mut egui::Ui,
@@ -25,7 +25,8 @@ pub fn search_field(
     let frame = egui::Frame::new()
         .fill(theme.bg_pill)
         .stroke(egui::Stroke::new(1.0, stroke_c))
-        .corner_radius(6.0);
+        .corner_radius(6.0)
+        .inner_margin(Margin::symmetric(10, 6));
 
     let icon_c = if is_focused {
         theme.accent
@@ -43,7 +44,7 @@ pub fn search_field(
         .prefix(prefix_text)
         .hint_text(RichText::new(crate::ui::i18n::text(ui, hint)).color(theme.text_muted).size(12.0))
         .font(egui::FontId::proportional(12.0))
-        .margin(egui::Margin::symmetric(9, 0))
+        .margin(Margin::symmetric(10, 6))
         .align(egui::Align2::LEFT_CENTER);
 
     let (rect, resp) = ui.allocate_exact_size(

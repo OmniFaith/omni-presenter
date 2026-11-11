@@ -1,5 +1,5 @@
 use crate::ui::AppTheme;
-use eframe::egui::{self, Color32, RichText, Stroke, StrokeKind, Vec2};
+use eframe::egui::{self, Color32, Margin, RichText, Stroke, StrokeKind, Vec2};
 use egui_phosphor::regular::*;
 
 pub fn parse_hex_color(input: &str) -> Option<Color32> {
@@ -198,7 +198,8 @@ pub fn color_swatch_button_sized(
                 let frame = egui::Frame::new()
                     .fill(theme.bg_pill)
                     .stroke(Stroke::new(1.0, stroke_c))
-                    .corner_radius(6.0);
+                    .corner_radius(6.0)
+                    .inner_margin(Margin::symmetric(8, 4));
 
                 let prefix_text = RichText::new("# ")
                     .strong()
@@ -211,7 +212,7 @@ pub fn color_swatch_button_sized(
                     .prefix(prefix_text)
                     .hint_text("RRGGBB")
                     .font(egui::FontId::monospace(12.5))
-                    .margin(egui::Margin::symmetric(9, 0))
+                    .margin(Margin::symmetric(8, 4))
                     .align(egui::Align2::LEFT_CENTER);
 
                 let (box_rect, box_resp) = ui.allocate_exact_size(

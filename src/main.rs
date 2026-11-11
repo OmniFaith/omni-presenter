@@ -117,6 +117,7 @@ fn setup_fonts_and_style(ctx: &egui::Context) {
 
     let mut style = (*ctx.style_of(egui::Theme::Light)).clone();
     style.interaction.selectable_labels = false;
+    style.spacing.button_padding = egui::vec2(10.0, 6.0);
     ctx.set_style_of(egui::Theme::Light, style.clone());
     ctx.set_style_of(egui::Theme::Dark, style);
 }

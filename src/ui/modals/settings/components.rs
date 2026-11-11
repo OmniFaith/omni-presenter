@@ -1,5 +1,5 @@
 use crate::ui::theme::AppTheme;
-use eframe::egui::{self, Color32, RichText, Stroke};
+use eframe::egui::{self, Color32, Margin, RichText, Stroke};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonTone {
@@ -223,14 +223,15 @@ pub fn text_input(
     let frame = egui::Frame::new()
         .fill(theme.bg_pill)
         .stroke(Stroke::new(1.0, stroke_c))
-        .corner_radius(6.0);
+        .corner_radius(6.0)
+        .inner_margin(Margin::symmetric(10, 6));
 
     let edit = egui::TextEdit::singleline(value)
         .id(input_id)
         .frame(frame)
         .hint_text(RichText::new(crate::ui::i18n::text(ui, hint)).color(theme.text_muted).size(12.0))
         .font(egui::FontId::proportional(12.0))
-        .margin(egui::Margin::symmetric(10, 0))
+        .margin(Margin::symmetric(10, 6))
         .align(egui::Align2::LEFT_CENTER);
 
     let (rect, resp) = ui.allocate_exact_size(
