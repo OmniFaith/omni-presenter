@@ -4,13 +4,13 @@ use crate::services::chat::{Message, SharedContent};
 use crate::ui::components::render_header_bar;
 use eframe::egui::{self, RichText, Vec2};
 use egui_phosphor::regular::{
-    BOOK_OPEN, DOWNLOAD_SIMPLE, FILE, IMAGE, LINK_SIMPLE, MAGNIFYING_GLASS, MUSIC_NOTES, PAUSE,
+    BOOK_OPEN, DOWNLOAD_SIMPLE, FILE, IMAGE, MAGNIFYING_GLASS, MUSIC_NOTES, PAUSE,
     PLAY, PLUS, PUSH_PIN, SMILEY, TRASH, VIDEO,
 };
 
 use super::channels::avatar;
 use super::composer::composer;
-use super::{AudioStatus, MessageActions, MessageContext, size_label, soft_button, time_label};
+use super::{AudioStatus, MessageActions, MessageContext, primary_button, size_label, soft_button, time_label};
 
 pub fn render_chat_messages(ui: &mut egui::Ui, state: &mut ControlPanelState) {
     let tokens = state.theme.clone();
@@ -774,12 +774,15 @@ fn shared_actions(
             } else {
                 format!("{PLAY}  {}", language.text("chat-present"))
             };
-            if soft_button(
+            if primary_button(
                 ui,
-                RichText::new(label).size(11.0).color(tokens.accent),
+                RichText::new(label)
+                    .size(11.5)
+                    .strong()
+                    .color(tokens.text_on_accent),
                 tokens,
-                true,
             )
+            .on_hover_text(language.text("workspace-present-now"))
             .clicked()
             {
                 actions.action = Some((message.id, "project".into()));
@@ -800,7 +803,6 @@ fn shared_actions(
         for (icon, tooltip, kind) in [
             (PUSH_PIN, language.text("chat-pin-to-quick-bar"), "shortcut"),
             (PLUS, language.text("workspace-add-to-playlist"), "playlist"),
-            (LINK_SIMPLE, language.text("chat-copy-content-link"), "copy"),
         ] {
             if tokens
                 .icon_button(ui, icon, tooltip, false, Vec2::splat(24.0))

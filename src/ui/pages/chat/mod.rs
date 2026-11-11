@@ -53,6 +53,21 @@ pub(super) struct AudioStatus {
     duration: f32,
 }
 
+pub(super) fn primary_button(
+    ui: &mut egui::Ui,
+    label: impl Into<egui::WidgetText>,
+    tokens: &crate::ui::theme::AppTheme,
+) -> egui::Response {
+    ui.add(
+        egui::Button::new(label)
+            .fill(tokens.accent)
+            .stroke(egui::Stroke::NONE)
+            .corner_radius(8.0)
+            .min_size(Vec2::new(0.0, 26.0)),
+    )
+    .on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 pub(super) fn soft_button(
     ui: &mut egui::Ui,
     label: impl Into<egui::WidgetText>,
