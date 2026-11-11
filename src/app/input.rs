@@ -58,6 +58,55 @@ impl PresentationApp {
             }
         }
 
+        // Tab / Shift+Tab to cycle workspace container cards (Presentation & Bible layouts)
+        if !modal_was_open && !self.global_search.open {
+            let is_workspace = matches!(
+                self.control_state.active_sidebar_page,
+                SidebarPage::Home | SidebarPage::Bible
+            );
+            if is_workspace {
+                let shift_tab =
+                    ctx.input_mut(|i| i.consume_key(egui::Modifiers::SHIFT, egui::Key::Tab));
+                let tab = !shift_tab
+                    && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Tab));
+
+                if tab || shift_tab {
+                    let mut leaves = Vec::new();
+                    if self.control_state.active_sidebar_page == SidebarPage::Bible {
+                        self.control_state.bible_layout.root.collect_leaves(&mut leaves);
+                    } else {
+                        self.control_state.layout.root.collect_leaves(&mut leaves);
+                    }
+
+                    if !leaves.is_empty() {
+                        let next_pos = match self.control_state.focused_container {
+                            Some(current) => {
+                                let cur_idx =
+                                    leaves.iter().position(|&k| k == current).unwrap_or(0);
+                                if tab {
+                                    (cur_idx + 1) % leaves.len()
+                                } else if cur_idx == 0 {
+                                    leaves.len() - 1
+                                } else {
+                                    cur_idx - 1
+                                }
+                            }
+                            None => 0,
+                        };
+                        self.control_state.focused_container = Some(leaves[next_pos]);
+                        ctx.memory_mut(|m| {
+                            if let Some(id) = m.focused() {
+                                m.surrender_focus(id);
+                            }
+                            m.stop_text_input();
+                        });
+                        ctx.request_repaint();
+                        return;
+                    }
+                }
+            }
+        }
+
         if self.global_search.open
             || modal_was_open
             || is_text_focused

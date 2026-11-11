@@ -245,3 +245,56 @@ fn test_execute_command_previous_slide_navigates_back() {
     app.execute_command(&ctx, Command::PreviousSlide);
     assert_eq!(app.slide_deck.current_index(), 0);
 }
+
+#[test]
+fn tab_and_shift_tab_cycle_workspace_containers() {
+    use crate::core::layout::ContainerKind;
+    use crate::core::state::SidebarPage;
+    let mut app = PresentationApp::with_db(AppDb::open_in_memory().unwrap());
+    let ctx = egui::Context::default();
+
+    app.control_state.active_sidebar_page = SidebarPage::Home;
+    app.control_state.focused_container = Some(ContainerKind::Selection);
+
+    // Simulate pressing Tab
+    let mut input = egui::RawInput::default();
+    input.events.push(egui::Event::Key {
+        key: egui::Key::Tab,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    });
+    let mut output = ctx.run_ui(input, |_| {});
+    output.textures_delta.clear();
+    app.handle_global_input(&ctx, false, false);
+    assert_eq!(app.control_state.focused_container, Some(ContainerKind::Player));
+
+    // Simulate pressing Tab again
+    let mut input2 = egui::RawInput::default();
+    input2.events.push(egui::Event::Key {
+        key: egui::Key::Tab,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    });
+    let mut output2 = ctx.run_ui(input2, |_| {});
+    output2.textures_delta.clear();
+    app.handle_global_input(&ctx, false, false);
+    assert_eq!(app.control_state.focused_container, Some(ContainerKind::Lyrics));
+
+    // Simulate pressing Shift+Tab to go back
+    let mut input3 = egui::RawInput::default();
+    input3.events.push(egui::Event::Key {
+        key: egui::Key::Tab,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::SHIFT,
+    });
+    let mut output3 = ctx.run_ui(input3, |_| {});
+    output3.textures_delta.clear();
+    app.handle_global_input(&ctx, false, false);
+    assert_eq!(app.control_state.focused_container, Some(ContainerKind::Player));
+}

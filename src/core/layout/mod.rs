@@ -120,6 +120,16 @@ impl LayoutNode {
         }
     }
 
+    pub fn collect_leaves(&self, out: &mut Vec<ContainerKind>) {
+        match self {
+            LayoutNode::Leaf(k) => out.push(*k),
+            LayoutNode::Split { first, second, .. } => {
+                first.collect_leaves(out);
+                second.collect_leaves(out);
+            }
+        }
+    }
+
     pub fn swap_leaves(&mut self, a: ContainerKind, b: ContainerKind) {
         match self {
             LayoutNode::Leaf(k) => {

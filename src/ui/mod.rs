@@ -53,38 +53,6 @@ pub fn render_layout(
     } else {
         state.layout.root = root;
     }
-
-    // Tab cycling between visible container cards
-    let visible_kinds: Vec<ContainerKind> = rendered_leaf_rects.iter().map(|(k, _)| *k).collect();
-    if !visible_kinds.is_empty() && ui.memory(|m| m.focused().is_none()) {
-        let tab_pressed = ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Tab));
-        let shift_tab_pressed =
-            ui.input_mut(|i| i.consume_key(egui::Modifiers::SHIFT, egui::Key::Tab));
-
-        if tab_pressed {
-            let next_idx = match state.focused_container {
-                Some(current) => visible_kinds
-                    .iter()
-                    .position(|&k| k == current)
-                    .map(|pos| (pos + 1) % visible_kinds.len())
-                    .unwrap_or(0),
-                None => 0,
-            };
-            state.focused_container = Some(visible_kinds[next_idx]);
-            ui.ctx().request_repaint();
-        } else if shift_tab_pressed {
-            let prev_idx = match state.focused_container {
-                Some(current) => visible_kinds
-                    .iter()
-                    .position(|&k| k == current)
-                    .map(|pos| if pos == 0 { visible_kinds.len() - 1 } else { pos - 1 })
-                    .unwrap_or(0),
-                None => 0,
-            };
-            state.focused_container = Some(visible_kinds[prev_idx]);
-            ui.ctx().request_repaint();
-        }
-    }
 }
 
 pub fn render_node(
@@ -107,8 +75,9 @@ pub fn render_node(
             let inner_rect = rect.shrink(2.0);
             rendered_leaf_rects.push((*kind, inner_rect));
 
-            if ui.input(|i| i.pointer.primary_clicked())
-                && ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| inner_rect.contains(p))
+            let pointer_pos = ui.input(|i| i.pointer.interact_pos());
+            if ui.input(|i| i.pointer.any_down() || i.pointer.any_click() || i.pointer.any_pressed())
+                && pointer_pos.is_some_and(|p| inner_rect.contains(p))
             {
                 state.focused_container = Some(*kind);
             }
@@ -119,14 +88,27 @@ pub fn render_node(
 
             let mut frame = state.theme.container_frame();
             if is_focused {
-                frame = frame.stroke(egui::Stroke::new(1.5, state.theme.accent.linear_multiply(0.5)));
+                frame = frame
+                    .stroke(egui::Stroke::new(2.0, state.theme.accent))
+                    .shadow(egui::epaint::Shadow {
+                        offset: [0, 0],
+                        blur: 10,
+                        spread: 1,
+                        color: state.theme.accent.linear_multiply(0.35),
+                    });
             }
 
-            frame.show(&mut child_ui, |ui| {
+            let response = frame.show(&mut child_ui, |ui| {
                 ui.set_min_height(ui.available_height());
                 ui.set_max_height(ui.available_height());
                 render_container(ui, *kind, state, slide_deck, is_presentation_open, db);
             });
+
+            if response.response.clicked()
+                || (response.response.hovered() && ui.input(|i| i.pointer.any_down()))
+            {
+                state.focused_container = Some(*kind);
+            }
         }
         LayoutNode::Split {
             direction,
