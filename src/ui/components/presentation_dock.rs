@@ -2,9 +2,10 @@ use crate::core::i18n::Language;
 use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
 use crate::ui::theme::AppTheme;
-use eframe::egui::{self, Color32, FontId, Margin, Stroke, StrokeKind, Vec2};
+use eframe::egui::{self, Color32, FontId, Margin, RichText, Stroke, StrokeKind, Vec2};
 use egui_phosphor::regular::{
-    ARROW_SQUARE_OUT, CHECK, EYE, EYE_SLASH, GEAR, PALETTE, PLAY, TELEVISION_SIMPLE, X,
+    ARROW_SQUARE_OUT, CHECK, EYE, EYE_SLASH, GEAR, MAGNIFYING_GLASS, PALETTE, PLAY, STAR,
+    TELEVISION_SIMPLE, X,
 };
 
 pub(crate) const BTN_H: f32 = 26.0;
@@ -212,23 +213,177 @@ pub(crate) fn live_theme_control(
         .id(popup_id)
         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .show(|ui| {
-            ui.set_max_width(260.0);
-            egui::ScrollArea::vertical()
-                .max_height(280.0)
-                .show(ui, |ui| {
-                    for (idx, theme) in state.themes.iter().enumerate() {
-                        let is_selected = theme.id == current_id;
-                        let theme_name = theme.display_name(language);
-                        let text = if is_selected {
-                            format!("{} {}", CHECK, theme_name)
-                        } else {
-                            format!("   {}", theme_name)
-                        };
-                        if ui.selectable_label(is_selected, text).clicked() {
-                            selected_theme = Some(idx);
-                            egui::Popup::close_id(ui.ctx(), popup_id);
-                        }
+            let popup_w = 276.0;
+            ui.set_width(popup_w);
+            ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
+
+            let search_id = popup_id.with("theme_search");
+            let mut search = ui.data_mut(|d| d.get_temp::<String>(search_id).unwrap_or_default());
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(MAGNIFYING_GLASS).size(12.0).color(tokens.text_muted));
+                ui.add(
+                    egui::TextEdit::singleline(&mut search)
+                        .hint_text(language.text("design-search-theme"))
+                        .desired_width(f32::INFINITY)
+                        .margin(egui::vec2(6.0, 4.0)),
+                );
+                if !search.is_empty() && ui.small_button(X).clicked() {
+                    search.clear();
+                }
+            });
+            let search_query = search.trim().to_lowercase();
+            ui.data_mut(|d| d.insert_temp(search_id, search));
+
+            ui.add_space(2.0);
+
+            let filtered_themes: Vec<(usize, &crate::core::models::PresentationTheme)> = state
+                .themes
+                .iter()
+                .enumerate()
+                .filter(|(_, theme)| {
+                    if search_query.is_empty() {
+                        true
+                    } else {
+                        let localized = theme.display_name(language).to_lowercase();
+                        let original = theme.name.to_lowercase();
+                        localized.contains(&search_query) || original.contains(&search_query)
                     }
+                })
+                .collect();
+
+            if filtered_themes.is_empty() {
+                ui.vertical_centered(|ui| {
+                    ui.add_space(14.0);
+                    ui.label(
+                        RichText::new(language.text("design-no-themes-found"))
+                            .size(11.0)
+                            .color(tokens.text_muted),
+                    );
+                    ui.add_space(14.0);
+                });
+                return;
+            }
+
+            egui::ScrollArea::vertical()
+                .id_salt("dock_theme_scroll")
+                .max_height(300.0)
+                .show(ui, |ui| {
+                    let card_w = 124.0;
+                    let aspect = state.presentation_aspect_ratio.clamp(1.0, 2.5);
+                    let card_h = (card_w / aspect).round().clamp(55.0, 80.0);
+                    let columns = 2;
+
+                    egui::Grid::new("dock_live_theme_grid")
+                        .spacing(egui::vec2(6.0, 6.0))
+                        .show(ui, |ui| {
+                            for (col_idx, (idx, theme)) in filtered_themes.into_iter().enumerate() {
+                                let is_selected = theme.id == current_id;
+                                let theme_name = theme.display_name(language);
+
+                                let (rect, resp) = ui.allocate_exact_size(
+                                    egui::vec2(card_w, card_h),
+                                    egui::Sense::click(),
+                                );
+
+                                crate::render::paint_theme_bg(ui.painter(), rect, theme, tokens.radius_md);
+
+                                let name_bar_h = 20.0;
+                                let text_area = egui::Rect::from_min_max(
+                                    rect.min,
+                                    egui::pos2(rect.max.x, rect.max.y - name_bar_h),
+                                );
+                                if text_area.height() >= 16.0 {
+                                    crate::render::render_theme_lyrics(
+                                        ui.painter(),
+                                        text_area,
+                                        theme,
+                                        "Aa",
+                                    );
+                                }
+
+                                let name_bar = egui::Rect::from_min_max(
+                                    egui::pos2(rect.min.x, rect.max.y - name_bar_h),
+                                    rect.max,
+                                );
+                                ui.painter().rect_filled(
+                                    name_bar,
+                                    egui::CornerRadius {
+                                        nw: 0,
+                                        ne: 0,
+                                        sw: tokens.radius_md.round() as u8,
+                                        se: tokens.radius_md.round() as u8,
+                                    },
+                                    Color32::from_black_alpha(160),
+                                );
+
+                                let clipped_painter = ui.painter().with_clip_rect(name_bar);
+                                clipped_painter.text(
+                                    name_bar.center(),
+                                    egui::Align2::CENTER_CENTER,
+                                    &theme_name,
+                                    egui::FontId::proportional(9.5),
+                                    Color32::WHITE,
+                                );
+
+                                if theme.is_favorite {
+                                    let star_pos = egui::pos2(rect.min.x + 10.0, rect.min.y + 10.0);
+                                    ui.painter().circle_filled(
+                                        star_pos,
+                                        6.5,
+                                        Color32::from_black_alpha(110),
+                                    );
+                                    ui.painter().text(
+                                        star_pos,
+                                        egui::Align2::CENTER_CENTER,
+                                        STAR,
+                                        egui::FontId::proportional(9.5),
+                                        Color32::from_rgb(253, 224, 71),
+                                    );
+                                }
+
+                                let stroke = if is_selected {
+                                    Some(Stroke::new(2.0, tokens.accent))
+                                } else if resp.hovered() {
+                                    Some(Stroke::new(1.5, tokens.border_active))
+                                } else {
+                                    Some(Stroke::new(1.0, tokens.border_subtle.linear_multiply(0.4)))
+                                };
+                                if let Some(stroke) = stroke {
+                                    ui.painter().rect_stroke(
+                                        rect,
+                                        tokens.radius_md,
+                                        stroke,
+                                        StrokeKind::Inside,
+                                    );
+                                }
+
+                                if is_selected {
+                                    let check_pos = egui::pos2(rect.max.x - 10.0, rect.min.y + 10.0);
+                                    ui.painter().circle_filled(check_pos, 7.5, tokens.accent);
+                                    ui.painter().text(
+                                        check_pos,
+                                        egui::Align2::CENTER_CENTER,
+                                        CHECK,
+                                        egui::FontId::proportional(9.0),
+                                        tokens.text_on_accent,
+                                    );
+                                }
+
+                                if resp.hovered() {
+                                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                                }
+                                let resp = resp.on_hover_text(&theme_name);
+
+                                if resp.clicked() {
+                                    selected_theme = Some(idx);
+                                    egui::Popup::close_id(ui.ctx(), popup_id);
+                                }
+
+                                if (col_idx + 1) % columns == 0 {
+                                    ui.end_row();
+                                }
+                            }
+                        });
                 });
         });
 

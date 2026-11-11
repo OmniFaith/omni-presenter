@@ -334,6 +334,23 @@ fn live_theme_control_renders_and_switches_theme() {
 }
 
 #[test]
+fn live_theme_popup_renders_visual_cards_when_open() {
+    let mut state = ControlPanelState::default();
+    let tokens = state.theme.clone();
+    let ctx = egui::Context::default();
+    let raw_input = egui::RawInput::default();
+
+    let popup_id = egui::Id::NULL.with("dock_live_theme_popup");
+    egui::Popup::open_id(&ctx, popup_id);
+
+    let mut output = ctx.run_ui(raw_input, |ui| {
+        live_theme_control(ui, &tokens, Language::Portuguese, &mut state, None);
+    });
+    output.textures_delta.clear();
+    assert!(!output.shapes.is_empty());
+}
+
+#[test]
 fn dock_height_remains_stable_across_multiple_frames() {
     let mut state = ControlPanelState::default();
     let mut slide_deck = SlideDeck::default();
