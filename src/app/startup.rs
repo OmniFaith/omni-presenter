@@ -13,9 +13,7 @@ fn open_workspace_database(path: &Path) -> Result<AppDb, StartupError> {
         db.load_settings()?;
         Ok(db)
     };
-    open().map_err(|error| {
-        std::io::Error::other(format!("{}: {error}", path.display())).into()
-    })
+    open().map_err(|error| std::io::Error::other(format!("{}: {error}", path.display())).into())
 }
 
 impl PresentationApp {
@@ -42,7 +40,9 @@ mod tests {
     fn inaccessible_workspace_is_an_error_not_a_temporary_database() {
         let directory = test_path();
         let path = directory.join("workspace.db");
-        let error = open_workspace_database(&path).err().expect("Missing parent must fail");
+        let error = open_workspace_database(&path)
+            .err()
+            .expect("Missing parent must fail");
         assert!(error.to_string().contains("workspace.db"));
         assert!(!directory.exists());
     }
@@ -53,9 +53,18 @@ mod tests {
         let db = AppDb::open(&path).unwrap();
         drop(db);
         let connection = rusqlite::Connection::open(&path).unwrap();
-        connection.execute("INSERT INTO app_settings (id, value) VALUES (1, ?1)", ["invalid JSON"]).unwrap();
+        connection
+            .execute(
+                "INSERT INTO app_settings (id, value) VALUES (1, ?1)",
+                ["invalid JSON"],
+            )
+            .unwrap();
         assert!(open_workspace_database(&path).is_err());
-        let original: String = connection.query_row("SELECT value FROM app_settings WHERE id = 1", [], |row| row.get(0)).unwrap();
+        let original: String = connection
+            .query_row("SELECT value FROM app_settings WHERE id = 1", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
         assert_eq!(original, "invalid JSON");
         drop(connection);
         std::fs::remove_file(path).unwrap();
@@ -70,6 +79,34 @@ mod tests {
         drop(db);
         let reopened = open_workspace_database(&path).unwrap();
         assert_eq!(reopened.load_settings().unwrap(), Some(settings));
+        drop(reopened);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn closing_and_reopening_the_app_restores_the_last_clicked_theme() {
+        let path = test_path();
+        let mut app = PresentationApp::open_workspace(&path).unwrap();
+        let default_theme = app.control_state.settings.service().theme_id.clone();
+        let live_theme = app.control_state.live_theme_id.clone();
+        let selected = app
+            .control_state
+            .themes
+            .iter()
+            .position(|theme| theme.id != default_theme)
+            .unwrap();
+        app.control_state.selected_theme_index = selected;
+        let clicked_theme = app.control_state.preview_theme().id.clone();
+        eframe::App::on_exit(&mut app);
+        assert_eq!(app.control_state.live_theme_id, live_theme);
+        drop(app);
+
+        let reopened = PresentationApp::open_workspace(&path).unwrap();
+        assert_eq!(reopened.control_state.preview_theme().id, clicked_theme);
+        assert_eq!(
+            reopened.control_state.settings.service().theme_id,
+            default_theme
+        );
         drop(reopened);
         std::fs::remove_file(path).unwrap();
     }

@@ -583,7 +583,7 @@ pub enum BibleReferencePosition {
 
 impl Default for BibleReferencePosition {
     fn default() -> Self {
-        Self::Bottom
+        Self::BelowVerse
     }
 }
 
@@ -630,7 +630,7 @@ pub enum BibleSeparator {
 
 impl Default for BibleSeparator {
     fn default() -> Self {
-        Self::Colon
+        Self::Dot
     }
 }
 
@@ -808,14 +808,14 @@ pub struct BibleSettings {
     #[serde(default = "crate::core::bible_split::default_true")]
     pub split_ellipsis: bool,
     pub one_verse_per_slide: bool,
-    #[serde(default)]
+    #[serde(default = "crate::core::bible_split::default_true")]
     pub range_number_only: bool,
 }
 
 impl Default for BibleSettings {
     fn default() -> Self {
         Self {
-            reference_position: BibleReferencePosition::Bottom,
+            reference_position: BibleReferencePosition::BelowVerse,
             reference_alignment: BibleReferenceAlignment::Right,
             reference_size: BibleReferenceSize::Normal,
             show_version: false,
@@ -825,20 +825,20 @@ impl Default for BibleSettings {
             italic_reference: false,
             show_verse_numbers: true,
             verse_number_style: BibleVerseNumberStyle::Bracket,
-            separator: BibleSeparator::Colon,
+            separator: BibleSeparator::Dot,
             alignment: BibleVerseAlignment::Center,
             vertical_alignment: BibleVerticalAlignment::Center,
             font_scale: BibleFontScale::Normal,
             reference_highlight: BibleReferenceHighlight::Accent,
             line_spacing: BibleLineSpacing::Normal,
-            quotes_around_verse: false,
+            quotes_around_verse: true,
             auto_split_long_verses: false,
             max_chars_per_slide: 120,
             split_action: BibleSplitAction::MultipleSlides,
             split_punctuation: BibleSplitPunctuation::NaturalPunctuation,
             split_ellipsis: true,
             one_verse_per_slide: false,
-            range_number_only: false,
+            range_number_only: true,
         }
     }
 }
@@ -852,3 +852,7 @@ pub use super::bible_format::{
 #[cfg(test)]
 #[path = "bible_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "bible_defaults_tests.rs"]
+mod defaults_tests;

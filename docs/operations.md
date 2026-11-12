@@ -4,9 +4,9 @@
 
 After cloning, initialize the Bible data with `git submodule update --init --recursive`. Build and launch from the project directory with `cargo run`, or build with `cargo build --release` and run the resulting `target/release/omni-presenter` executable. The process working directory determines where the default database and web-video downloads are created; launching the same binary from another directory can therefore open a different workspace.
 
-The desktop needs a graphical environment and working graphics drivers. Linux builds require the development packages for ALSA, fontconfig and the X11/Wayland stack. Install `ffmpeg` and `ffprobe` for video playback and `yt-dlp` for supported web-video extraction and downloads. These programs are external to the Rust build.
+The desktop needs a graphical environment and working graphics drivers. Linux builds require the development packages for ALSA, fontconfig and the X11/Wayland stack. Building from source also requires Bun 1.4.4 and `bun install --cwd web --frozen-lockfile`; failed web compilation stops the Rust build rather than reusing stale assets. Install `ffmpeg` and `ffprobe` for video playback and `yt-dlp` for supported web-video extraction and downloads. These programs are external to the Rust build.
 
-**Persistence:** if opening `omni-presenter.db` fails, the current application falls back to an in-memory database. Changes in that session will not survive a restart. If expected data is missing, check the working directory, database permissions and available disk space before continuing work.
+**Persistence:** if opening `omni-presenter.db` or decoding its saved preferences fails, startup stops and displays an error with the resolved database path. The application does not silently substitute an in-memory database or overwrite invalid preferences with defaults. Check permissions, disk space and the database path, or restore a backup before trying again. Launching from another working directory can still open a different workspace; existing databases are not moved automatically.
 
 ## Presenting
 
@@ -16,6 +16,13 @@ The desktop needs a graphical environment and working graphics drivers. Linux bu
 4. Send the selected content live and navigate its slides. Use the presentation controls to end the presentation when finished.
 
 For network viewing, configure a virtual screen and use the screen address displayed in the application. Browser output and physical output are separate destinations; verify both if they are in use.
+
+New Bible settings and **Restore defaults** place the reference below the verse,
+aligned right, with centered verse text and vertical placement. References use a
+dot between chapter and verse, normal size and full book names; quotations and
+summarized multi-verse references are enabled. Verse numbers use brackets; version
+tags, uppercase references and italics are off. Explicitly saved preferences are
+preserved. The former reference-highlight selector is no longer shown.
 
 ## Browser access and discovery
 
@@ -39,7 +46,8 @@ For a consistent backup, close the application first, then copy the database, re
 
 | Symptom | Check |
 | --- | --- |
-| Workspace appears empty | Confirm the process working directory and whether `omni-presenter.db` is readable and writable; the in-memory fallback is temporary. |
+| Workspace appears empty | Confirm the process working directory; a different directory opens a different `omni-presenter.db`. |
+| Workspace fails to open | Read the database path and details in the startup error; check permissions and disk space, or restore a backup. No temporary workspace is opened automatically. |
 | Browser cannot connect | Confirm the server is enabled, the port is free, LAN access is allowed when needed, and the client can reach the host. Try the host IP if `.local` resolution fails. |
 | Video does not play | Check that `ffmpeg` and `ffprobe` are installed and callable, and that the referenced media path is accessible. |
 | Web video cannot be resolved or downloaded | Check `yt-dlp`, network access and the source URL. Downloads also require a writable `web_media/` directory. |

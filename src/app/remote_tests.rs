@@ -127,7 +127,7 @@ fn single_bible_verse_keeps_the_same_chapter_navigation_as_the_native_app() {
         direction: "next".into(),
     })
     .unwrap();
-    assert!(app.slide_deck.live_slide_text().ends_with("João 3:17"));
+    assert!(app.slide_deck.live_slide_text().ends_with("João 3.17"));
 }
 
 #[test]
@@ -249,7 +249,10 @@ fn remote_bible_ranges_notices_and_song_edits_use_real_content_and_keep_live_ind
     })
     .unwrap();
     assert_eq!(app.slide_deck.slides().len(), 3);
-    assert!(app.slide_deck.slides()[0].contains("João 3:16"));
+    let first = crate::core::slides::strip_directive_commands(&app.slide_deck.slides()[0]);
+    assert!(first.starts_with("[16] “"));
+    assert!(!app.slide_deck.slides()[0].contains("//ref-pos:"));
+    assert!(app.slide_deck.slides()[2].contains("João 3.16–18"));
     assert_eq!(app.slide_deck.live_title(), "Canção de Esperança");
     app.apply_web_command(Command::Bible {
         reference: "Sl119:01-07".into(),
@@ -263,7 +266,7 @@ fn remote_bible_ranges_notices_and_song_edits_use_real_content_and_keep_live_ind
     assert!(
         app.control_state.playlist[0]
             .content
-            .contains("Salmos 119:1–7")
+            .contains("Salmos 119.1–7")
     );
     app.apply_web_command(Command::Text {
         title: "Aviso".into(),

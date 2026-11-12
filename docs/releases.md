@@ -41,10 +41,11 @@ Download `SHA256SUMS.txt` and the packages to the same directory. On Linux, `sha
 
 ## Local build
 
-With Python 3.11+, Rust, and the platform development libraries installed, run:
+With Python 3.11+, Rust, Bun 1.4.4, and the platform development libraries installed, run:
 
 ```sh
 git submodule update --init --recursive
+bun install --cwd web --frozen-lockfile
 python3 tools/release.py build --local
 ```
 

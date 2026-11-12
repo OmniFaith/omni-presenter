@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use std::{collections::HashMap, env, fs, path::Path};
 
+#[path = "build_support/web_assets.rs"]
+mod web_assets;
+
 #[derive(Deserialize)]
 struct IndexLanguage {
     language: String,
@@ -298,10 +301,10 @@ fn build_web_assets(manifest: &Path) {
     println!("cargo:rerun-if-changed={}", web_dir.join("package.json").display());
     println!("cargo:rerun-if-changed={}", web_dir.join("tsconfig.json").display());
     println!("cargo:rerun-if-changed={}", web_dir.join("build.ts").display());
-
-    let _ = std::process::Command::new("bun")
-        .current_dir(&web_dir)
-        .arg("run")
-        .arg("build")
-        .status();
+    println!("cargo:rerun-if-changed={}", web_dir.join("bun.lock").display());
+    println!("cargo:rerun-if-changed=build_support/web_assets.rs");
+    println!("cargo:rerun-if-env-changed=BUN");
+    let bun = env::var_os("BUN").unwrap_or_else(|| "bun".into());
+    web_assets::compile_web_assets(manifest, &bun)
+        .unwrap_or_else(|error| panic!("{error}"));
 }

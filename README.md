@@ -66,11 +66,12 @@ Omni Presenter brings the content and controls for a live event into one desktop
 
 ## Get started
 
-Install a current Rust toolchain with Cargo. Linux builds also require system development libraries for ALSA, fontconfig and the X11/Wayland windowing stack.
+Install a current Rust toolchain with Cargo and Bun 1.4.4. Linux builds also require system development libraries for ALSA, fontconfig and the X11/Wayland windowing stack. Web compilation is required and failures stop the Rust build.
 
 ```sh
 # Initialize the Bible data submodule after cloning
 git submodule update --init --recursive
+bun install --cwd web --frozen-lockfile
 
 # Run from the project directory
 cargo run

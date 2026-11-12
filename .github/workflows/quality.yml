@@ -1,0 +1,55 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@1.98.0
+        with:
+          components: clippy, rustfmt
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev libfontconfig1-dev libx11-dev libxkbcommon-dev libwayland-dev ffmpeg fonts-dejavu-core
+      - name: Install locked web dependencies
+        working-directory: web
+        run: bun install --frozen-lockfile
+      - uses: Swatinem/rust-cache@v2
+      - name: TypeScript
+        working-directory: web
+        run: bun run check
+      - name: Translation catalogs
+        run: python3 tools/i18n_audit.py --catalogs
+      - name: Rust tests and architecture constraints
+        run: cargo test --all-targets --locked
+      - name: Clippy warning budget
+        run: python3 tools/check_clippy.py
+      - name: Quality checker regression tests
+        run: python3 tools/test_quality_checks.py
+      - name: Formatting debt report (informational until baseline cleanup)
+        continue-on-error: true
+        run: cargo fmt --all -- --check > rustfmt-report.txt 2>&1
+      - name: Preserve formatting report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rustfmt-report
+          path: rustfmt-report.txt
+          if-no-files-found: ignore

@@ -12,6 +12,8 @@ mod lyrics_search;
 mod player;
 pub mod setup_wizard;
 mod web_media;
+#[cfg(test)]
+mod theme_preferences_tests;
 pub use editors::{
     EditorSnapshot, SongEditorState, StropheEditorState, ThemeDragHandle, ThemeEditorState,
 };
@@ -576,6 +578,8 @@ impl ControlPanelState {
             .find(|p| p.id == self.settings.active_service)
         {
             p.playlist = self.playlist.clone();
+            p.last_selected_theme_id = self.themes.get(self.selected_theme_index).map(|t| t.id.clone());
+            p.last_selected_theme_default_id = Some(p.theme_id.clone());
             let session_date = p.current_session_date();
             p.save_session_playlist(&session_date, self.playlist.clone());
             p.bible_version = self.bible_version.clone();
@@ -673,10 +677,10 @@ impl ControlPanelState {
         let book_index = crate::core::bible::book_canonical_index("", &self.bible_book)
             .unwrap_or(0);
         self.bible.expanded_book = Some(book_index);
-        self.selected_theme_index = self
-            .themes
-            .iter()
-            .position(|t| t.id == service.theme_id)
+        self.selected_theme_index = service.last_selected_theme_id.as_ref()
+            .filter(|_| service.last_selected_theme_default_id.as_deref() == Some(service.theme_id.as_str()))
+            .and_then(|id| self.themes.iter().position(|theme| &theme.id == id))
+            .or_else(|| self.themes.iter().position(|theme| theme.id == service.theme_id))
             .unwrap_or(0);
         if (!self.settings.bible_enabled && self.active_sidebar_page == SidebarPage::Bible)
             || (!self.settings.chat_enabled && self.active_sidebar_page == SidebarPage::Chat)

@@ -36,7 +36,14 @@ Browser commands are received by `services/control/`, queued in `WebControl` and
 
 ## Persistence and output
 
-Startup opens the working directory's `omni-presenter.db`, initializes the schema and seeds defaults as needed. Settings are loaded into application state; changes and design edits are persisted through `AppDb`. The current startup fallback to an in-memory database is important operationally: see [operations](operations.md#prerequisites-and-startup).
+Startup opens the working directory's `omni-presenter.db`, initializes the schema and seeds defaults as needed. Saved preferences are validated before constructing the application. Open/decoding failures stop startup with an explicit error instead of silently using an in-memory database. Settings are loaded into application state; changes and design edits are persisted through `AppDb`. See [operations](operations.md#prerequisites-and-startup).
+
+Each service remembers its last clicked preview theme by ID, separately from its
+configured default theme. Profile capture/autosave and normal shutdown persist
+that selection. Startup/profile restoration prefers the last valid selection,
+then the event default, then the first available theme. Remembering a preview
+selection does not change live output during a session. Explicitly changing an
+event's default invalidates its older remembered selection.
 
 Native presentation rendering and browser output share domain content but use different rendering paths. The browser server publishes presentation state and serves the viewer's assets. Images, fonts, video and design assets may be exposed through generated URLs rather than local filesystem paths. Test both paths when changing typography, theme behavior or presentation content.
 

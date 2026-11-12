@@ -56,9 +56,15 @@ jobs:
         with:
           ref: refs/tags/${{ needs.validate.outputs.tag }}
           submodules: recursive
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.98.0
         with:
           targets: ${{ matrix.target }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Install locked web dependencies
+        working-directory: web
+        run: bun install --frozen-lockfile
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev libfontconfig1-dev libx11-dev libxkbcommon-dev libwayland-dev flatpak flatpak-builder librsvg2-bin

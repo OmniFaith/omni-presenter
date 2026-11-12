@@ -1,6 +1,6 @@
 use super::settings_preview::{PreviewSample, render_settings_preview};
 use crate::core::bible::{
-    BibleReferenceAlignment, BibleReferenceHighlight, BibleReferencePosition, BibleReferenceSize,
+    BibleReferenceAlignment, BibleReferencePosition, BibleReferenceSize,
     BibleSeparator, BibleSettings, BibleSplitAction, BibleSplitPunctuation, BibleVerseAlignment,
     BibleVerseNumberStyle, BibleVerticalAlignment,
 };
@@ -521,28 +521,6 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
                         );
                         ui.add_space(4.0);
 
-                        // Destaque da Referência
-                        ui.label(
-                            RichText::new(crate::ui::i18n::text(ui, "workspace-bible-ref-highlight"))
-                                .size(11.0)
-                                .color(tokens.text_secondary),
-                        );
-                        ui.add_space(2.0);
-                        ui.push_id("bible_ref_highlight_seg", |ui| {
-                            segmented_picker(
-                                ui,
-                                &mut state.settings.bible_settings.reference_highlight,
-                                &[
-                                    (BibleReferenceHighlight::Discreet, "workspace-bible-highlight-discreet"),
-                                    (BibleReferenceHighlight::Accent, "workspace-bible-highlight-accent"),
-                                    (BibleReferenceHighlight::Badge, "workspace-bible-highlight-badge"),
-                                ],
-                                &tokens,
-                            );
-                        });
-
-                        ui.add_space(6.0);
-
                         // Tamanho da Referência
                         ui.label(
                             RichText::new(crate::ui::i18n::text(ui, "workspace-bible-ref-size"))
@@ -697,6 +675,36 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reference_highlight_controls_are_not_shown_and_saved_legacy_values_are_preserved() {
+        let ctx = egui::Context::default();
+        let mut state = ControlPanelState::default();
+        state.bible.show_settings = true;
+        state.settings.bible_settings.reference_highlight =
+            crate::core::bible::BibleReferenceHighlight::Badge;
+        ctx.data_mut(|data| {
+            data.insert_temp(egui::Id::unique("bible_settings_active_tab"), BibleSettingsTab::Formatting);
+        });
+        let language = state.settings.language;
+        let removed = [
+            "workspace-bible-ref-highlight", "workspace-bible-highlight-discreet",
+            "workspace-bible-highlight-accent", "workspace-bible-highlight-badge",
+        ].map(|key| language.text(key).to_owned());
+        for _ in 0..3 {
+            let mut output = ctx.run_ui(egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1200.0, 1200.0))),
+                ..Default::default()
+            }, |ui| render_bible_settings_modal(ui.ctx(), &mut state));
+            let has_removed_control = output.shapes.iter().any(|shape| {
+                matches!(&shape.shape, egui::Shape::Text(text) if removed.contains(&text.galley.job.text))
+            });
+            output.textures_delta.clear();
+            assert!(!has_removed_control);
+        }
+        assert_eq!(state.settings.bible_settings.reference_highlight,
+            crate::core::bible::BibleReferenceHighlight::Badge);
+    }
 
     #[test]
     fn bible_settings_tabs_fit_short_and_narrow_viewports() {

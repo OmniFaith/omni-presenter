@@ -291,7 +291,12 @@ pub fn render_theme_creator_modal(
             if let Some(app_db) = db {
                 let _ = app_db.save_theme(&theme_to_save);
                 let ids: Vec<String> = state.themes.iter().map(|t| t.id.clone()).collect();
-                let _ = app_db.update_themes_order(&ids);
+                if let Err(error) = app_db.update_themes_order(&ids) {
+                    state.notify(state.settings.language.format(
+                        "services-theme-order-save-failed",
+                        &[("error", &error.to_string())],
+                    ));
+                }
             }
         }
 

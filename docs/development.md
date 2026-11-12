@@ -6,14 +6,37 @@ Use a current Rust toolchain and the platform libraries described in [operations
 
 ```sh
 git submodule update --init --recursive
+bun install --cwd web --frozen-lockfile
 cargo build
 cargo test
 python3 tools/i18n_audit.py --catalogs
+python3 tools/check_clippy.py
+python3 tools/test_quality_checks.py
 ```
 
-`cargo test` includes domain, service, UI and integration tests. Some tests are explicitly ignored because they require a graphical compositor, multicast network, Chromium or Playwright; inspect their `#[ignore]` annotations before running them in a suitable environment. Media tests may exercise locally installed tools. `tests/architecture_tests.rs` checks that Rust source modules stay within the project's line limit; it is not a substitute for reviewing coupling or behavior.
+`cargo test` includes domain, service, UI and integration tests. Some tests are explicitly ignored because they require a graphical compositor, multicast network, Chromium or Playwright; inspect their `#[ignore]` annotations before running them in a suitable environment. Media tests may exercise locally installed tools. `tests/architecture_tests.rs` checks module sizes and guards new core modules against direct UI/service references, with explicit exceptions for legacy adapters. This lightweight source check is not a substitute for dependency analysis or behavior tests.
 
 For portable builds, versioned release notes and GitHub Releases, see the [release guide](releases.md).
+
+### Automated quality checks
+
+`quality.yml` runs for pull requests and pushes to main/master. It uses Rust
+1.98.0 and Bun 1.4.4, locked dependencies, Rust tests (including architecture and
+web-build failure tests), TypeScript, translation catalogs and the Clippy budget.
+The release workflow also installs Bun and locked frontend dependencies.
+
+`tools/clippy-baseline.json` records the current unique warning budget by lint;
+the checker deduplicates shared binary/test warnings and fails if any category
+grows. Reduce budgets when fixing warnings. To inspect a proposed update, run
+`python3 tools/check_clippy.py --record` and review the JSON before editing the
+baseline. This is a category-count budget, not a guarantee that every individual
+warning is unchanged. Use the CI toolchain when comparing counts.
+
+Formatting remains an explicitly informational CI report while the pre-existing
+repository-wide formatting debt is cleaned up separately. Do not interpret this
+as a passing `cargo fmt --check`; new and rewritten modules should be formatted.
+Bun/web compilation is mandatory; set `BUN` to an alternate executable path if
+needed. Missing Bun or a failing web build is an error, not an asset fallback.
 
 ## Localization
 

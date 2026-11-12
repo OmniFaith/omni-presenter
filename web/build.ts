@@ -7,7 +7,11 @@ const outDir = resolve(root, "assets/web");
 
 async function run() {
   console.log("Compiling TypeScript to assets/web/...");
-  await $`bun x tsc --rootDir src --outDir ${outDir}`;
+  const tsc = resolve(import.meta.dir, "node_modules/typescript/bin/tsc");
+  if (!(await Bun.file(tsc).exists())) {
+    throw new Error("Missing locked TypeScript dependency. Run bun install --frozen-lockfile in web/.");
+  }
+  await $`bun ${tsc} --rootDir src --outDir ${outDir}`;
   await $`rm -rf ${outDir}/types`;
 
   console.log("Copying HTML and CSS files to assets/web/...");

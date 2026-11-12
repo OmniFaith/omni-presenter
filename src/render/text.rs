@@ -787,7 +787,10 @@ mod tests {
         theme.align_h = "right".into();
         theme.align_v = "bottom".into();
         let (_, content) = format_bible_slide(
-            &BibleSettings::default(), "Salmos", "Sl", "NTLH", 39, 4, 4,
+            &BibleSettings {
+                reference_position: crate::core::bible::BibleReferencePosition::Bottom,
+                ..Default::default()
+            }, "Salmos", "Sl", "NTLH", 39, 4, 4,
             &["Ó Senhor Deus, quanto tempo ainda vou viver? Mostra-me como é passageira a minha vida. Quando é que vou morrer?".into()],
         );
         let mut output = ctx.run_ui(

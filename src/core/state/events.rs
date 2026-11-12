@@ -148,6 +148,10 @@ impl ControlPanelState {
                 service.name = trimmed_name.clone();
                 service.recurrence = recurrence;
                 service.event_date = event_date;
+                if service.theme_id != draft.theme_id {
+                    service.last_selected_theme_id = None;
+                    service.last_selected_theme_default_id = None;
+                }
                 service.theme_id = draft.theme_id.clone();
                 service.idle_theme_id = match &draft.wallpaper {
                     Some(crate::core::preferences::PhysicalBackground::Theme { id }) => id.clone(),

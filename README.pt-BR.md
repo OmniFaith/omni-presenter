@@ -66,11 +66,12 @@ O Omni Presenter reúne o conteúdo e os controles de um evento ao vivo em um ap
 
 ## Primeiros passos
 
-Instale uma versão atual do Rust com Cargo. No Linux, a compilação também requer bibliotecas de desenvolvimento de ALSA, fontconfig e do sistema de janelas X11/Wayland.
+Instale uma versão atual do Rust com Cargo e o Bun 1.4.4. No Linux, a compilação também requer bibliotecas de desenvolvimento de ALSA, fontconfig e do sistema de janelas X11/Wayland. A compilação web é obrigatória e falhas interrompem o build Rust.
 
 ```sh
 # Inicialize o submódulo de dados bíblicos após clonar
 git submodule update --init --recursive
+bun install --cwd web --frozen-lockfile
 
 # Execute a partir da pasta do projeto
 cargo run

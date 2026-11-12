@@ -117,6 +117,10 @@ pub struct ServiceProfile {
     pub id: String,
     pub name: String,
     pub theme_id: String,
+    /// Last preview selection, separate from the event's configured default.
+    pub last_selected_theme_id: Option<String>,
+    /// The configured default when that selection was saved; detects edits.
+    pub last_selected_theme_default_id: Option<String>,
     pub idle_theme_id: String,
     #[serde(default)]
     pub wallpaper: Option<PhysicalBackground>,
@@ -418,6 +422,8 @@ impl Default for ServiceProfile {
             id: "service_default".into(),
             name: "workspace-new-event".into(),
             theme_id: "obsidian_pro".into(),
+            last_selected_theme_id: None,
+            last_selected_theme_default_id: None,
             idle_theme_id: "obsidian_pro".into(),
             wallpaper: None,
             aspect_ratio: 0.0,

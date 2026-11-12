@@ -4,6 +4,10 @@ use crate::core::models::{PresentationTheme, color_to_hex, hex_to_color};
 
 use super::AppDb;
 
+#[cfg(test)]
+#[path = "theme_order_tests.rs"]
+mod order_tests;
+
 impl AppDb {
     /// Retorna todos os temas salvos no banco SQLite ordenados por favoritos e ordem de ordenação
     pub fn get_all_themes(&self) -> Result<Vec<PresentationTheme>> {

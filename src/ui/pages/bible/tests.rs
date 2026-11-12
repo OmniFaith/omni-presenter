@@ -106,7 +106,7 @@ fn bible_search_accepts_leading_zeroes_in_chapters_and_verses() {
             assert_eq!((state.bible_chapter, state.bible_verse), (chapter, verse));
             assert!(
                 deck.preview_slide_text()
-                    .ends_with(&format!("{} {chapter}:{verse}", state.bible_book))
+                    .ends_with(&format!("{} {chapter}.{verse}", state.bible_book))
             );
         } else {
             assert!(state.bible.show_search);
@@ -233,14 +233,14 @@ fn preview_range_and_playlist_keep_live_content_independent() {
     let live = deck.projected_text().to_owned();
     let library_count = deck.library().len();
     sync_preview(&mut state, &mut deck, false);
-    assert!(deck.preview_slide_text().ends_with("Gênesis 1:1"));
+    assert!(deck.preview_slide_text().ends_with("Gênesis 1.1"));
     assert_eq!(deck.projected_text(), live);
     state.bible.merge_selection = true;
     state.bible_verse = 1;
     state.bible.verse_end = 3;
     sync_preview(&mut state, &mut deck, true);
     assert_eq!(deck.slides().len(), 1);
-    assert!(deck.preview_slide_text().ends_with("Gênesis 1:1–3"));
+    assert!(deck.preview_slide_text().ends_with("Gênesis 1.1–3"));
     add_to_playlist(&mut state);
     add_to_playlist(&mut state);
     assert_eq!(
@@ -252,7 +252,7 @@ fn preview_range_and_playlist_keep_live_content_independent() {
         1
     );
     let item = state.playlist.last().unwrap().clone();
-    assert!(item.content.ends_with("Gênesis 1:1–3"));
+    assert!(item.content.ends_with("Gênesis 1.1–3"));
     let mut presenting = false;
     project(&mut state, &mut deck, &mut presenting);
     assert!(presenting);
@@ -278,7 +278,13 @@ fn shift_selection_without_merge_creates_one_slide_per_verse() {
         "each selected verse is its own slide"
     );
     for (offset, slide) in deck.slides().iter().enumerate() {
-        assert!(slide.ends_with(&format!("Gênesis 1:{}", offset + 1)));
+        let visible = crate::core::slides::strip_directive_commands(slide);
+        assert!(visible.starts_with(&format!("[{}] “", offset + 1)));
+        if offset < 2 {
+            assert!(!slide.contains("//ref-pos:"));
+        } else {
+            assert!(slide.ends_with("Gênesis 1.1–3"));
+        }
     }
 
     let playlist_before = state.playlist.len();
@@ -295,8 +301,8 @@ fn shift_selection_without_merge_creates_one_slide_per_verse() {
         quick_before + 1,
         "the range is pinned as one shortcut"
     );
-    assert_eq!(state.playlist.last().unwrap().title, "Gênesis 1:1–3");
-    assert_eq!(state.quick_bar.items.last().unwrap().title, "Gênesis 1:1–3");
+    assert_eq!(state.playlist.last().unwrap().title, "Gênesis 1.1–3");
+    assert_eq!(state.quick_bar.items.last().unwrap().title, "Gênesis 1.1–3");
 
     let mut presenting = false;
     project(&mut state, &mut deck, &mut presenting);
@@ -308,6 +314,8 @@ fn shift_selection_without_merge_creates_one_slide_per_verse() {
 fn saved_bible_ranges_preserve_slide_boundaries_for_playlist_and_shortcuts() {
     for (end, merged, count) in [(7, false, 7), (7, true, 1), (1, false, 1)] {
         let mut state = ControlPanelState::default();
+        // This case exercises the optional full-reference-on-every-slide mode.
+        state.settings.bible_settings.range_number_only = false;
         let bible = state.bible.library.get(&state.bible_version).unwrap();
         let book = bible
             .books
@@ -317,9 +325,9 @@ fn saved_bible_ranges_preserve_slide_boundaries_for_playlist_and_shortcuts() {
         select_reference(&mut state, book, 119, 1, end);
         state.bible.merge_selection = merged;
         let reference = if end == 1 {
-            "Salmos 119:1"
+            "Salmos 119.1"
         } else {
-            "Salmos 119:1–7"
+            "Salmos 119.1–7"
         };
 
         let playlist_before = state.playlist.len();
@@ -350,7 +358,7 @@ fn saved_bible_ranges_preserve_slide_boundaries_for_playlist_and_shortcuts() {
             assert!(deck.live_slides()[0].ends_with(reference));
         } else {
             for (index, slide) in deck.live_slides().iter().enumerate() {
-                assert!(slide.ends_with(&format!("Salmos 119:{}", index + 1)));
+                assert!(slide.ends_with(&format!("Salmos 119.{}", index + 1)));
             }
         }
     }
@@ -376,7 +384,7 @@ fn verse_inside_selection_keeps_every_selected_verse() {
         before + 1,
         "context action queues the selection as one entry"
     );
-    assert_eq!(state.playlist.last().unwrap().title, "Gênesis 1:1–3");
+    assert_eq!(state.playlist.last().unwrap().title, "Gênesis 1.1–3");
 }
 
 #[test]
@@ -458,7 +466,7 @@ fn bible_summarized_reference_numbers_stay_outside_quotes() {
             let first = crate::core::slides::strip_directive_commands(&passages[0].content);
             assert!(first.starts_with(&format!("{} “", format_verse_number(1, style))));
             assert!(!passages[0].content.contains("//ref-pos:"));
-            assert!(passages.last().unwrap().content.contains("1:1–3"));
+            assert!(passages.last().unwrap().content.contains("1.1–3"));
         }
     }
 }
@@ -557,10 +565,16 @@ fn test_bible_settings_reference_position_and_formatting() {
         BibleReferencePosition, BibleSeparator, BibleSettings, format_bible_slide,
     };
 
-    let mut settings = BibleSettings::default();
+    let mut settings = BibleSettings {
+        reference_position: BibleReferencePosition::Bottom,
+        separator: BibleSeparator::Colon,
+        quotes_around_verse: false,
+        range_number_only: false,
+        ..Default::default()
+    };
     let sample = "No princípio criou Deus os céus e a terra.".to_string();
 
-    // Default: Bottom position, no version tag, full name, colon separator
+    // Explicit bottom position, no version tag, full name, colon separator.
     let (reference, content) = format_bible_slide(
         &settings,
         "Gênesis",
@@ -720,7 +734,7 @@ fn test_bible_settings_reference_position_and_formatting() {
     state.bible.verse_end = 3;
     let single_passages = super::selection::selection_passages(&state);
     assert_eq!(single_passages.len(), 1);
-    assert!(single_passages[0].content.contains("1:3"));
+    assert!(single_passages[0].content.contains("1.3"));
     assert!(!single_passages[0].content.starts_with("[3]"));
 
     // Multi-verse with range_number_only: intermediate hides ref and shows [verse], last shows full range
@@ -734,7 +748,7 @@ fn test_bible_settings_reference_position_and_formatting() {
     assert!(!multi_passages[1].content.contains("//ref-pos:")); // ref omitted
     assert!(multi_passages[2].content.contains("[3]"));
     assert!(multi_passages[2].content.contains("//ref-pos:")); // full range on last slide
-    assert!(multi_passages[2].content.contains("1:1–3"));
+    assert!(multi_passages[2].content.contains("1.1–3"));
 }
 
 #[test]
