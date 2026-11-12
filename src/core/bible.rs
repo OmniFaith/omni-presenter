@@ -659,7 +659,7 @@ impl Default for BibleVerseAlignment {
 impl BibleVerseAlignment {
     pub fn as_markup_directive(&self) -> Option<&'static str> {
         match self {
-            Self::Center => None,
+            Self::Center => Some("//alinhar: centro\n"),
             Self::Left => Some("//alinhar: esquerda\n"),
             Self::Justified => Some("//alinhar: justificado\n"),
         }
@@ -687,7 +687,7 @@ impl BibleVerticalAlignment {
     pub fn as_markup_directive(&self) -> Option<&'static str> {
         match self {
             Self::Top => Some("//valign: top\n"),
-            Self::Center => None,
+            Self::Center => Some("//valign: center\n"),
             Self::Bottom => Some("//valign: bottom\n"),
         }
     }
@@ -844,6 +844,7 @@ impl Default for BibleSettings {
 }
 
 pub use super::bible_format::{
+    format_bible_slide_with_numbered_ref,
     format_bible_reference, format_bible_slide, format_bible_slide_with_custom_ref,
     format_verse_number, to_superscript,
 };
@@ -851,4 +852,3 @@ pub use super::bible_format::{
 #[cfg(test)]
 #[path = "bible_tests.rs"]
 mod tests;
-

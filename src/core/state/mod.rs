@@ -567,6 +567,7 @@ impl ControlPanelState {
             p.dock_preview_bg = self.dock_preview_bg;
             p.dock_height = self.dock_height;
             p.lyrics_cards_layout = self.lyrics_cards_layout;
+            p.bible_cards_layout = self.bible.cards_layout;
         }
         if let Some(p) = self
             .settings
@@ -579,6 +580,7 @@ impl ControlPanelState {
             p.save_session_playlist(&session_date, self.playlist.clone());
             p.bible_version = self.bible_version.clone();
             p.bible_shortcuts = self.bible_shortcuts.clone();
+            p.bible_shortcuts_initialized = true;
             p.last_bible_book = self.bible_book.clone();
             p.last_bible_chapter = self.bible_chapter;
             p.last_bible_verse = self.bible_verse;
@@ -614,6 +616,7 @@ impl ControlPanelState {
             175.0
         };
         self.lyrics_cards_layout = operator.lyrics_cards_layout;
+        self.bible.cards_layout = operator.bible_cards_layout;
         self.theme = if operator.dark_mode {
             AppTheme::dark()
         } else {
@@ -651,10 +654,8 @@ impl ControlPanelState {
             .into_iter()
             .filter(|id| available.contains(&version_code(id)))
             .collect();
-        if self.bible_shortcuts.is_empty() {
-            self.bible_shortcuts.push(self.bible_version.clone());
-        }
-        if !self.bible_shortcuts.contains(&self.bible_version) {
+        // Seed a new/legacy profile once, but preserve an explicitly empty bar.
+        if !service.bible_shortcuts_initialized && self.bible_shortcuts.is_empty() {
             self.bible_shortcuts.push(self.bible_version.clone());
         }
         let last_book = if !service.last_bible_book.trim().is_empty() {

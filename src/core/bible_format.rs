@@ -103,6 +103,16 @@ pub fn format_bible_slide_with_custom_ref(
     start_verse: usize,
     verses: &[String],
 ) -> (String, String) {
+    format_bible_slide_with_numbered_ref(settings, reference, start_verse, verses, false)
+}
+
+pub fn format_bible_slide_with_numbered_ref(
+    settings: &BibleSettings,
+    reference: String,
+    start_verse: usize,
+    verses: &[String],
+    number_first_verse: bool,
+) -> (String, String) {
     let processed_verses: Vec<String> = if settings.auto_split_long_verses
         && settings.split_action == BibleSplitAction::BreakLines
     {
@@ -139,6 +149,10 @@ pub fn format_bible_slide_with_custom_ref(
 
     if settings.quotes_around_verse && !body.trim().is_empty() {
         body = format!("“{body}”");
+    }
+    if number_first_verse && !body.trim().is_empty() {
+        let number = format_verse_number(start_verse, settings.verse_number_style);
+        body = format!("{number} {body}");
     }
 
     let styled_ref = if reference.trim().is_empty() {
@@ -209,4 +223,3 @@ pub fn format_bible_slide(
     );
     format_bible_slide_with_custom_ref(settings, reference, start_verse, verses)
 }
-

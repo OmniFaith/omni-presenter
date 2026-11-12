@@ -85,9 +85,7 @@ pub fn render_settings_preview(
         let total = chunks.len();
         (vec![chunks.into_iter().next().unwrap_or_default()], total, None)
     } else if state.settings.bible_settings.range_number_only && s_verse < e_verse {
-        let num_str = format_verse_number(s_verse, state.settings.bible_settings.verse_number_style);
-        let first_with_num = format!("{num_str} {}", &verses[0]);
-        (vec![first_with_num], 2, Some(String::new()))
+        (vec![verses[0].clone()], 2, Some(String::new()))
     } else {
         (verses, 1, None)
     };
@@ -333,7 +331,8 @@ pub fn render_settings_preview(
                 .enumerate()
                 .map(|(idx, v)| {
                     let num_str = format_verse_number(s_verse + idx, state.settings.bible_settings.verse_number_style);
-                    let prefix = if preview_verses.len() > 1 && state.settings.bible_settings.show_verse_numbers {
+                    let prefix = if (preview_verses.len() > 1 && state.settings.bible_settings.show_verse_numbers)
+                        || (state.settings.bible_settings.range_number_only && s_verse < e_verse) {
                         format!("{num_str} ")
                     } else {
                         String::new()
@@ -342,9 +341,9 @@ pub fn render_settings_preview(
                     let quote_close = if state.settings.bible_settings.quotes_around_verse && idx == preview_verses.len() - 1 { "”" } else { "" };
                     let is_last = idx == preview_verses.len() - 1;
                     let line_text = if is_last && ref_pos == BibleReferencePosition::EndOfVerse {
-                        format!("{quote_open}{prefix}{v}{quote_close}  ({reference})")
+                        format!("{prefix}{quote_open}{v}{quote_close}  ({reference})")
                     } else {
-                        format!("{quote_open}{prefix}{v}{quote_close}")
+                        format!("{prefix}{quote_open}{v}{quote_close}")
                     };
                     let g = ui.painter().layout(
                         line_text,
@@ -373,7 +372,8 @@ pub fn render_settings_preview(
                     // Verses
                     for (idx, v) in preview_verses.iter().enumerate() {
                         let num_str = format_verse_number(s_verse + idx, state.settings.bible_settings.verse_number_style);
-                        let prefix = if preview_verses.len() > 1 && state.settings.bible_settings.show_verse_numbers {
+                        let prefix = if (preview_verses.len() > 1 && state.settings.bible_settings.show_verse_numbers)
+                            || (state.settings.bible_settings.range_number_only && s_verse < e_verse) {
                             format!("{num_str} ")
                         } else {
                             String::new()
@@ -397,9 +397,9 @@ pub fn render_settings_preview(
                             } else {
                                 format!("({reference})")
                             };
-                            format!("{quote_open}{prefix}{v}{quote_close}  {styled_ref}")
+                            format!("{prefix}{quote_open}{v}{quote_close}  {styled_ref}")
                         } else {
-                            format!("{quote_open}{prefix}{v}{quote_close}")
+                            format!("{prefix}{quote_open}{v}{quote_close}")
                         };
 
                         let mut verse_rich = RichText::new(line_text)
@@ -474,4 +474,3 @@ fn render_preview_reference(
         }
     }
 }
-

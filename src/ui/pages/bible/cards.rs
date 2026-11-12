@@ -120,29 +120,24 @@ fn section_panel(
     body: impl FnOnce(&mut egui::Ui),
 ) {
     let margin = 8.0;
-    egui::Frame::new()
+    let frame = egui::Frame::new()
         .fill(theme.bg_panel)
         .stroke(Stroke::new(1.0, theme.border_default))
         .corner_radius(10.0)
-        .inner_margin(egui::Margin::same(margin as i8))
-        .show(ui, |ui| {
-            ui.set_min_size(egui::vec2(
-                (size.x - margin * 2.0).max(40.0),
-                (size.y - margin * 2.0).max(40.0),
-            ));
-            ui.set_max_size(egui::vec2(
-                (size.x - margin * 2.0).max(40.0),
-                (size.y - margin * 2.0).max(40.0),
-            ));
-            ui.label(
-                RichText::new(crate::ui::i18n::text(ui, title))
-                    .size(11.5)
-                    .strong()
-                    .color(theme.text_secondary),
-            );
-            ui.add_space(5.0);
-            body(ui);
-        });
+        .inner_margin(egui::Margin::same(margin as i8));
+    let content_size = (size - frame.total_margin().sum()).max(egui::Vec2::ZERO);
+    frame.show(ui, |ui| {
+        ui.set_min_size(content_size);
+        ui.set_max_size(content_size);
+        ui.label(
+            RichText::new(crate::ui::i18n::text(ui, title))
+                .size(11.5)
+                .strong()
+                .color(theme.text_secondary),
+        );
+        ui.add_space(5.0);
+        body(ui);
+    });
 }
 
 pub(super) fn cards_body(
@@ -183,11 +178,35 @@ pub(super) fn cards_body(
     let Some((names, abbrevs, book, chapter, chapter_count, verse_count)) = info else {
         ui.add_space(30.0);
         ui.vertical_centered(|ui| {
-            ui.label(RichText::new(crate::ui::i18n::format(ui, "workspace-add-version", &[("version", &version_code(&state.bible_version))])).size(16.0).strong());
+            ui.label(
+                RichText::new(crate::ui::i18n::format(
+                    ui,
+                    "workspace-add-version",
+                    &[("version", &version_code(&state.bible_version))],
+                ))
+                .size(16.0)
+                .strong(),
+            );
             ui.add_space(8.0);
-            ui.label(RichText::new(crate::ui::i18n::text(ui, "workspace-import-this-translation-s-json-file-to-look-up-and")).size(12.0).color(theme.text_secondary));
+            ui.label(
+                RichText::new(crate::ui::i18n::text(
+                    ui,
+                    "workspace-import-this-translation-s-json-file-to-look-up-and",
+                ))
+                .size(12.0)
+                .color(theme.text_secondary),
+            );
             ui.add_space(12.0);
-            if ui.button(crate::ui::i18n::format(ui, "workspace-import-in-settings", &[("icon", PLUS)])).clicked() { open_bible_settings(state); }
+            if ui
+                .button(crate::ui::i18n::format(
+                    ui,
+                    "workspace-import-in-settings",
+                    &[("icon", PLUS)],
+                ))
+                .clicked()
+            {
+                open_bible_settings(state);
+            }
         });
         return;
     };
@@ -195,9 +214,11 @@ pub(super) fn cards_body(
 
     let spacing = 6.0;
     let gap = 6.0;
-    let total = (ui.available_height() - gap - 4.0).max(220.0);
-    let books_h = (total * 0.52 - gap * 0.5).max(80.0);
-    let side_h = (total * 0.48 - gap * 0.5).max(80.0);
+    ui.spacing_mut().item_spacing = egui::vec2(gap, gap);
+    ui.spacing_mut().scroll = egui::style::ScrollStyle::solid();
+    let total = (ui.available_height() - gap).max(0.0);
+    let books_h = total * 0.52;
+    let side_h = total * 0.48;
     let full_w = ui.available_width();
 
     let query_trimmed = state.bible.search.trim();
@@ -218,39 +239,47 @@ pub(super) fn cards_body(
         (0..names.len()).collect()
     };
 
-    section_panel(ui, egui::vec2(full_w, books_h), "workspace-books", theme, |ui| {
-        let (per_row, cell) = grid_metrics(ui, 54.0, spacing);
-        let tile = egui::vec2(cell, cell);
-        egui::ScrollArea::vertical()
-            .id_salt("cards_books")
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                for row in (0..visible_books.len()).step_by(per_row) {
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing.x = spacing;
-                        for item_idx in row..(row + per_row).min(visible_books.len()) {
-                            let index = visible_books[item_idx];
-                            if (state.bible.testament == 1 && index >= 39)
-                                || (state.bible.testament == 2 && index < 39)
-                            {
-                                continue;
+    section_panel(
+        ui,
+        egui::vec2(full_w, books_h),
+        "workspace-books",
+        theme,
+        |ui| {
+            egui::ScrollArea::vertical()
+                .id_salt("cards_books")
+                .auto_shrink([false, false])
+                .max_height(ui.available_height())
+                .min_scrolled_height(0.0)
+                .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
+                .show(ui, |ui| {
+                    let (per_row, cell) = grid_metrics(ui, 64.0, spacing);
+                    let tile = egui::vec2(cell, cell.max(66.0));
+                    for row in (0..visible_books.len()).step_by(per_row) {
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = spacing;
+                            for item_idx in row..(row + per_row).min(visible_books.len()) {
+                                let index = visible_books[item_idx];
+                                if (state.bible.testament == 1 && index >= 39)
+                                    || (state.bible.testament == 2 && index < 39)
+                                {
+                                    continue;
+                                }
+                                let abbrev = capitalize(&abbrevs[index]);
+                                let selected = state.bible_book == names[index];
+                                if book_card(ui, tile, &abbrev, &names[index], selected, theme)
+                                    .clicked()
+                                {
+                                    select_reference(state, index, 1, 1, 1);
+                                }
                             }
-                            let abbrev = capitalize(&abbrevs[index]);
-                            let selected = state.bible_book == names[index];
-                            if book_card(ui, tile, &abbrev, &names[index], selected, theme)
-                                .clicked()
-                            {
-                                select_reference(state, index, 1, 1, 1);
-                            }
-                        }
-                    });
-                }
-            });
-    });
+                        });
+                    }
+                });
+        },
+    );
 
-    ui.add_space(gap);
-    let side_w = ((full_w - gap) / 2.0).max(60.0);
     ui.columns(2, |cols| {
+        let side_w = cols[0].available_width();
         section_panel(
             &mut cols[0],
             egui::vec2(side_w, side_h),
@@ -258,19 +287,22 @@ pub(super) fn cards_body(
             theme,
             |ui| {
                 let target_w = if chapter_count >= 100 { 50.0 } else { 44.0 };
-                let (per_row, cell) = grid_metrics(ui, target_w, spacing);
-                let tile = egui::vec2(
-                    cell,
-                    if chapter_count >= 100 {
-                        38.0
-                    } else {
-                        cell.min(42.0)
-                    },
-                );
                 egui::ScrollArea::vertical()
                     .id_salt("cards_chapters")
                     .auto_shrink([false, false])
+                    .max_height(ui.available_height())
+                    .min_scrolled_height(0.0)
+                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
                     .show(ui, |ui| {
+                        let (per_row, cell) = grid_metrics(ui, target_w, spacing);
+                        let tile = egui::vec2(
+                            cell,
+                            if chapter_count >= 100 {
+                                38.0
+                            } else {
+                                cell.min(42.0)
+                            },
+                        );
                         for row in (0..chapter_count).step_by(per_row) {
                             ui.horizontal(|ui| {
                                 ui.spacing_mut().item_spacing.x = spacing;
@@ -296,19 +328,22 @@ pub(super) fn cards_body(
             theme,
             |ui| {
                 let target_w = if verse_count >= 100 { 50.0 } else { 44.0 };
-                let (per_row, cell) = grid_metrics(ui, target_w, spacing);
-                let tile = egui::vec2(
-                    cell,
-                    if verse_count >= 100 {
-                        38.0
-                    } else {
-                        cell.min(42.0)
-                    },
-                );
                 egui::ScrollArea::vertical()
                     .id_salt("cards_verses")
                     .auto_shrink([false, false])
+                    .max_height(ui.available_height())
+                    .min_scrolled_height(0.0)
+                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
                     .show(ui, |ui| {
+                        let (per_row, cell) = grid_metrics(ui, target_w, spacing);
+                        let tile = egui::vec2(
+                            cell,
+                            if verse_count >= 100 {
+                                38.0
+                            } else {
+                                cell.min(42.0)
+                            },
+                        );
                         let start = state.bible_verse.min(state.bible.verse_end);
                         let end = state.bible_verse.max(state.bible.verse_end);
                         for row in (0..verse_count).step_by(per_row) {
@@ -338,4 +373,43 @@ pub(super) fn cards_body(
             },
         );
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bible_cards_panels_fit_the_available_space() {
+        for size in [egui::vec2(430.0, 750.0), egui::vec2(320.0, 420.0)] {
+            let ctx = egui::Context::default();
+            let mut state = ControlPanelState::default();
+            state.bible_book = "Salmos".into();
+            let mut deck = SlideDeck::default();
+            let theme = state.theme.clone();
+            for _ in 0..3 {
+                let mut output = ctx.run_ui(
+                    egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                        ..Default::default()
+                    },
+                    |ui| {
+                        let available = ui.available_rect_before_wrap();
+                        cards_body(ui, &mut state, &mut deck, &theme);
+                        assert!(
+                            ui.min_rect().right() <= available.right() + 1.0,
+                            "Cards overflow horizontally: {:?}, {available:?}",
+                            ui.min_rect()
+                        );
+                        assert!(
+                            ui.min_rect().bottom() <= available.bottom() + 1.0,
+                            "Cards overflow vertically: {:?}, {available:?}",
+                            ui.min_rect()
+                        );
+                    },
+                );
+                output.textures_delta.clear();
+            }
+        }
+    }
 }

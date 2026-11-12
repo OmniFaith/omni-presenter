@@ -1,4 +1,4 @@
-use super::settings_preview::{render_settings_preview, PreviewSample};
+use super::settings_preview::{PreviewSample, render_settings_preview};
 use crate::core::bible::{
     BibleReferenceAlignment, BibleReferenceHighlight, BibleReferencePosition, BibleReferenceSize,
     BibleSeparator, BibleSettings, BibleSplitAction, BibleSplitPunctuation, BibleVerseAlignment,
@@ -10,9 +10,7 @@ use crate::ui::modals::settings::components::{
     ButtonTone, apply_settings_style, card, segmented_picker, setting_toggle, styled_button,
 };
 use eframe::egui::{self, Frame, Margin, RichText, Stroke, Vec2};
-use egui_phosphor::regular::{
-    ARROW_COUNTER_CLOCKWISE, BOOKS, CHECK, DESKTOP, ROWS, TEXT_T,
-};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, BOOKS, CHECK, DESKTOP, ROWS, TEXT_T};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum BibleSettingsTab {
@@ -57,7 +55,7 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
             // 1. TOP: Clean Modern 3-Tab Segmented Switcher
             // ========================================================
             ui.vertical_centered(|ui| {
-                ui.set_width(450.0);
+                ui.set_width(ui.available_width().min(450.0));
                 ui.push_id("bible_settings_tab_bar", |ui| {
                     if segmented_picker(
                         ui,
@@ -65,17 +63,37 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
                         &[
                             (BibleSettingsTab::Screen, "workspace-bible-tab-screen"),
                             (BibleSettingsTab::Split, "workspace-bible-tab-split"),
-                            (BibleSettingsTab::Formatting, "workspace-bible-tab-formatting"),
+                            (
+                                BibleSettingsTab::Formatting,
+                                "workspace-bible-tab-formatting",
+                            ),
                         ],
                         &tokens,
                     ) {
-                        ui.ctx().data_mut(|d| d.insert_temp(active_tab_id, active_tab));
+                        ui.ctx()
+                            .data_mut(|d| d.insert_temp(active_tab_id, active_tab));
                     }
                 });
             });
 
             ui.add_space(2.0);
 
+            // Keep the modal inside the viewport. Only the preview and settings
+            // scroll; the title, tabs and action buttons remain accessible.
+            let narrow_footer = ui.available_width() < 540.0;
+            let footer_height = if narrow_footer { 96.0 } else { 56.0 };
+            let body_height = (ctx.content_rect().height()
+                - 80.0 // modal padding and breathing room around the panel
+                - ui.min_size().y
+                - footer_height)
+                .max(48.0);
+            ui.spacing_mut().scroll = egui::style::ScrollStyle::solid();
+            egui::ScrollArea::vertical()
+                .id_salt(("bible_settings_body", active_tab as u8))
+                .max_height(body_height)
+                .auto_shrink([false, true])
+                .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
+                .show(ui, |ui| {
             // ========================================================
             // 2. SHOWCASE: Live Slide Viewport with Active Theme
             // ========================================================
@@ -597,6 +615,8 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
                 }
             }
 
+                });
+
             ui.add_space(2.0);
             ui.separator();
             ui.add_space(2.0);
@@ -604,7 +624,20 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
             // ========================================================
             // 4. BOTTOM ACTION FOOTER
             // ========================================================
-            ui.horizontal(|ui| {
+            let mut done = false;
+            let mut done_button = |ui: &mut egui::Ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    done |= styled_button(
+                        ui,
+                        Some(CHECK),
+                        "settings-done",
+                        ButtonTone::Primary,
+                        &tokens,
+                    )
+                    .clicked();
+                });
+            };
+            ui.horizontal_wrapped(|ui| {
                 if styled_button(
                     ui,
                     Some(BOOKS),
@@ -629,20 +662,16 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
                     reset_defaults = true;
                 }
 
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if styled_button(
-                        ui,
-                        Some(CHECK),
-                        "settings-done",
-                        ButtonTone::Primary,
-                        &tokens,
-                    )
-                    .clicked()
-                    {
-                        state.bible.show_settings = false;
-                    }
-                });
+                if !narrow_footer {
+                    done_button(ui);
+                }
             });
+            if narrow_footer {
+                done_button(ui);
+            }
+            if done {
+                state.bible.show_settings = false;
+            }
         },
     );
 
@@ -662,5 +691,57 @@ pub fn render_bible_settings_modal(ctx: &egui::Context, state: &mut ControlPanel
 
     if close {
         state.bible.show_settings = false;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bible_settings_tabs_fit_short_and_narrow_viewports() {
+        for size in [
+            egui::vec2(1000.0, 600.0),
+            egui::vec2(640.0, 480.0),
+            egui::vec2(560.0, 480.0),
+        ] {
+            for tab in [
+                BibleSettingsTab::Screen,
+                BibleSettingsTab::Split,
+                BibleSettingsTab::Formatting,
+            ] {
+                let ctx = egui::Context::default();
+                let mut state = ControlPanelState::default();
+                state.bible.show_settings = true;
+                let original = state.settings.bible_settings.clone();
+                ctx.data_mut(|d| {
+                    d.insert_temp(egui::Id::unique("bible_settings_active_tab"), tab);
+                });
+                let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, size);
+                // Modal placement settles after its first sizing pass.
+                for _ in 0..8 {
+                    let mut output = ctx.run_ui(
+                        egui::RawInput {
+                            screen_rect: Some(screen),
+                            ..Default::default()
+                        },
+                        |ui| render_bible_settings_modal(ui.ctx(), &mut state),
+                    );
+                    output.textures_delta.clear();
+                }
+                let rect = ctx.memory(|m| {
+                    m.area_rect(egui::Id::unique("app_dialog").with("bible_settings_modal"))
+                        .expect("Bible settings modal should be present")
+                });
+                assert!(rect.height() <= size.y, "Modal {rect:?} exceeds {size:?}");
+                assert!(rect.width() <= size.x, "Modal {rect:?} exceeds {size:?}");
+                assert!(
+                    screen.contains_rect(rect),
+                    "Modal {rect:?} is outside {screen:?}"
+                );
+                assert!(state.bible.show_settings);
+                assert_eq!(state.settings.bible_settings, original);
+            }
+        }
     }
 }

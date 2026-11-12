@@ -21,9 +21,6 @@ pub(super) fn version_bar(
                         ui.spacing_mut().item_spacing.x = 3.0;
                         let catalog = state.bible.library.catalog();
                         let current = version_code(&state.bible_version);
-                        if !state.bible_shortcuts.contains(&current) {
-                            state.bible_shortcuts.push(current.clone());
-                        }
                         let shortcuts = state.bible_shortcuts.clone();
                         let mut reorder = None;
                         for version in &shortcuts {

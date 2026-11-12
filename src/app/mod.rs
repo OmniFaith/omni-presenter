@@ -11,6 +11,7 @@ mod modals;
 mod persistence;
 mod plugins;
 mod search;
+mod startup;
 mod remote;
 mod remote_snapshot;
 mod remote_tools;
@@ -47,19 +48,6 @@ pub struct PresentationApp {
     pub(super) last_monitor_sync: std::time::Instant,
     pub(super) applied_appearance: Option<(bool, u32, bool)>,
     pub(super) physical_transition: crate::ui::presentation_transition::PresentationTransition,
-}
-
-impl Default for PresentationApp {
-    fn default() -> Self {
-        // Pré-carrega o catálogo de fontes do sistema em segundo plano para não travar a UI
-        std::thread::spawn(|| {
-            let _ = crate::core::models::get_system_fonts();
-        });
-
-        let db_path = "omni-presenter.db";
-        let db = AppDb::open(db_path).unwrap_or_else(|_| AppDb::open_in_memory().unwrap());
-        Self::with_db(db)
-    }
 }
 
 impl PresentationApp {

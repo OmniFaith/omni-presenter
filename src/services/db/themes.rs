@@ -219,14 +219,18 @@ impl AppDb {
 
     /// Atualiza a ordenação da lista de temas no SQLite
     pub fn update_themes_order(&self, ids: &[String]) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let mut conn = self.conn.lock().unwrap();
+        let transaction = conn.transaction()?;
         for (idx, id) in ids.iter().enumerate() {
-            let _ = conn.execute(
+            let updated = transaction.execute(
                 "UPDATE themes SET sort_order = ?1 WHERE id = ?2;",
                 params![idx as i32, id],
-            );
+            )?;
+            if updated != 1 {
+                return Err(rusqlite::Error::QueryReturnedNoRows);
+            }
         }
-        Ok(())
+        transaction.commit()
     }
 
     /// Restaura todos os temas padrão de apresentação no SQLite

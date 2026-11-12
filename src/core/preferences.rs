@@ -33,6 +33,8 @@ pub struct OperatorProfile {
     pub dock_height: f32,
     #[serde(default)]
     pub lyrics_cards_layout: bool,
+    #[serde(default)]
+    pub bible_cards_layout: bool,
     pub layout: LayoutTree,
     pub bible_layout: LayoutTree,
     #[serde(default = "LayoutTree::default_chat")]
@@ -62,6 +64,7 @@ impl Default for OperatorProfile {
             dock_preview_bg: false,
             dock_height: 175.0,
             lyrics_cards_layout: false,
+            bible_cards_layout: false,
             layout: LayoutTree::default(),
             bible_layout: LayoutTree::bible_workspace(),
             chat_layout: LayoutTree::default_chat(),
@@ -122,6 +125,8 @@ pub struct ServiceProfile {
     pub bible_version: String,
     #[serde(default)]
     pub bible_shortcuts: Vec<String>,
+    #[serde(default)]
+    pub bible_shortcuts_initialized: bool,
     pub playlist: Vec<PlaylistItem>,
     pub last_bible_book: String,
     pub last_bible_chapter: usize,
@@ -418,6 +423,7 @@ impl Default for ServiceProfile {
             aspect_ratio: 0.0,
             bible_version: String::new(),
             bible_shortcuts: Vec::new(),
+            bible_shortcuts_initialized: false,
             playlist: Vec::new(),
             last_bible_book: "Gênesis".into(),
             last_bible_chapter: 1,

@@ -409,6 +409,88 @@ fn test_last_searched_bible_verse_persists_across_profiles() {
 }
 
 #[test]
+fn unpinned_active_bible_translation_does_not_return_on_render_or_profile_reload() {
+    let mut state = ControlPanelState::default();
+    let current = crate::core::bible::version_code(&state.bible_version);
+    state.bible_shortcuts = vec![current.clone()];
+    state.bible_shortcuts.retain(|id| id != &current);
+    let ctx = egui::Context::default();
+    for _ in 0..2 {
+        let theme = state.theme.clone();
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            super::version_bar::version_bar(ui, &mut state, &theme);
+        });
+        output.textures_delta.clear();
+        assert!(state.bible_shortcuts.is_empty());
+        assert_eq!(crate::core::bible::version_code(&state.bible_version), current);
+    }
+    state.capture_profiles();
+    state.apply_profiles();
+    assert!(state.bible_shortcuts.is_empty());
+    assert_eq!(crate::core::bible::version_code(&state.bible_version), current);
+}
+
+#[test]
+fn bible_summarized_reference_numbers_stay_outside_quotes() {
+    use crate::core::bible::{BibleVerseNumberStyle, format_verse_number};
+    for style in [BibleVerseNumberStyle::Bracket, BibleVerseNumberStyle::Superscript, BibleVerseNumberStyle::Dot] {
+        for split in [false, true] {
+            let mut state = ControlPanelState::default();
+            state.bible_verse = 1;
+            state.bible.verse_end = 3;
+            let settings = &mut state.settings.bible_settings;
+            settings.range_number_only = true;
+            settings.quotes_around_verse = true;
+            settings.verse_number_style = style;
+            settings.auto_split_long_verses = split;
+            settings.max_chars_per_slide = 40;
+            let passages = selection_passages(&state);
+            assert!(passages.len() >= 3);
+            for passage in &passages {
+                let visible = crate::core::slides::strip_directive_commands(&passage.content);
+                assert!(!visible.starts_with('“'), "Number must precede the quote: {visible}");
+                assert!(visible.contains(" “"), "Verse must still be quoted: {visible}");
+                for verse in 1..=3 {
+                    let number = format_verse_number(verse, style);
+                    assert!(!visible.contains(&format!("“{number}")), "Number is inside quotes: {visible}");
+                }
+            }
+            let first = crate::core::slides::strip_directive_commands(&passages[0].content);
+            assert!(first.starts_with(&format!("{} “", format_verse_number(1, style))));
+            assert!(!passages[0].content.contains("//ref-pos:"));
+            assert!(passages.last().unwrap().content.contains("1:1–3"));
+        }
+    }
+}
+
+#[test]
+fn bible_cards_layout_is_saved_and_restored_per_operator() {
+    let mut state = ControlPanelState::default();
+    let first = state.settings.active_operator.clone();
+    let mut second = crate::core::preferences::OperatorProfile::default();
+    second.id = "second_operator".into();
+    state.settings.operators.push(second);
+    super::navigation::toggle_layout(&mut state);
+    assert!(state.bible.cards_layout);
+    state.capture_profiles();
+    let json = serde_json::to_string(&state.settings).unwrap();
+    state.settings = serde_json::from_str(&json).unwrap();
+    state.settings.active_operator = "second_operator".into();
+    state.apply_profiles();
+    assert!(!state.bible.cards_layout);
+    state.settings.active_operator = first;
+    state.apply_profiles();
+    assert!(state.bible.cards_layout);
+    super::navigation::toggle_layout(&mut state);
+    state.capture_profiles();
+    state.apply_profiles();
+    assert!(!state.bible.cards_layout);
+    let legacy: crate::core::preferences::OperatorProfile =
+        serde_json::from_str(r#"{"id":"legacy"}"#).unwrap();
+    assert!(!legacy.bible_cards_layout);
+}
+
+#[test]
 fn test_floating_bible_search_overlay_renders_from_any_page() {
     use crate::core::commands::Command;
     let mut state = ControlPanelState {
@@ -490,7 +572,8 @@ fn test_bible_settings_reference_position_and_formatting() {
         std::slice::from_ref(&sample),
     );
     assert_eq!(reference, "Gênesis 1:1");
-    assert_eq!(content, format!("//ref-pos: bottom\n//ref-align: right\n{sample}\nGênesis 1:1"));
+    let alignment = "//valign: center\n//alinhar: centro\n";
+    assert_eq!(content, format!("{alignment}//ref-pos: bottom\n//ref-align: right\n{sample}\nGênesis 1:1"));
 
     // Top position
     settings.reference_position = BibleReferencePosition::Top;
@@ -504,7 +587,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         1,
         std::slice::from_ref(&sample),
     );
-    assert_eq!(content_top, format!("//ref-pos: top\n//ref-align: right\nGênesis 1:1\n{sample}"));
+    assert_eq!(content_top, format!("{alignment}//ref-pos: top\n//ref-align: right\nGênesis 1:1\n{sample}"));
 
     // Hidden position
     settings.reference_position = BibleReferencePosition::Hidden;
@@ -518,7 +601,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         1,
         std::slice::from_ref(&sample),
     );
-    assert_eq!(content_hidden, sample);
+    assert_eq!(content_hidden, format!("{alignment}{sample}"));
 
     // BelowVerse position
     settings.reference_position = BibleReferencePosition::BelowVerse;
@@ -532,7 +615,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         1,
         std::slice::from_ref(&sample),
     );
-    assert_eq!(content_below, format!("//ref-pos: below\n//ref-align: right\n{sample}\nGênesis 1:1"));
+    assert_eq!(content_below, format!("{alignment}//ref-pos: below\n//ref-align: right\n{sample}\nGênesis 1:1"));
 
     // EndOfVerse position
     settings.reference_position = BibleReferencePosition::EndOfVerse;
@@ -546,7 +629,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         1,
         std::slice::from_ref(&sample),
     );
-    assert_eq!(content_end, format!("{sample} (Gênesis 1:1)"));
+    assert_eq!(content_end, format!("{alignment}{sample} (Gênesis 1:1)"));
 
     // Abbreviation and Version Tag
     settings.reference_position = BibleReferencePosition::Bottom;
@@ -564,7 +647,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         std::slice::from_ref(&sample),
     );
     assert_eq!(ref_abbrev, "Gn 1.1 (ARA)");
-    assert_eq!(content_abbrev, format!("//ref-pos: bottom\n//ref-align: right\n{sample}\nGn 1.1 (ARA)"));
+    assert_eq!(content_abbrev, format!("{alignment}//ref-pos: bottom\n//ref-align: right\n{sample}\nGn 1.1 (ARA)"));
 
     // Multi-verse numbering
     let v2 = "E a terra era sem forma e vazia.".to_string();
@@ -581,7 +664,7 @@ fn test_bible_settings_reference_position_and_formatting() {
         &verses,
     );
     assert_eq!(ref_multi, "Gn 1.1–2 (ARA)");
-    assert_eq!(content_multi, format!("//ref-pos: bottom\n//ref-align: right\n[1] {sample}\n[2] {v2}\nGn 1.1–2 (ARA)"));
+    assert_eq!(content_multi, format!("{alignment}//ref-pos: bottom\n//ref-align: right\n[1] {sample}\n[2] {v2}\nGn 1.1–2 (ARA)"));
     // Quotes and Uppercase reference
     settings.quotes_around_verse = true;
     settings.uppercase_reference = true;
@@ -681,9 +764,12 @@ fn test_bible_vertical_alignment_directives_and_parsing() {
     let mut settings = BibleSettings::default();
     let sample = "No princípio criou Deus os céus e a terra.".to_string();
 
-    // Default is Center -> no directive emitted (inherits theme)
+    // Center is explicit, so a theme cannot silently override Bible alignment.
     let (_, content_center) = format_bible_slide(&settings, "Gênesis", "Gn", "ARA", 1, 1, 1, std::slice::from_ref(&sample));
-    assert!(!content_center.contains("//valign:"));
+    assert!(content_center.starts_with("//valign: center\n"));
+    let dirs_center = parse_slide_directives(&content_center);
+    assert_eq!(dirs_center.valign.as_deref(), Some("center"));
+    assert_eq!(dirs_center.align.as_deref(), Some("center"));
 
     // Top emits //valign: top
     settings.vertical_alignment = BibleVerticalAlignment::Top;

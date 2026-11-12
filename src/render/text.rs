@@ -69,10 +69,16 @@ pub fn layout(
     } else {
         crate::core::markup::SlideDirectives::default()
     };
-    let active_family_name = directives.font_family.as_deref().unwrap_or(&theme.font_family);
+    let active_family_name = directives
+        .font_family
+        .as_deref()
+        .unwrap_or(&theme.font_family);
     let line_spacing = directives.line_spacing.unwrap_or(theme.line_spacing);
     let letter_spacing = directives.letter_spacing.unwrap_or(theme.letter_spacing);
-    let align_h = directives.align.as_deref().unwrap_or(theme.align_h.as_str());
+    let align_h = directives
+        .align
+        .as_deref()
+        .unwrap_or(theme.align_h.as_str());
 
     let family = crate::core::models::ensure_font_loaded_with_style(
         ctx,
@@ -130,7 +136,11 @@ pub fn layout(
                 crate::core::models::ensure_font_loaded_with_style(
                     ctx,
                     custom_font,
-                    if is_emphasis { theme.font_weight.max(700) } else { theme.font_weight },
+                    if is_emphasis {
+                        theme.font_weight.max(700)
+                    } else {
+                        theme.font_weight
+                    },
                     italic,
                 )
             } else if is_emphasis {
@@ -317,20 +327,26 @@ fn render_internal(
     let inner = box_rect.shrink(padding);
     let directives = crate::core::markup::parse_slide_directives(text);
     let (verse_text, ref_text_opt) = if let Some(ref pos) = directives.ref_pos {
-        let lines: Vec<&str> = text
-            .lines()
-            .filter(|l| !crate::core::markup::is_directive_command(l.trim_start()))
+        let mut lines: Vec<&str> = text.lines().collect();
+        let visible_lines: Vec<usize> = lines
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| !crate::core::markup::is_directive_command(l.trim_start()))
+            .map(|(i, _)| i)
             .collect();
-        if lines.len() > 1 {
+        if visible_lines.len() > 1 {
             match pos.as_str() {
                 "top" => {
-                    let r = lines[0].trim().to_string();
-                    let v = lines[1..].join("\n");
+                    let r = lines.remove(visible_lines[0]).trim().to_string();
+                    let v = lines.join("\n");
                     (v, Some(r))
                 }
                 "bottom" | "below" => {
-                    let r = lines[lines.len() - 1].trim().to_string();
-                    let v = lines[..lines.len() - 1].join("\n");
+                    let r = lines
+                        .remove(*visible_lines.last().unwrap())
+                        .trim()
+                        .to_string();
+                    let v = lines.join("\n");
                     (v, Some(r))
                 }
                 _ => (text.to_string(), None),
@@ -364,10 +380,29 @@ fn render_internal(
 
     let screen_top = 28.0;
     let screen_bottom = design_size.y - 28.0;
+    let ref_x = match directives.ref_align.as_deref().unwrap_or("right") {
+        "center" => inner.center().x,
+        "right" => inner.right(),
+        _ => inner.left(),
+    };
+    let centered_edge_reference = matches!(directives.ref_pos.as_deref(), Some("top" | "bottom"))
+        && directives.valign.as_deref().unwrap_or(&theme.align_v) == "center";
 
     let (verse_inner, ref_pos_and_data) = if let Some(ref_layout) = ref_layout_opt {
-        let ref_x = inner.left();
         let ref_pos_str = directives.ref_pos.as_deref().unwrap_or("bottom");
+        // Top/bottom references belong to the slide, not to the theme's text
+        // box. Reserve the same clearance at both edges so switching between
+        // them never moves the centered verse, even with an offset theme box.
+        let inner = if centered_edge_reference {
+            let half_height = (inner.height() * 0.5)
+                .min((design_size.y * 0.5 - screen_top - ref_layout.size.y - 16.0).max(1.0));
+            Rect::from_center_size(
+                egui::pos2(inner.center().x, design_size.y * 0.5),
+                egui::vec2(inner.width(), half_height * 2.0),
+            )
+        } else {
+            inner
+        };
         match ref_pos_str {
             "top" => {
                 let ref_y = screen_top;
@@ -395,16 +430,31 @@ fn render_internal(
         (inner, None)
     };
 
-    let text_layout = layout(painter, theme, &verse_text, verse_inner.size());
+    let align_h = directives
+        .align
+        .as_deref()
+        .unwrap_or(theme.align_h.as_str());
+    let mut verse_theme = theme.clone();
+    verse_theme.align_h = align_h.to_string();
+    let text_layout = layout(painter, &verse_theme, &verse_text, verse_inner.size());
+    let verse_clip = if centered_edge_reference {
+        Rect::from_min_size(to_view(verse_inner.min), verse_inner.size() * view_scale)
+    } else {
+        view_box
+    };
     let mut clipped =
-        painter.with_clip_rect(painter.clip_rect().intersect(rect).intersect(view_box));
-    let align_h = directives.align.as_deref().unwrap_or(theme.align_h.as_str());
+        painter.with_clip_rect(painter.clip_rect().intersect(rect).intersect(verse_clip));
+    // Screen-edge references are outside the theme's verse box by design.
+    let mut ref_painter = painter.with_clip_rect(painter.clip_rect().intersect(rect));
     let x = match align_h {
         "center" => verse_inner.center().x,
         "right" => verse_inner.right(),
         _ => verse_inner.left(),
     };
-    let align_v = directives.valign.as_deref().unwrap_or(theme.align_v.as_str());
+    let align_v = directives
+        .valign
+        .as_deref()
+        .unwrap_or(theme.align_v.as_str());
     let y = match align_v {
         "top" => verse_inner.top(),
         "bottom" => (verse_inner.bottom() - text_layout.size.y).max(verse_inner.top()),
@@ -416,7 +466,6 @@ fn render_internal(
 
     let ref_render_data = match ref_pos_and_data {
         Some((layout, _, _, true)) => {
-            let ref_x = inner.left();
             let ref_y = (y + text_layout.size.y + 12.0).min(screen_bottom - layout.size.y);
             let ref_pos = to_view(egui::pos2(ref_x, ref_y));
             let ref_scale = layout.scale * view_scale;
@@ -436,7 +485,7 @@ fn render_internal(
             Some(color),
         ));
         if let Some((ref_layout, ref_pos, ref_scale)) = ref_render_data {
-            clipped.add(text_shape(
+            ref_painter.add(text_shape(
                 ref_layout.galley,
                 ref_pos,
                 ref_scale,
@@ -449,11 +498,14 @@ fn render_internal(
     }
 
     clipped.multiply_opacity(theme.options.text_opacity.clamp(0.0, 1.0));
+    ref_painter.multiply_opacity(theme.options.text_opacity.clamp(0.0, 1.0));
+    let mut box_painter = painter.with_clip_rect(painter.clip_rect().intersect(rect));
+    box_painter.multiply_opacity(theme.options.text_opacity.clamp(0.0, 1.0));
     if theme.box_bg_enabled {
-        clipped.rect_filled(view_box, theme.box_radius * view_scale, theme.box_bg_color);
+        box_painter.rect_filled(view_box, theme.box_radius * view_scale, theme.box_bg_color);
     }
     if theme.box_border_enabled {
-        clipped.rect_stroke(
+        box_painter.rect_stroke(
             view_box,
             theme.box_radius * view_scale,
             Stroke::new(theme.box_border_width * view_scale, theme.box_border_color),
@@ -480,7 +532,7 @@ fn render_internal(
         );
         if let Some((ref ref_layout, ref_pos, ref_scale)) = ref_render_data {
             render_shadow(
-                &mut clipped,
+                &mut ref_painter,
                 ref_layout.galley.clone(),
                 ref_pos,
                 offset,
@@ -571,7 +623,11 @@ fn render_internal(
             let count = 4 + ring * 4;
             sum_weights += w * count as f32;
         }
-        let weight_scale = if sum_weights > 0.001 { 1.0 / sum_weights } else { 1.0 };
+        let weight_scale = if sum_weights > 0.001 {
+            1.0 / sum_weights
+        } else {
+            1.0
+        };
         let boost = (1.0 + (num_rings as f32) * 0.24).clamp(1.15, 2.2);
         let base_a = base_color.a() as f32 / 255.0;
 
@@ -613,7 +669,7 @@ fn render_internal(
 
     if let Some((ref ref_layout, ref_pos, ref_scale)) = ref_render_data {
         let ref_color = base_color.linear_multiply(0.88);
-        clipped.add(text_shape(
+        ref_painter.add(text_shape(
             ref_layout.galley.clone(),
             ref_pos,
             ref_scale,
@@ -668,7 +724,11 @@ fn render_shadow(
         let count = 4 + ring * 4;
         sum_weights += w * count as f32;
     }
-    let weight_scale = if sum_weights > 0.001 { 1.0 / sum_weights } else { 1.0 };
+    let weight_scale = if sum_weights > 0.001 {
+        1.0 / sum_weights
+    } else {
+        1.0
+    };
     let boost = (1.0 + (num_rings as f32) * 0.22).clamp(1.1, 2.0);
 
     // Amostra central de sombra atenuada de acordo com o raio de difusão
@@ -708,8 +768,65 @@ fn render_shadow(
 }
 
 #[cfg(test)]
+#[path = "text_bible_tests.rs"]
+mod bible_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bible_reference_is_visible_and_verse_is_centered() {
+        use crate::core::bible::{BibleSettings, format_bible_slide};
+        let ctx = egui::Context::default();
+        let screen = Rect::from_min_size(Pos2::ZERO, egui::vec2(1280.0, 720.0));
+        let mut theme = PresentationTheme::default_themes().remove(0);
+        theme.font_family = "Proportional".into();
+        theme.shadow_enabled = false;
+        // Bible alignment must override a theme's lower/right placement.
+        theme.align_h = "right".into();
+        theme.align_v = "bottom".into();
+        let (_, content) = format_bible_slide(
+            &BibleSettings::default(), "Salmos", "Sl", "NTLH", 39, 4, 4,
+            &["Ó Senhor Deus, quanto tempo ainda vou viver? Mostra-me como é passageira a minha vida. Quando é que vou morrer?".into()],
+        );
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(screen),
+                ..Default::default()
+            },
+            |ui| render(ui.painter(), screen, &theme, &content),
+        );
+        let texts: Vec<_> = output
+            .shapes
+            .iter()
+            .filter_map(|s| {
+                if let egui::Shape::Text(t) = &s.shape {
+                    Some((
+                        s.clip_rect,
+                        t.visual_bounding_rect(),
+                        t.galley.job.text.clone(),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        output.textures_delta.clear();
+        assert_eq!(texts.len(), 2, "{texts:?}");
+        assert!(
+            texts[1].0.contains_rect(texts[1].1),
+            "Reference is clipped: {texts:?}"
+        );
+        assert!(
+            (texts[0].1.center().x - screen.center().x).abs() < 16.0,
+            "Verse is off center: {texts:?}"
+        );
+        assert!(
+            (texts[0].1.center().y - screen.center().y).abs() < 16.0,
+            "Verse is off center: {texts:?}"
+        );
+    }
 
     #[test]
     fn light_solid_theme_uses_readable_text_color() {
@@ -855,6 +972,9 @@ mod tests {
             render_blurred(ui.painter(), rect, &theme, "Holy Holy Holy", 16.0);
         });
         output.textures_delta.clear();
-        assert!(output.shapes.len() >= 30, "Gaussian spiral should generate rich multi-sample shapes");
+        assert!(
+            output.shapes.len() >= 30,
+            "Gaussian spiral should generate rich multi-sample shapes"
+        );
     }
 }

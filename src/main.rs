@@ -26,17 +26,34 @@ fn main() -> eframe::Result {
     }
 
     let native_options = native_options();
+    let app = match PresentationApp::open_workspace("omni-presenter.db") {
+        Ok(app) => app,
+        Err(error) => {
+            let language = core::i18n::Language::system();
+            let description = language.format(
+                "services-workspace-open-failed",
+                &[("error", &error.to_string())],
+            );
+            eprintln!("{description}");
+            rfd::MessageDialog::new()
+                .set_level(rfd::MessageLevel::Error)
+                .set_title(language.text("services-workspace-open-failed-title"))
+                .set_description(description)
+                .show();
+            return Err(eframe::Error::AppCreation(error));
+        }
+    };
 
     eframe::run_native(
         "Presentation Control Panel",
         native_options,
-        Box::new(|cc| {
+        Box::new(move |cc| {
             if let Some(state) = &cc.wgpu_render_state {
                 services::shaders::install(state, &cc.egui_ctx);
                 render::design::install(state, &cc.egui_ctx);
             }
             setup_fonts_and_style(&cc.egui_ctx);
-            Ok(Box::new(PresentationApp::default()))
+            Ok(Box::new(app))
         }),
     )
 }
