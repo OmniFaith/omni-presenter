@@ -211,6 +211,7 @@ fn all_settings_tabs_render_in_both_themes() {
             SettingsTab::Connections,
             SettingsTab::Profiles,
             SettingsTab::About,
+            SettingsTab::Transfer,
         ] {
             state.settings_ui.tab = tab;
             let input = egui::RawInput {
@@ -228,6 +229,29 @@ fn all_settings_tabs_render_in_both_themes() {
             assert!(state.settings_ui.draft.is_some());
         }
     }
+}
+
+#[test]
+fn import_export_navigation_precedes_about_and_about_stays_last() {
+    let ctx = egui::Context::default();
+    let mut state = ControlPanelState::default();
+    state.settings_ui.open = true;
+    let language = state.settings.language;
+    let input = egui::RawInput {
+        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1040.0, 760.0))),
+        ..Default::default()
+    };
+    // Areas use their initial frame for sizing before their visible layout.
+    let mut warmup = ctx.run_ui(input.clone(), |ui| render_settings_modal(ui.ctx(), &mut state, &[], None));
+    warmup.textures_delta.clear();
+    let mut output = ctx.run_ui(input, |ui| render_settings_modal(ui.ctx(), &mut state, &[], None));
+    output.textures_delta.clear();
+    let y = |key| output.shapes.iter().find_map(|s| match &s.shape {
+        egui::Shape::Text(t) if t.galley.job.text == language.text(key) && t.pos.x < 240.0 => Some(t.pos.y),
+        _ => None,
+    }).unwrap();
+    assert!(y("transfer-title") < y("settings-about"));
+    assert_eq!(crate::core::commands::SETTINGS_PAGES.last().unwrap().0, SettingsTab::About);
 }
 
 #[test]

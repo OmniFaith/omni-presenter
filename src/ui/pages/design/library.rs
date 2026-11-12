@@ -19,6 +19,9 @@ mod interactions;
 mod preview;
 use interactions::handle_design_click;
 pub use preview::render_preview;
+#[cfg(test)]
+#[path = "library_empty_tests.rs"]
+mod empty_tests;
 
 pub fn pin(state: &mut ControlPanelState, scene: &DesignDocument) {
     state.add_quick_item(
@@ -293,16 +296,6 @@ pub fn render_selection(
     if let Some(kind) = create {
         create_design(state, deck, db, kind);
     }
-    if deck.designs.is_empty() {
-        ui.add_space(20.0);
-        ui.label(crate::ui::i18n::text(ui, "design-your-designs-will-appear-here-automatically"));
-        let btn_text = crate::ui::i18n::format(ui, "design-create-design", &[("icon", PLUS)]);
-        if ui.button(btn_text).clicked() {
-            state.active_sidebar_page = SidebarPage::Design;
-        }
-        return;
-    }
-
     let query = crate::core::bible::fold(&state.search_query);
     let filtered: Vec<DesignDocument> = deck
         .designs
@@ -311,12 +304,21 @@ pub fn render_selection(
         .cloned()
         .collect();
     if filtered.is_empty() {
-        ui.add_space(12.0);
-        ui.label(
-            RichText::new(crate::ui::i18n::text(ui, "design-no-designs-found"))
-                .size(12.0)
-                .color(theme.text_muted),
-        );
+        let searching = !query.is_empty();
+        let (icon, hint, label) = if searching {
+            (MAGNIFYING_GLASS, "library-empty-search-hint",
+                state.settings.language.text("library-clear-search").to_owned())
+        } else {
+            (STACK, "design-your-designs-will-appear-here-automatically",
+                state.settings.language.format("design-create-design", &[("icon", PLUS)]))
+        };
+        if crate::ui::components::empty_state::show(ui, icon, "common-empty", hint, &label, &theme).clicked() {
+            if searching {
+                state.search_query.clear();
+            } else {
+                state.active_sidebar_page = SidebarPage::Design;
+            }
+        }
         return;
     }
 

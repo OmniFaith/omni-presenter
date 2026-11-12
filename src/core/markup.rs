@@ -66,6 +66,7 @@ pub struct MarkupRun<'a> {
 
 pub fn parse_hex_color(s: &str) -> Option<Color32> {
     let s = s.trim().trim_start_matches('#');
+    if !s.is_ascii() { return None; }
     if s.len() == 3 {
         let r = u8::from_str_radix(&s[0..1], 16).ok()? * 17;
         let g = u8::from_str_radix(&s[1..2], 16).ok()? * 17;

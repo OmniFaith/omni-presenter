@@ -72,7 +72,9 @@ fn legacy_profiles_still_restore_their_configured_theme() {
     json.as_object_mut()
         .unwrap()
         .remove("last_selected_theme_id");
-    json.as_object_mut().unwrap().remove("last_selected_theme_default_id");
+    json.as_object_mut()
+        .unwrap()
+        .remove("last_selected_theme_default_id");
     json["theme_id"] = state.themes[1].id.clone().into();
     let service: ServiceProfile = serde_json::from_value(json).unwrap();
     assert!(service.last_selected_theme_id.is_none());

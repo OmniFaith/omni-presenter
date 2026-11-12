@@ -42,6 +42,8 @@ Media imported from the file picker or dropped into the application can be conve
 
 For a consistent backup, close the application first, then copy the database, relevant local asset directories and every externally referenced file. Preserve paths where possible. To restore, put the files back in their original locations, launch from the intended working directory and verify the library, media and outputs before an event.
 
+For a portable application-level backup, use **Settings → Import / Export**. Its ZIP includes workspace catalogs, settings and referenced local media, but excludes chat data, certificates and installed system fonts. Restoration replaces the backed-up categories after confirmation, creates a recovery ZIP beside the database, then closes the app; reopen from the same workspace directory. The same panel offers additive lyrics import from text and presentation files and a downloadable TXT command guide. See [Import and export](import-export.md) for exact scope, supported formats and limits.
+
 ## Troubleshooting
 
 | Symptom | Check |

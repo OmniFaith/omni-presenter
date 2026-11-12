@@ -11,6 +11,7 @@ mod settings;
 mod slides;
 mod songs;
 mod themes;
+pub mod transfer;
 
 #[cfg(test)]
 mod tests;

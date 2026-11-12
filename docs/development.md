@@ -18,6 +18,10 @@ python3 tools/test_quality_checks.py
 
 For portable builds, versioned release notes and GitHub Releases, see the [release guide](releases.md).
 
+### Dependency updates
+
+Keep dependencies current and adapt code to updated APIs rather than downgrading libraries to hide build failures. Update manifest constraints when needed, preserve the corresponding lockfile updates, and validate with `cargo build --locked`, `cargo test --all-targets --locked` and `python3 tools/check_clippy.py`. Cover changed behavior with regression tests; for example, ZIP entry names use a fallible decoding API and still need duplicate-name and manifest-reference validation. Commit dependency and compatibility changes together so clean checkouts and CI use the same versions.
+
 ### Automated quality checks
 
 `quality.yml` runs for pull requests and pushes to main/master. It uses Rust

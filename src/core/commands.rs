@@ -229,7 +229,7 @@ impl CommandGroup {
     }
 }
 
-pub const SETTINGS_PAGES: [(SettingsTab, &str); 8] = [
+pub const SETTINGS_PAGES: [(SettingsTab, &str); 9] = [
     (SettingsTab::Outputs, "settings-outputs-title"),
     (SettingsTab::Interface, "settings-interface-title"),
     (SettingsTab::Shortcuts, "shortcuts-title"),
@@ -237,5 +237,6 @@ pub const SETTINGS_PAGES: [(SettingsTab, &str); 8] = [
     (SettingsTab::Bible, "settings-bibles-title"),
     (SettingsTab::Connections, "settings-connections-title"),
     (SettingsTab::Profiles, "settings-profiles-title"),
+    (SettingsTab::Transfer, "transfer-title"),
     (SettingsTab::About, "settings-about-title"),
 ];

@@ -22,6 +22,8 @@ pub mod profiles;
 pub mod search;
 pub mod shaders;
 pub mod tasks;
+pub mod transfer;
+pub mod lyrics_import;
 pub mod video;
 pub mod web;
 mod web_http;

@@ -403,67 +403,31 @@ pub fn render_selection_column(
                 row(ui, state, deck, kind, item, &visible, &folders, &mut action);
             }
             if filtered.is_empty() {
-                ui.vertical_centered(|ui| {
-                    ui.add_space(28.0);
-                    let (icon, hint_key) = if !query.is_empty() {
-                        (MAGNIFYING_GLASS, "library-empty-search-hint")
-                    } else {
-                        match kind {
-                            LibraryKind::Song => (kind.icon(), "library-empty-songs-hint"),
-                            LibraryKind::Text => (kind.icon(), "library-empty-texts-hint"),
-                            LibraryKind::Media => (kind.icon(), "library-empty-media-hint"),
-                            LibraryKind::Verse => (kind.icon(), "workspace-no-books-or-verses-found"),
-                        }
-                    };
-                    ui.label(
-                        egui::RichText::new(icon)
-                            .size(32.0)
-                            .color(theme.text_secondary.linear_multiply(0.4)),
-                    );
-                    ui.add_space(6.0);
-                    ui.label(
-                        egui::RichText::new(language.text("common-empty"))
-                            .size(12.5)
-                            .strong()
-                            .color(theme.text_primary),
-                    );
-                    ui.add_space(2.0);
-                    ui.label(
-                        egui::RichText::new(language.text(hint_key))
-                            .size(10.5)
-                            .color(theme.text_secondary),
-                    );
-                    ui.add_space(10.0);
-                    if !query.is_empty() {
-                        if ui
-                            .add(
-                                egui::Button::new(
-                                    egui::RichText::new(language.text("library-clear-search"))
-                                        .size(11.0),
-                                )
-                                .fill(theme.bg_card)
-                                .stroke(egui::Stroke::new(1.0, theme.border_default))
-                                .corner_radius(6.0),
-                            )
-                            .clicked()
-                        {
-                            state.search_query.clear();
-                        }
-                    } else {
-                        let btn_label = format!("+  {}", language.text(kind.create_label()));
-                        if ui
-                            .add(
-                                egui::Button::new(egui::RichText::new(btn_label).size(11.0))
-                                    .fill(theme.bg_card)
-                                    .stroke(egui::Stroke::new(1.0, theme.border_default))
-                                    .corner_radius(6.0),
-                            )
-                            .clicked()
-                        {
-                            action = Some(LibraryAction::Create(None));
-                        }
+                let searching = !query.is_empty();
+                let (icon, hint_key) = if searching {
+                    (MAGNIFYING_GLASS, "library-empty-search-hint")
+                } else {
+                    match kind {
+                        LibraryKind::Song => (kind.icon(), "library-empty-songs-hint"),
+                        LibraryKind::Text => (kind.icon(), "library-empty-texts-hint"),
+                        LibraryKind::Media => (kind.icon(), "library-empty-media-hint"),
+                        LibraryKind::Verse => (kind.icon(), "workspace-no-books-or-verses-found"),
                     }
-                });
+                };
+                let label = if searching {
+                    language.text("library-clear-search").to_owned()
+                } else {
+                    format!("+  {}", language.text(kind.create_label()))
+                };
+                if crate::ui::components::empty_state::show(
+                    ui, icon, "common-empty", hint_key, &label, &theme,
+                ).clicked() {
+                    if searching {
+                        state.search_query.clear();
+                    } else {
+                        action = Some(LibraryAction::Create(None));
+                    }
+                }
             }
             let empty_h = (ui.available_height() - 8.0).max(40.0);
             let (root_rect, response) = ui.allocate_exact_size(

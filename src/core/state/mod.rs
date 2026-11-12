@@ -44,6 +44,7 @@ pub enum SettingsTab {
     Connections,
     Profiles,
     About,
+    Transfer,
 }
 
 /// Target for the floating screen preview window.

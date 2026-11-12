@@ -9,6 +9,7 @@ mod frame;
 mod input;
 mod modals;
 mod persistence;
+mod transfer;
 mod plugins;
 mod search;
 mod startup;
@@ -48,6 +49,8 @@ pub struct PresentationApp {
     pub(super) last_monitor_sync: std::time::Instant,
     pub(super) applied_appearance: Option<(bool, u32, bool)>,
     pub(super) physical_transition: crate::ui::presentation_transition::PresentationTransition,
+    pub(super) restore_task: Option<crate::services::tasks::BackgroundTask<std::path::PathBuf>>,
+    pub(super) restored_workspace: bool,
 }
 
 impl PresentationApp {
@@ -149,6 +152,8 @@ impl PresentationApp {
             last_monitor_sync: std::time::Instant::now(),
             applied_appearance: None,
             physical_transition: Default::default(),
+            restore_task: None,
+            restored_workspace: false,
         };
         app.restart_browser_server();
         app
@@ -157,6 +162,7 @@ impl PresentationApp {
 
 impl eframe::App for PresentationApp {
     fn on_exit(&mut self) {
+        if self.restore_task.is_some() || self.restored_workspace { return; }
         self.design_editor
             .flush(&self.db, &mut self.slide_deck, true);
         self.control_state.capture_profiles();
@@ -171,6 +177,7 @@ impl eframe::App for PresentationApp {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        if self.workspace_transfer(ui) { return; }
         let (ctx, modal_was_open) = self.begin_frame(ui, frame);
         self.handle_search_shortcut(&ctx);
         self.sync_chat(&ctx);

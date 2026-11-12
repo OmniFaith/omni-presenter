@@ -3,10 +3,11 @@ use crate::services::db::AppDb;
 use crate::services::monitor::MonitorInfo;
 use eframe::egui::{self, Color32, RichText, Stroke};
 use egui_phosphor::regular::{
-    BOOK_OPEN, BOOKS, GEAR_SIX, GLOBE, INFO, KEYBOARD, PALETTE, PUZZLE_PIECE, USER, X,
+    ARROWS_DOWN_UP, BOOK_OPEN, BOOKS, GEAR_SIX, GLOBE, INFO, KEYBOARD, PALETTE, PUZZLE_PIECE, USER, X,
 };
 
 mod about;
+pub(crate) mod transfer;
 mod appearance;
 mod bibles;
 pub mod components;
@@ -214,6 +215,7 @@ pub fn render_settings_modal(
                     USER,
                     language.text("settings-profiles"),
                 ),
+                (SettingsTab::Transfer, ARROWS_DOWN_UP, language.text("transfer-title")),
                 (SettingsTab::About, INFO, language.text("settings-about")),
             ] {
                 let active = state.settings_ui.tab == tab;
@@ -291,6 +293,7 @@ pub fn render_settings_modal(
             );
 
             let (active_icon, active_title, active_subtitle) = match state.settings_ui.tab {
+                SettingsTab::Transfer => (ARROWS_DOWN_UP, language.text("transfer-title"), language.text("transfer-subtitle")),
                 SettingsTab::Outputs => (
                     BOOK_OPEN,
                     language.text("settings-outputs"),
@@ -476,6 +479,7 @@ pub fn render_settings_modal(
                     ui.set_width((body_rect.width() - 16.0).max(1.0));
                     ui.set_clip_rect(ui.clip_rect().intersect(body_rect));
                     match state.settings_ui.tab {
+                    SettingsTab::Transfer => transfer::render(ui, &draft, db),
                     SettingsTab::Outputs => {
                         outputs::outputs(ui, &mut draft, state, monitors, &theme, db)
                     }

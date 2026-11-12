@@ -4,6 +4,7 @@ pub mod context_menu;
 pub mod controls;
 pub mod dialog;
 pub mod drag_drop;
+pub mod empty_state;
 pub mod font_picker;
 pub mod global_search;
 pub mod header_bar;
