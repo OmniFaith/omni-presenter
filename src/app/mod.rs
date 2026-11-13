@@ -14,6 +14,7 @@ mod plugins;
 mod search;
 mod startup;
 mod remote;
+mod remote_library;
 mod remote_snapshot;
 mod remote_tools;
 mod output;

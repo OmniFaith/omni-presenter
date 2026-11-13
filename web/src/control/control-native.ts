@@ -220,39 +220,23 @@ function preparePanels(): void {
           label: t("sort_title"),
           symbol: "playlist",
           action: async () => {
-            if (!model.state?.playlist) return;
-            const sorted = [...model.state.playlist].sort((a, b) =>
-              a.title.localeCompare(b.title),
-            );
-            for (let index = 1; index < sorted.length; index++)
-              await send({
-                action: "playlist_move",
-                id: sorted[index].id,
-                target: sorted[index - 1].id,
-                after: true,
-              });
+            await send({action: "playlist_batch", operation: "sort"});
           },
         },
         {
           label: t("reverse"),
           symbol: "refresh",
           action: async () => {
-            if (!model.state?.playlist) return;
-            const reversed = [...model.state.playlist].reverse();
-            for (let index = 1; index < reversed.length; index++)
-              await send({
-                action: "playlist_move",
-                id: reversed[index].id,
-                target: reversed[index - 1].id,
-                after: true,
-              });
+            await send({action: "playlist_batch", operation: "reverse"});
           },
         },
         {
           label: t("clear"),
           symbol: "trash",
-          action: () => send({ action: "playlist_clear" }),
+          action: () => { if (confirm(t("confirm_clear_playlist"))) send({ action: "playlist_clear" }); },
         },
+        { label: t("mark_all_played"), symbol: "check_circle", action: () => send({action: "playlist_batch", operation: "played", ids: model.state?.playlist?.map(i => String(i.id)) || [], played: true}) },
+        { label: t("mark_all_unplayed"), symbol: "circle", action: () => send({action: "playlist_batch", operation: "played", ids: model.state?.playlist?.map(i => String(i.id)) || [], played: false}) },
       ]),
     ),
     iconButton(t("edit_lyrics"), "edit", async () => {
@@ -261,13 +245,13 @@ function preparePanels(): void {
         $("edit-song").click();
     }),
     $("playlist-clear"),
-    iconButton(t("save_playlist"), "pin", () => toast(t("saved"))),
+    iconButton(t("save_playlist"), "pin", async () => { if (await send({action: "playlist_batch", operation: "save"})) toast(t("saved")); }),
   );
   heading(panelMap.Playlist, "native_playlist", [$("playlist-count")]);
   panelMap.Playlist.querySelector(".panel-heading")?.after(tools);
   $("playlist-clear").onclick = () => {
-    const sel = model.state?.playlist?.find((item) => item.selected);
-    if (sel) send({ action: "playlist_remove", id: sel.id });
+    const ids = model.state?.playlist?.filter(item => item.selected).map(item => String(item.id)) || [];
+    if (ids.length) send({ action: "playlist_batch", operation: "remove", ids });
   };
   const navigation = document.querySelector<HTMLElement>(".setlist-toolbar");
   if (navigation) navigation.classList.add("native-extra-tools");
@@ -712,15 +696,6 @@ function fitNativePreview(): void {
     stage.style.marginLeft = "auto";
     stage.style.marginRight = "auto";
   }
-  const stage = $("preview-stage");
-  const text = stage.firstElementChild as HTMLElement | null;
-  if (!stage.clientWidth || !stage.clientHeight || !text) return;
-  let size = Math.max(12, Math.min(28, stage.clientWidth / 22));
-  text.style.fontSize = size + "px";
-  while (text.scrollHeight > stage.clientHeight * 0.8 && size > 10) {
-    size -= 0.5;
-    text.style.fontSize = size + "px";
-  }
 }
 
 export function updateNative(state: ControlState): void {
@@ -729,12 +704,9 @@ export function updateNative(state: ControlState): void {
     previewIframe.src = "/screen/__control_preview";
   }
   const outputKey = JSON.stringify([
-    state.preview?.index,
-    state.preview?.title,
-    state.preview?.theme?.id,
-    state.live?.index,
-    state.live?.title,
-    state.live?.theme?.id,
+    state.preview,
+    state.live,
+    state.aspect,
     state.presenting,
     state.hidden,
     state.overlay,
@@ -805,18 +777,11 @@ export function updateNative(state: ControlState): void {
     idleEl.textContent = t(
       state.hidden ? "native_hidden" : "native_ready",
     );
-    idleEl.hidden = !!(state.presenting && !state.hidden);
+     idleEl.hidden = true;
   }
   const footerEl = panelMap.Stage?.querySelector<HTMLElement>(".monitor-footer");
   if (footerEl) {
     footerEl.hidden = !state.presenting || !!state.hidden;
-  }
-  if (!state.presenting && state.idle_theme) {
-    applyTheme($("live-stage"), state.idle_theme);
-  }
-  if (state.hidden) {
-    const liveStage = $("live-stage");
-    if (liveStage) liveStage.style.background = "#000";
   }
   $("player-panel").hidden = false;
   const playerEmpty = $("native-player-empty");
@@ -1005,4 +970,3 @@ export function openNativeMenu(
     0,
   );
 }
-

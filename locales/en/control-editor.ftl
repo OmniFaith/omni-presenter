@@ -1,0 +1,16 @@
+control-bold = Bold
+control-italic = Italic
+control-underline = Underline
+control-emphasis = Emphasis
+control-conditional-break = Conditional break
+control-new-strophe = Add stanza
+control-text-color = Text color
+control-folder = Folder
+control-tags = Tags
+control-discard-song = Discard unsaved changes to this song?
+control-duplicate = Duplicate
+control-confirm-clear-playlist = Clear this event's playlist? This cannot be undone.
+control-all-languages = All languages
+control-language = Language
+control-mark-all-played = Mark all as played
+control-mark-all-unplayed = Mark all as not played

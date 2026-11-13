@@ -1,0 +1,16 @@
+control-bold = Negrita
+control-italic = Cursiva
+control-underline = Subrayado
+control-emphasis = Énfasis
+control-conditional-break = Salto condicional
+control-new-strophe = Añadir estrofa
+control-text-color = Color del texto
+control-folder = Carpeta
+control-tags = Etiquetas
+control-discard-song = ¿Descartar los cambios sin guardar de esta canción?
+control-duplicate = Duplicar
+control-confirm-clear-playlist = ¿Vaciar la lista de este evento? Esta acción no se puede deshacer.
+control-all-languages = Todos los idiomas
+control-language = Idioma
+control-mark-all-played = Marcar todos como reproducidos
+control-mark-all-unplayed = Marcar todos como no reproducidos

@@ -2,7 +2,7 @@ const { chromium, devices } = require("playwright");
 const assert = require("node:assert/strict");
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.OMNI_CHROMIUM || undefined });
   const page = await browser.newPage({
     viewport: { width: 1600, height: 1000 },
     locale: "pt-BR",
@@ -147,17 +147,21 @@ const assert = require("node:assert/strict");
 
     await row("Canção de Esperança").locator(".resource-title").click();
     await page.locator("#project-preview").click();
+    await page.waitForFunction(async () => (await (await fetch("/api/control/state")).json()).presenting);
+    const initialSlideCount = (await state()).live.slides.length;
+    await page.frameLocator("#live-viewer").locator("#native-text").waitFor({state: "visible"});
+    await page.frameLocator("#native-preview-output").locator("#native-text").waitFor({state: "visible"});
     await page.waitForFunction(
       () => document.body.dataset.presenting === "true",
     );
     await page.locator('[data-direction="next"]').click();
     await page.waitForFunction(
-      () => document.getElementById("live-count").textContent === "2 / 4",
+      total => document.getElementById("live-count").textContent === `2 / ${total}`, initialSlideCount,
     );
     await page.locator("#native-slide-jump").fill("3");
     await page.locator("#native-slide-jump").press("Enter");
     await page.waitForFunction(
-      () => document.getElementById("live-count").textContent === "3 / 4",
+      total => document.getElementById("live-count").textContent === `3 / ${total}`, initialSlideCount,
     );
     await row("Próxima música").locator(".resource-title").click();
     await waitTitle("preview", "Próxima música");
@@ -177,6 +181,8 @@ const assert = require("node:assert/strict");
       () =>
         document.getElementById("live-status").textContent === "Texto oculto",
     );
+    assert.equal(await page.locator("#live-viewer").isVisible(), true);
+    assert.equal(await page.locator("#native-live-idle").isVisible(), false);
     await page.locator("#hide-toggle").click();
     await page.locator("#stop").click();
     await page.waitForFunction(
@@ -228,6 +234,10 @@ const assert = require("node:assert/strict");
     await screenshot("control-native-home");
 
     await page.locator('.app-rail [data-nav-kind="bible"]').click();
+    await page.locator("#version-picker-open").click();
+    await page.locator("#version-search").fill("ARA");
+    await page.locator(".native-version-row").filter({has: page.locator("strong", {hasText: /^ARA$/})}).locator("button").first().click();
+    await page.waitForFunction(async () => (await (await fetch("/api/control/state")).json()).bible_version === "ARA");
     await page
       .locator("#native-books")
       .getByRole("button", { name: "Salmos", exact: true })
@@ -258,6 +268,8 @@ const assert = require("node:assert/strict");
     await page.locator("#bible-project").click();
     await waitTitle("live", "João 3");
     assert.equal((await state()).live.slides.length, 3);
+    await page.frameLocator("#live-viewer").locator("#native-text").waitFor({state: "visible"});
+    await page.frameLocator("#native-preview-output").locator("#native-text").waitFor({state: "visible"});
     await page.locator("#bible-add").click();
     await page.waitForFunction(
       () => document.querySelectorAll("#playlist .playlist-row").length === 3,
@@ -298,6 +310,9 @@ const assert = require("node:assert/strict");
     await page.locator("#song-title").fill("Música nova");
     await page.locator("#song-artist").fill("Equipe");
     await page.locator("#song-content").fill("Letra nova\n\nNovo final");
+    await page.locator("#song-folder").fill("Web imports");
+    await page.locator("#song-tags").fill("faith,web");
+    assert.match(await page.locator("#song-strophe-count").textContent(), /2/);
     await page
       .locator("#song-form")
       .getByRole("button", { name: "Salvar", exact: true })
@@ -362,9 +377,10 @@ const assert = require("node:assert/strict");
     await touch.waitForFunction(
       () => document.body.dataset.mobileMonitor === "live",
     );
+    const mobileSlideCount = await touch.evaluate(async () => (await (await fetch("/api/control/state")).json()).live.slides.length);
     await touch.locator('[data-direction="next"]').tap();
     await touch.waitForFunction(
-      () => document.getElementById("live-count").textContent === "2 / 4",
+      total => document.getElementById("live-count").textContent === `2 / ${total}`, mobileSlideCount,
     );
     const transport = await touch.locator(".performance-bar").boundingBox();
     assert.ok(transport.y + transport.height < touch.viewportSize().height);

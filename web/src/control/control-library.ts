@@ -12,6 +12,7 @@ import {
   toast,
 } from "/control-api.js";
 import { icon } from "/control-icons.js";
+import { setupSongEditor } from "/control-song.js";
 
 export interface LibraryItem {
   id: string | number;
@@ -150,6 +151,11 @@ export async function refreshLibrary(): Promise<void> {
 function resourceRow(item: LibraryItem): HTMLElement {
   const row = node("article", undefined, "resource-row");
   row.dataset.id = String(item.id);
+  row.draggable = true;
+  row.ondragstart = event => {
+    event.dataTransfer?.setData("application/x-control-resource", JSON.stringify({kind: item.kind, id: String(item.id)}));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+  };
   const activate = async (project: boolean, control?: HTMLButtonElement) => {
     selected = item;
     const result = await send(
@@ -261,60 +267,5 @@ export function setupLibrary(onBible: (refresh?: boolean) => void): void {
     refreshBtn.onclick = () =>
       kind === "bible" ? onBible(true) : refreshLibrary();
   }
-  const newSongBtn = $("song-new");
-  if (newSongBtn) newSongBtn.onclick = () => openSongEditor();
-  const editSongBtn = $("edit-song");
-  if (editSongBtn) {
-    editSongBtn.onclick = async () => {
-      const id = model.state?.preview?.song_id;
-      if (!id) return;
-      try {
-        openSongEditor(
-          await request<SongResource>(
-            "resource?" + new URLSearchParams({ kind: "song", id: String(id) }),
-          ),
-        );
-      } catch (error) {
-        report(error);
-      }
-    };
-  }
-  const songForm = $<HTMLFormElement>("song-form");
-  if (songForm) {
-    songForm.onsubmit = async (event: SubmitEvent) => {
-      event.preventDefault();
-      const idVal = $<HTMLInputElement>("song-id")?.value;
-      const result = await send(
-        {
-          action: "save_song",
-          id: idVal ? Number(idVal) : null,
-          title: $<HTMLInputElement>("song-title")?.value || "",
-          artist: $<HTMLInputElement>("song-artist")?.value || "",
-          content: $<HTMLTextAreaElement>("song-content")?.value || "",
-        },
-        event.submitter as HTMLButtonElement | null,
-      );
-      if (result) {
-        $<HTMLDialogElement>("song-dialog")?.close();
-        refreshLibrary();
-        toast(t("saved"));
-      }
-    };
-  }
+  setupSongEditor(refreshLibrary);
 }
-
-function openSongEditor(song: SongResource = {}): void {
-  const idInput = $<HTMLInputElement>("song-id");
-  if (idInput) idInput.value = song.id ? String(song.id) : "";
-  const titleInput = $<HTMLInputElement>("song-title");
-  if (titleInput) titleInput.value = song.title || "";
-  const artistInput = $<HTMLInputElement>("song-artist");
-  if (artistInput) artistInput.value = song.artist || "";
-  const contentInput = $<HTMLTextAreaElement>("song-content");
-  if (contentInput) contentInput.value = song.content || "";
-  const dialog = $<HTMLDialogElement>("song-dialog");
-  dialog?.querySelector(".dialog-error")?.remove();
-  dialog?.showModal();
-  titleInput?.focus();
-}
-

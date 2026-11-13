@@ -267,8 +267,10 @@ impl PresentationApp {
                 .find(|t| t.id == self.control_state.settings.service().idle_theme_id)
                 .unwrap_or(self.control_state.live_theme()).clone()
         };
+        let mut output_settings = self.control_state.settings.clone();
+        output_settings.service_mut().aspect_ratio = self.control_state.presentation_aspect_ratio;
         server.publish(
-            &self.control_state.settings,
+            &output_settings,
             &self.slide_deck,
             &output_theme,
             self.is_presentation_open,

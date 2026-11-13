@@ -64,6 +64,45 @@ pub enum ControlCommand {
         played: bool,
     },
     PlaylistClear,
+    PlaylistInsert {
+        kind: ResourceKind,
+        id: String,
+        #[serde(default)]
+        target: Option<String>,
+        #[serde(default)]
+        after: bool,
+    },
+    PlaylistBatch {
+        operation: String,
+        #[serde(default)]
+        ids: Vec<String>,
+        #[serde(default)]
+        target: Option<String>,
+        #[serde(default)]
+        after: bool,
+        #[serde(default)]
+        played: bool,
+    },
+    PlaylistSelection {
+        id: String,
+        #[serde(default)]
+        range: bool,
+        #[serde(default)]
+        additive: bool,
+    },
+    BibleVersion {
+        id: String,
+    },
+    BibleOptions {
+        merge: bool,
+        cards: bool,
+    },
+    BibleShortcut {
+        id: String,
+        operation: String,
+        #[serde(default)]
+        target: Option<String>,
+    },
     Pin {
         kind: ResourceKind,
         id: String,
@@ -100,6 +139,10 @@ pub enum ControlCommand {
         title: String,
         artist: String,
         content: String,
+        #[serde(default)]
+        folder: Option<String>,
+        #[serde(default)]
+        tags: Option<String>,
     },
     OverlayClear,
     Timer {

@@ -10,6 +10,7 @@ import {
   showView,
   toast,
 } from "/control-api.js";
+import type { ControlState } from "../types/state.js";
 
 export interface BibleChoice {
   label: string;
@@ -40,15 +41,54 @@ let selection: BibleSelection | null = null;
 let sequence = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let choiceIndex = 0;
+let contextKey = "";
+let versionsKey = "";
+let pendingVersion = false;
+
+export async function changeBibleVersion(id: string): Promise<void> {
+  if (pendingVersion || id === model.state?.bible_version) return;
+  pendingVersion = true;
+  ++sequence;
+  resetSelection();
+  try { await send({action: "bible_version", id}); }
+  finally { pendingVersion = false; contextKey = ""; if (model.state) syncBible(model.state); }
+}
+
+export function syncBible(state: ControlState): void {
+  const select = $<HTMLSelectElement>("bible-version");
+  if (!select || !state.bible_versions) return;
+  const signature = JSON.stringify(state.bible_versions);
+  if (signature !== versionsKey) {
+    versionsKey = signature;
+    select.replaceChildren(...state.bible_versions.map(v => {
+      const option = node("option", `${v.id} · ${v.name}`); option.value = v.id; return option;
+    }));
+  }
+  if (!pendingVersion) select.value = state.bible_version || select.options[0]?.value || "";
+  const merge = $<HTMLInputElement>("bible-merge");
+  if (merge) merge.checked = !!state.bible_merge;
+  document.dispatchEvent(new CustomEvent("control-versions", {detail: state}));
+  if (pendingVersion || document.activeElement === $("bible-query")) return;
+  const key = JSON.stringify([state.bible_version, state.bible_context, state.service]);
+  if (key !== contextKey) {
+    contextKey = key;
+    const context = state.bible_context;
+    if (context?.book) {
+      const range = context.end && context.end !== context.start ? `-${context.end}` : "";
+      selectBibleReference(`${context.book} ${context.chapter || 1}:${context.start || 1}${range}`, false, false);
+    }
+  }
+}
 
 export function selectBibleReference(
   query: string,
   complete = false,
+  prepare = true,
 ): Promise<void> {
   clearTimeout(timer);
   const queryInput = $<HTMLInputElement>("bible-query");
   if (queryInput) queryInput.value = query;
-  return searchBible().then(() => {
+  return searchBible(false, prepare).then(() => {
     const dialog = $<HTMLDialogElement>("native-bible-search");
     if (complete && selection && dialog?.open) {
       dialog.close();
@@ -62,7 +102,7 @@ export async function openBible(refresh = false): Promise<void> {
   if (!versionSelect) return;
   if (refresh || !versionSelect.options.length) {
     const selected =
-      versionSelect.value || model.state?.bible_version || "ARA";
+      model.state?.bible_version || versionSelect.value;
     try {
       const versions = await request<BibleVersionItem[]>("versions");
       versionSelect.replaceChildren(
@@ -72,7 +112,7 @@ export async function openBible(refresh = false): Promise<void> {
           return option;
         }),
       );
-      versionSelect.value = selected;
+      versionSelect.value = versions.some(v => v.id === selected) ? selected : versions[0]?.id || "";
     } catch (error) {
       report(error);
       return;
@@ -93,7 +133,7 @@ function resetSelection(): void {
   });
 }
 
-async function searchBible(autocomplete = false): Promise<void> {
+async function searchBible(autocomplete = false, prepare = false): Promise<void> {
   const current = ++sequence;
   resetSelection();
   const queryInput = $<HTMLInputElement>("bible-query");
@@ -116,7 +156,7 @@ async function searchBible(autocomplete = false): Promise<void> {
       !result.selection
     ) {
       queryInput.value = result.completion;
-      return searchBible(true);
+      return searchBible(true, prepare);
     }
     const stageEl = $("bible-stage");
     if (stageEl) {
@@ -163,6 +203,9 @@ async function searchBible(autocomplete = false): Promise<void> {
     document.dispatchEvent(
       new CustomEvent("control-bible-result", { detail: result }),
     );
+    if (selection && prepare) {
+      await send({action: "bible", reference: selection.reference, version: selection.version, merge: !!model.state?.bible_merge});
+    }
     const dialog = $<HTMLDialogElement>("native-bible-search");
     if (autocomplete && result.auto_select && dialog?.open) {
       dialog.close();
@@ -194,7 +237,7 @@ export function setupBible(): void {
       clearTimeout(timer);
       const inputEvent = event as InputEvent;
       timer = setTimeout(
-        () => searchBible(inputEvent.inputType === "insertText"),
+        () => searchBible(inputEvent.inputType === "insertText", true),
         90,
       );
     };
@@ -239,7 +282,7 @@ export function setupBible(): void {
   }
   const versionSelect = $<HTMLSelectElement>("bible-version");
   if (versionSelect) {
-    versionSelect.onchange = () => searchBible();
+    versionSelect.onchange = () => changeBibleVersion(versionSelect.value);
   }
   const resetBtn = $("bible-reset");
   if (resetBtn) {
@@ -277,4 +320,3 @@ export function setupBible(): void {
     }
   }
 }
-

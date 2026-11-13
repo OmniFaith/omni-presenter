@@ -17,6 +17,7 @@ import {
   selectBibleReference,
   type BibleSearchResult,
 } from "/control-bible.js";
+import { createVersionBar } from "/control-versions.js";
 
 export interface BookInfo {
   name: string;
@@ -164,7 +165,6 @@ function renderVerses(result: BibleSearchResult & { chapter?: ChapterInfo }): vo
       );
     }
   });
-  if (result.selection && document.body.dataset.page === "bible") prepare();
   renderBooks(previousBook !== chapter.book);
 }
 
@@ -174,8 +174,10 @@ async function loadBooks(): Promise<void> {
     const code =
       versionSelect?.value || model.state?.bible_version || "ARA";
     if (version !== code) {
+      const loaded = await request<BookInfo[]>("books?version=" + encodeURIComponent(code));
+      if (code !== $<HTMLSelectElement>("bible-version")?.value) return;
       version = code;
-      books = await request<BookInfo[]>("books?version=" + encodeURIComponent(code));
+      books = loaded;
       renderBooks();
     }
     const context = model.state?.bible_context;
@@ -184,7 +186,7 @@ async function loadBooks(): Promise<void> {
     const query =
       queryInput?.value ||
       `${context?.book || defaultBook} ${context?.chapter || 1}:${context?.start || 1}`;
-    selectBibleReference(query);
+    selectBibleReference(query, false, false);
   } catch (error) {
     version = "";
     report(error);
@@ -211,22 +213,11 @@ export function setupNativeBible(
           : "old";
   });
   const layout = iconButton(t("cards_layout"), "grid", () =>
-    panel.classList.toggle("books-cards"),
+    send({action: "bible_options", merge: !!model.state?.bible_merge, cards: !model.state?.bible_cards}),
   );
   const tools = node("div", undefined, "native-toolbar");
   tools.append(search, filter, layout);
-  const selectedVersion = node("select");
-  selectedVersion.id = "native-version";
-  selectedVersion.dataset.tip = "bible_version";
-  selectedVersion.setAttribute("aria-label", t("bible_version"));
-  selectedVersion.onchange = () => {
-    const mainSelect = $<HTMLSelectElement>("bible-version");
-    if (mainSelect) {
-      mainSelect.value = selectedVersion.value;
-      mainSelect.dispatchEvent(new Event("change"));
-    }
-    loadBooks();
-  };
+  const selectedVersion = createVersionBar();
   tree = node("div", undefined, "native-book-tree");
   tree.id = "native-books";
   panel.append(tools, selectedVersion, tree);
@@ -287,24 +278,11 @@ export function setupNativeBible(
   );
   done.dataset.i18n = "select_reference";
   dialog.append(done);
-  const bibleVersionSelect = $<HTMLSelectElement>("bible-version");
-  if (bibleVersionSelect) {
-    const observer = new MutationObserver(() => {
-      selectedVersion.replaceChildren(
-        ...Array.from(bibleVersionSelect.options, (option) =>
-          option.cloneNode(true),
-        ),
-      );
-      selectedVersion.value = bibleVersionSelect.value;
-      loadBooks();
-    });
-    observer.observe(bibleVersionSelect, { childList: true });
-    bibleVersionSelect.addEventListener("change", () => {
-      selectedVersion.value = bibleVersionSelect.value;
-      loadBooks();
-    });
-  }
-  $("bible-merge")?.addEventListener("change", () => prepare());
+  document.addEventListener("control-versions", () => {
+    panel.classList.toggle("books-cards", !!model.state?.bible_cards);
+    if (document.body.dataset.page === "bible" && version !== model.state?.bible_version) loadBooks();
+  });
+  $("bible-merge")?.addEventListener("change", () => send({action: "bible_options", merge: $<HTMLInputElement>("bible-merge").checked, cards: !!model.state?.bible_cards}));
   document.addEventListener("control-bible-result", (event: Event) =>
     renderVerses((event as CustomEvent).detail),
   );
@@ -314,4 +292,3 @@ export function setupNativeBible(
     }
   });
 }
-

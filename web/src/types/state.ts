@@ -7,6 +7,7 @@ export interface PlaylistItem {
   kind?: string;
   played?: boolean;
   selected?: boolean;
+  focused?: boolean;
 }
 
 export interface QuickBarItem {
@@ -73,6 +74,10 @@ export interface ControlState {
   language?: string;
   catalog_revision?: string;
   bible_version?: string;
+  bible_versions?: {id: string; name: string; language: string}[];
+  bible_shortcuts?: string[];
+  bible_merge?: boolean;
+  bible_cards?: boolean;
   layout?: string;
   bible_layout?: string;
   scale?: number;
@@ -100,4 +105,3 @@ export interface ControlState {
   overlay?: string | null;
   screens?: ScreenItem[];
 }
-

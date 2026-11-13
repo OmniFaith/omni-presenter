@@ -4,6 +4,8 @@
 //! draws them to the screen lives here, keeping the model layer free of UI code.
 
 pub mod text;
+pub(crate) mod fonts;
+pub(crate) mod web_text;
 pub mod design;
 pub mod theme;
 

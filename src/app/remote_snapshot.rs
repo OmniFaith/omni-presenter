@@ -120,7 +120,7 @@ impl PresentationApp {
         self.web_control.set_bible(state.bible.library.clone());
         let mut catalog_hash = std::collections::hash_map::DefaultHasher::new();
         for song in deck.library() {
-            (song.id, &song.title, &song.artist, &song.text, &song.folder).hash(&mut catalog_hash);
+            (song.id, &song.title, &song.artist, &song.text, &song.folder, &song.tags).hash(&mut catalog_hash);
         }
         for item in &state.custom_texts {
             (item.id, &item.title, &item.content, &item.folder).hash(&mut catalog_hash);
@@ -200,13 +200,15 @@ impl PresentationApp {
         self.web_control.publish(json!({
             "ready":true,"presenting":self.is_presentation_open,"hidden":deck.is_content_hidden(),"dark":state.settings.operator().dark_mode,"language":state.settings.language,
             "catalog_revision":catalog_hash.finish().to_string(),"bible_version":state.bible_version,
+            "bible_versions":state.bible.library.catalog().into_iter().map(|(id,name)| json!({"language":crate::core::bible::bible_language(&id),"id":id,"name":name})).collect::<Vec<_>>(),
+            "bible_shortcuts":state.bible_shortcuts,"bible_merge":state.bible.merge_selection,"bible_cards":state.bible.cards_layout,
             "layout":state.layout,"bible_layout":state.bible_layout,"scale":state.settings.operator().scale,"lyrics_cards":state.lyrics_cards_layout,"show_dock":state.show_presentation_dock,"dock_background":state.dock_preview_bg,"progress":deck.progress(),"aspect":state.presentation_aspect_ratio,
             "idle_theme":theme(state.themes.iter().find(|theme| theme.id==state.settings.service().idle_theme_id).unwrap_or(state.live_theme()), state.settings.language),
             "bible_context":{"book":state.bible_book,"chapter":state.bible_chapter,"start":state.bible_verse,"end":state.bible.verse_end},
             "operator":state.settings.operator().name,"chat_enabled":state.settings.chat_enabled,"service":state.settings.active_service,"service_date":active_service_date,"service_dates":service_dates,"services":state.settings.services.iter().map(|service| json!({"id":service.id,"name":service.display_name(state.settings.language)})).collect::<Vec<_>>(),
             "preview":{"title":deck.title(),"subtitle":deck.artist(),"slides":slides(deck.slides()),"index":deck.preview_slide_index(),"raw":deck.raw_text(),"song_id":deck.current_song().filter(|song| song.title == deck.title() && song.artist == deck.artist()).and_then(|song| song.id),"design":deck.preview_design.as_ref().map(|scene| &scene.name),"theme":theme(&preview_theme, state.settings.language)},
             "live":{"title":deck.live_title(),"subtitle":deck.live_artist(),"slides":slides(deck.live_slides()),"index":deck.live_index(),"design":deck.live_design.as_ref().map(|scene| &scene.name),"theme":theme(&live_theme, state.settings.language)},
-            "playlist":state.playlist.iter().enumerate().map(|(index,item)| json!({"id":item.id,"title":item.title,"subtitle":item.subtitle,"kind":item.kind,"played":item.played,"selected":Some(index)==state.selected_playlist_index})).collect::<Vec<_>>(),
+            "playlist":state.playlist.iter().enumerate().map(|(index,item)| json!({"id":item.id,"title":item.title,"subtitle":item.subtitle,"kind":item.kind,"played":item.played,"selected":state.playlist_selection.selected.contains(&item.id),"focused":Some(index)==state.selected_playlist_index})).collect::<Vec<_>>(),
             "quick":state.quick_bar.items.iter().map(|item|json!({"id":item.id,"title":item.title,"kind":item.kind})).collect::<Vec<_>>(),
             "themes":state.themes.iter().map(|t| theme(t, state.settings.language)).collect::<Vec<_>>(),"player":player,"timers":timers,"questions":design.is_some_and(|scene| scene.layers.iter().any(|layer| matches!(layer.content, crate::core::design::LayerContent::Questions{..}))),
             "overlay":deck.live_overlay.as_ref().map(|scene| &scene.name),"screens":state.settings.screens.iter().filter(|screen| screen.enabled && state.settings.server_enabled).map(|screen|json!({"id":screen.id,"name":screen.name,"slug":crate::core::preferences::screen_url_slug(screen, &state.settings.screens)})).collect::<Vec<_>>()

@@ -119,6 +119,8 @@ pub fn serve(request: tiny_http::Request, control: &WebControl) {
             "application/javascript; charset=utf-8",
             include_bytes!("../../../assets/web/control/control-library.js"),
         )),
+        "/control-song.js" => Some(("application/javascript; charset=utf-8", include_bytes!("../../../assets/web/control/control-song.js"))),
+        "/control-versions.js" => Some(("application/javascript; charset=utf-8", include_bytes!("../../../assets/web/control/control-versions.js"))),
         "/control-bible.js" => Some((
             "application/javascript; charset=utf-8",
             include_bytes!("../../../assets/web/control/control-bible.js"),
@@ -247,8 +249,9 @@ pub fn serve(request: tiny_http::Request, control: &WebControl) {
                 .map_err(|e| e.to_string())?;
                 let item =
                     control.resource(kind, params.get("id").map(String::as_str).unwrap_or(""))?;
+                let song = if kind == ResourceKind::Song { control.db.get_all_songs().map_err(|e| e.to_string())?.into_iter().find(|song| song.id.map(|id| id.to_string()).as_deref() == Some(item.id.as_str())) } else { None };
                 Ok(
-                    json!({"id":item.id,"title":item.title,"artist":item.subtitle,"content":if kind==ResourceKind::Media { "" } else { &item.content }}),
+                    json!({"id":item.id,"title":item.title,"artist":item.subtitle,"content":if kind==ResourceKind::Media { "" } else { &item.content },"folder":song.as_ref().map(|s|s.folder.as_str()),"tags":song.as_ref().map(|s|s.tags.as_str())}),
                 )
             }
             ("GET", "/api/control/versions") => Ok(json!(

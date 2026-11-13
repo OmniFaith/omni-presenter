@@ -80,36 +80,7 @@ fn native_options() -> eframe::NativeOptions {
 }
 
 fn setup_fonts_and_style(ctx: &egui::Context) {
-    // Setup custom icon font with Phosphor fallback for vector icons
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert(
-        "custom-icons".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/custom-icons.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "phosphor".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(
-            egui_phosphor::Variant::Regular.font_bytes(),
-        )),
-    );
-    if let Some(font_keys) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
-        font_keys.push("custom-icons".to_owned());
-        font_keys.push("phosphor".to_owned());
-    }
-    if let Some(bytes) = core::models::fonts::color_emoji_font_bytes() {
-        fonts.font_data.insert(
-            "color-emoji".to_owned(),
-            std::sync::Arc::new(egui::FontData::from_owned(bytes)),
-        );
-        for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
-            if let Some(font_keys) = fonts.families.get_mut(&family) {
-                font_keys.push("color-emoji".to_owned());
-            }
-        }
-    }
-    ctx.set_fonts(fonts);
+    ctx.set_fonts(render::fonts::definitions());
 
     // Setup clean modern light visuals matching target design
     let mut visuals = egui::Visuals::light();

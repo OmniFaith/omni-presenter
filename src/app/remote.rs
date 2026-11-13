@@ -26,11 +26,17 @@ impl PresentationApp {
         let persist = matches!(
             &command,
             PlaylistAdd { .. }
+                | PlaylistInsert { .. }
                 | PlaylistSelect { .. }
                 | PlaylistMove { .. }
                 | PlaylistRemove { .. }
                 | PlaylistPlayed { .. }
                 | PlaylistClear
+                | PlaylistBatch { .. }
+                | PlaylistSelection { .. }
+                | BibleVersion { .. }
+                | BibleOptions { .. }
+                | BibleShortcut { .. }
                 | Pin { .. }
                 | QuickRemove { .. }
                 | Service { .. }
@@ -40,6 +46,35 @@ impl PresentationApp {
                 | DockPreviewMode { .. }
         );
         match command {
+            PlaylistInsert { kind, id, target, after } => {
+                let mut item = self.web_control.resource(kind, &id)?;
+                let focused = self.control_state.selected_playlist_index.and_then(|i| self.control_state.playlist.get(i)).map(|i| i.id.clone());
+                let index = if let Some(target) = target {
+                    self.control_state.playlist.iter().position(|i| i.id == target).ok_or("Destino não encontrado.")? + usize::from(after)
+                } else { self.control_state.playlist.len() };
+                item.id = crate::core::preferences::new_id("playlist");
+                self.control_state.playlist.insert(index, item);
+                self.control_state.selected_playlist_index = self.control_state.playlist.iter().position(|i| Some(&i.id) == focused.as_ref());
+            }
+            BibleVersion { id } => self.remote_bible_version(&id)?,
+            BibleOptions { merge, cards } => {
+                self.control_state.bible.merge_selection = merge;
+                self.control_state.bible.cards_layout = cards;
+                self.control_state.bible.preview_key.clear();
+                crate::ui::pages::bible::sync_preview(&mut self.control_state, &mut self.slide_deck, true);
+            }
+            BibleShortcut { id, operation, target } => {
+                if self.control_state.bible.library.get(&id).is_none() { return Err("Versão bíblica não encontrada.".into()); }
+                let shortcuts = &mut self.control_state.bible_shortcuts;
+                match operation.as_str() {
+                    "add" => if !shortcuts.contains(&id) { shortcuts.push(id); },
+                    "remove" => shortcuts.retain(|v| v != &id),
+                    "move" => { let target = target.ok_or("Destino não encontrado.")?; crate::core::interaction::move_items(shortcuts, &[id], &target, false, |v| v); },
+                    _ => return Err("Operação inválida.".into()),
+                }
+            }
+            PlaylistSelection { id, range, additive } => self.remote_playlist_selection(id, range, additive)?,
+            PlaylistBatch { operation, ids, target, after, played } => self.remote_playlist_batch(&operation, &ids, target, after, played)?,
             DockVisibility { visible } => self.control_state.show_presentation_dock = visible,
             DockPreviewMode { background } => self.control_state.dock_preview_bg = background,
             WorkspaceReset { bible } => {
@@ -235,6 +270,8 @@ impl PresentationApp {
                 let item = self.control_state.playlist[index].clone();
                 self.activate_remote_item(&item, project)?;
                 self.control_state.selected_playlist_index = Some(index);
+                self.control_state.playlist_selection.selected = std::iter::once(id.clone()).collect();
+                self.control_state.playlist_selection.anchor = Some(id);
                 if project {
                     self.control_state.playlist[index].played = true;
                 }
@@ -290,6 +327,7 @@ impl PresentationApp {
             }
             PlaylistClear => {
                 self.control_state.playlist.clear();
+                self.control_state.playlist_selection.clear();
                 self.control_state.selected_playlist_index = None;
             }
             Pin { kind, id } => {
@@ -409,6 +447,8 @@ impl PresentationApp {
                 title,
                 artist,
                 content,
+                folder,
+                tags,
             } => {
                 if title.trim().is_empty() || content.trim().is_empty() {
                     return Err("Preencha o título e a letra.".into());
@@ -422,13 +462,14 @@ impl PresentationApp {
                     {
                         return Err("Música não encontrada.".into());
                     }
+                    let existing = self.slide_deck.library().iter().find(|s| s.id == Some(id)).unwrap();
                     self.db
-                        .update_song(id, title.trim(), artist.trim(), &content)
+                        .update_song_full(id, title.trim(), artist.trim(), &content, folder.as_deref().unwrap_or(&existing.folder), tags.as_deref().unwrap_or(&existing.tags))
                         .map_err(|e| e.to_string())?;
                     id
                 } else {
                     self.db
-                        .add_song(title.trim(), artist.trim(), &content)
+                        .add_song_full(title.trim(), artist.trim(), &content, folder.as_deref().unwrap_or(""), tags.as_deref().unwrap_or(""))
                         .map_err(|e| e.to_string())?
                 };
                 self.slide_deck.reload_from_db(&self.db);

@@ -19,7 +19,7 @@ import {
   refreshLibrary,
   highlightLibrary,
 } from "/control-library.js";
-import { setupBible, openBible } from "/control-bible.js";
+import { setupBible, openBible, syncBible } from "/control-bible.js";
 import {
   setupInterface,
   translateChrome,
@@ -40,6 +40,7 @@ let language: string | undefined;
 let catalogRevision: string | undefined;
 let polling = false;
 const stamps = new Map<string, string>();
+const selectedPlaylistIds = (): (string | number)[] => (model.state?.playlist || []).filter(i => i.selected).map(i => i.id);
 let slideStructure = "";
 let playlistStructure = "";
 
@@ -77,6 +78,7 @@ function connection(online: boolean): void {
 function renderState(state: ControlState): void {
   if (!state.ready) return;
   connection(true);
+  syncBible(state);
   const operatorEl = $("operator-label");
   if (operatorEl && state.operator) operatorEl.textContent = state.operator;
   const chatLink = $("chat-link");
@@ -132,18 +134,10 @@ function renderState(state: ControlState): void {
     if (item) {
       changed(key, [item, state.hidden, state.presenting], () => {
         const stage = $(key + "-stage");
-        applyTheme(stage, item.theme);
-        const first = stage.firstElementChild;
-        if (first) {
-          first.textContent =
-            item.design ||
-            (item.slides && item.index !== undefined ? item.slides[item.index] : undefined) ||
-            (item.title ? "" : t("no_content"));
-        }
-        stage.classList.toggle(
-          "hidden",
-          key === "live" && (!state.presenting || !!state.hidden),
-        );
+        // Both monitors use the real viewer, never an independently styled text copy.
+        stage.classList.remove("hidden");
+        const text = stage.querySelector<HTMLElement>(".stage-text");
+        if (text) text.hidden = true;
         const titleEl = $(key + "-title");
         if (titleEl) {
           titleEl.textContent = item.design || item.title || t("no_content");
@@ -172,7 +166,7 @@ function renderState(state: ControlState): void {
     if (!liveViewer.getAttribute("src")) {
       liveViewer.src = "/screen/__control_live";
     }
-    liveViewer.hidden = !!state.hidden;
+    liveViewer.hidden = false;
   }
 
   setControlLabel(
@@ -491,6 +485,29 @@ function renderPlaylist(): void {
   );
   const playlistEl = $("playlist");
   if (!playlistEl) return;
+  playlistEl.setAttribute("role", "listbox"); playlistEl.setAttribute("aria-multiselectable", "true"); playlistEl.tabIndex = 0;
+  playlistEl.ondragover = event => { if (event.dataTransfer?.types.includes("application/x-control-resource")) event.preventDefault(); };
+  playlistEl.ondrop = event => {
+    const raw = event.dataTransfer?.getData("application/x-control-resource");
+    if (!raw) return;
+    event.preventDefault();
+    try { send({action: "playlist_insert", ...JSON.parse(raw)}); } catch (error) { toast(t("failed")); }
+  };
+  playlistEl.onkeydown = event => {
+    const current = model.state?.playlist || [];
+    const focus = current.findIndex(item => item.focused);
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+      event.preventDefault(); event.stopPropagation(); send({action: "playlist_batch", operation: "select", ids: current.map(i => String(i.id))});
+    } else if (event.key === "Delete") {
+      event.preventDefault(); event.stopPropagation(); send({action: "playlist_batch", operation: "remove", ids: selectedPlaylistIds().map(String)});
+    } else if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+      event.preventDefault(); event.stopPropagation();
+      const next = current[Math.max(0, Math.min(current.length - 1, focus + (event.key === "ArrowUp" ? -1 : 1)))];
+      if (next) send({action: "playlist_selection", id: next.id, range: event.shiftKey, additive: event.ctrlKey || event.metaKey});
+    } else if (event.key === "Enter" && event.target === playlistEl && current[focus]) {
+      event.preventDefault(); send({action: "playlist_select", id: current[focus].id, project: true});
+    }
+  };
 
   if (
     structure === playlistStructure &&
@@ -498,6 +515,7 @@ function renderPlaylist(): void {
   ) {
     playlistEl.querySelectorAll<HTMLElement>(".playlist-row").forEach((row, index) => {
       row.classList.toggle("selected", !!items[index].selected);
+      row.setAttribute("aria-selected", String(!!items[index].selected));
       row.classList.toggle("played", !!items[index].played);
       const statusEl = row.querySelector<HTMLElement>(".playlist-status");
       if (statusEl) {
@@ -527,28 +545,35 @@ function renderPlaylist(): void {
           (item.played ? " played" : ""),
       );
       row.dataset.id = String(item.id);
+      row.setAttribute("role", "option"); row.setAttribute("aria-selected", String(!!item.selected));
+      const groupIds = () => model.state?.playlist?.find(i => i.id === item.id)?.selected ? selectedPlaylistIds().map(String) : [String(item.id)];
       row.draggable = true;
       row.ondragstart = (event: DragEvent) => {
-        event.dataTransfer?.setData("application/x-control-playlist", String(item.id));
+        const ids = groupIds();
+        event.dataTransfer?.setData("application/x-control-playlist", JSON.stringify(ids.map(String)));
         if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
       };
       row.ondragover = (event: DragEvent) => {
         if (
-          event.dataTransfer?.types.includes("application/x-control-playlist")
+          event.dataTransfer?.types.some(type => ["application/x-control-playlist", "application/x-control-resource"].includes(type))
         ) {
           event.preventDefault();
           row.classList.add("drag-over");
+          row.dataset.dropAfter = String(event.clientY > row.getBoundingClientRect().top + row.offsetHeight / 2);
         }
       };
       row.ondragleave = () => row.classList.remove("drag-over");
       row.ondrop = (event: DragEvent) => {
         event.preventDefault();
+        event.stopPropagation();
         row.classList.remove("drag-over");
-        const id = event.dataTransfer?.getData("application/x-control-playlist");
-        if (id && id !== String(item.id)) {
+        const raw = event.dataTransfer?.getData("application/x-control-playlist");
+        const resource = event.dataTransfer?.getData("application/x-control-resource");
+        if (raw || resource) {
+          const data = resource ? JSON.parse(resource) as {kind: string; id: string} : null;
           send({
-            action: "playlist_move",
-            id,
+            action: data ? "playlist_insert" : "playlist_batch",
+            ...(data || {operation: "move", ids: JSON.parse(raw || "[]")}),
             target: item.id,
             after:
               event.clientY >
@@ -563,6 +588,7 @@ function renderPlaylist(): void {
       );
       select.ondblclick = () =>
         send({ action: "playlist_select", id: item.id, project: true });
+      select.onclick = event => send({action: "playlist_selection", id: item.id, range: event.shiftKey, additive: event.ctrlKey || event.metaKey});
       const label = node("span");
       label.append(node("strong", item.title), node("small", item.subtitle));
       select.append(
@@ -643,6 +669,7 @@ function renderPlaylist(): void {
       );
       const menu = (anchor: HTMLElement | { x: number; y: number }) =>
         openNativeMenu(anchor, [
+          { label: t("duplicate"), symbol: "plus", action: () => send({action: "playlist_batch", operation: "duplicate", ids: groupIds()}) },
           {
             label: t("project"),
             symbol: "play",
@@ -687,7 +714,7 @@ function renderPlaylist(): void {
           {
             label: t("remove"),
             symbol: "trash",
-            action: () => send({ action: "playlist_remove", id: item.id }),
+            action: () => send({ action: "playlist_batch", operation: "remove", ids: groupIds() }),
           },
         ]);
       row.oncontextmenu = (event: MouseEvent) => {
@@ -1107,4 +1134,3 @@ document.addEventListener("control-slides-layout", () => {
 });
 
 poll();
-

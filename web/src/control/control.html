@@ -8,19 +8,23 @@
     />
     <meta name="theme-color" content="#16181e" />
     <title>Controle web</title>
-    <link rel="stylesheet" href="/control-shell.css" />
-    <link rel="stylesheet" href="/control.css" />
-    <link rel="stylesheet" href="/control-dock.css" />
-    <link rel="stylesheet" href="/control-native-bible.css" />
-    <link rel="stylesheet" href="/control-mobile.css" />
-    <script type="module" src="/control-auth.js"></script>
+    <link rel="stylesheet" href="/control-shell.css?v=3" />
+    <link rel="stylesheet" href="/control.css?v=3" />
+    <link rel="stylesheet" href="/control-dock.css?v=3" />
+    <link rel="stylesheet" href="/control-native-bible.css?v=3" />
+    <link rel="stylesheet" href="/control-mobile.css?v=3" />
+    <script type="module" src="/control-auth.js?v=3"></script>
   </head>
   <body data-view="operation" data-layout="studio" data-mobile-monitor="live" data-locked="true">
     <section id="control-login" class="control-login">
       <form id="control-login-form" class="control-login-card">
         <h1>Controle web</h1>
         <p>Entre com seu perfil e a senha definida em Configurações → Perfis.</p>
-        <label>Perfil<select id="control-profile" required autocomplete="username"></select></label>
+        <div class="control-profile-field">
+          <span class="control-profile-label">Perfil</span>
+          <div id="control-profile-cards" class="control-profile-cards" role="radiogroup" aria-label="Perfil"></div>
+          <select id="control-profile" required autocomplete="username" tabindex="-1" aria-hidden="true" class="control-profile-select-hidden"></select>
+        </div>
         <label>Senha<input id="control-password" type="password" required autocomplete="current-password" /></label>
         <small>A senha padrão é omni-presenter.</small>
         <button type="submit" class="primary">Entrar no controle</button>
@@ -662,7 +666,7 @@
         </div>
       </form>
     </dialog>
-    <dialog id="song-dialog">
+    <dialog id="song-dialog" class="native-song-editor">
       <form id="song-form">
         <h2 data-i18n="song_editor">Música</h2>
         <input id="song-id" type="hidden" /><label
@@ -673,8 +677,10 @@
           ><input id="song-artist" maxlength="200" /></label
         ><label
           ><span data-i18n="lyrics">Letra</span
-          ><textarea id="song-content" rows="12" required></textarea>
+          ><div id="song-format-tools" class="song-format-tools"></div><textarea id="song-content" rows="12" required></textarea>
         </label>
+        <div class="song-metadata"><label><span data-i18n="folder">Pasta</span><input id="song-folder" maxlength="200" /></label><label><span data-i18n="tags">Etiquetas</span><input id="song-tags" maxlength="1000" /></label></div>
+        <details class="song-strophe-panel"><summary id="song-strophe-count"></summary><div id="song-strophes"></div></details>
         <p class="hint" data-i18n="text_hint">
           Separe os slides com uma linha em branco.
         </p>

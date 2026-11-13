@@ -9,6 +9,8 @@ use std::sync::{
 use std::time::Duration;
 #[path = "web_design.rs"]
 mod design_output;
+#[path = "web_text.rs"]
+mod native_text;
 #[cfg(test)]
 #[path = "web_typography_tests.rs"]
 mod typography_tests;
@@ -536,6 +538,10 @@ impl BrowserServer {
                     "nextText": next_text,
                 });
                 let slug = crate::core::preferences::screen_url_slug(s, &settings.screens);
+                let mut state = state;
+                state["nativeText"] = json!(!s.show_comments && !s.show_next_preview);
+                state["textLayer"] = json!(if s.show_comments || s.show_next_preview { None } else { native_text::layer(&mut data, screen_theme, raw_text, s.font_scale, settings.service().aspect_ratio) });
+                state["showTitle"] = json!(s.show_title);
                 PublishedScreen {
                     id: s.id.clone(),
                     name: s.name.clone(),

@@ -1,4 +1,6 @@
 use super::PresentationApp;
+#[path = "remote_parity_tests.rs"]
+mod parity_tests;
 use crate::{
     core::{models::PlaylistItemKind, preferences::AppSettings},
     services::{
@@ -283,6 +285,8 @@ fn remote_bible_ranges_notices_and_song_edits_use_real_content_and_keep_live_ind
         title: "Título editado".into(),
         artist: "Equipe".into(),
         content: "Letra nova".into(),
+        folder: None,
+        tags: None,
     })
     .unwrap();
     assert_eq!(app.slide_deck.title(), "Título editado");
@@ -385,6 +389,7 @@ fn browser_operates_the_real_app_from_web_control() {
     drop(listener);
     db.save_settings(&AppSettings {
         server_port: port,
+        language: crate::core::i18n::Language::Portuguese,
         allow_lan: false,
         server_enabled: true,
         chat_enabled: false,

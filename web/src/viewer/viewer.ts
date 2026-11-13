@@ -10,6 +10,12 @@ const background = byId("background");
 const video = byId<HTMLVideoElement>("video");
 const canvas = byId<HTMLCanvasElement>("shader");
 const layer = byId("current-layer");
+const nativeText = document.createElement("img");
+nativeText.id = "native-text";
+nativeText.alt = "";
+nativeText.hidden = true;
+Object.assign(nativeText.style, { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none" });
+layer.append(nativeText);
 const layers = byId("text-layers");
 const title = byId("title");
 const connection = byId("connection");
@@ -95,6 +101,9 @@ export interface ViewerOptions {
 }
 
 export interface ViewerState {
+  nativeText?: boolean;
+  textLayer?: string | null;
+  showTitle?: boolean;
   aspect?: number;
   box: [number, number, number, number];
   vertical?: string;
@@ -464,6 +473,7 @@ function render(s: ViewerState): void {
   const o = options(s);
   const changed =
     !current ||
+    current.textLayer !== s.textLayer ||
     current.text !== s.text ||
     current.nextText !== s.nextText ||
     current.showNextPreview !== s.showNextPreview ||
@@ -485,7 +495,7 @@ function render(s: ViewerState): void {
     lyrics.replaceChildren();
 
     // 1. Estrofe atual
-    renderStrophe(lyrics, s.text, false, s.showComments);
+    if (!s.nativeText) renderStrophe(lyrics, s.text, false, s.showComments);
 
     // 2. Estrofe a seguir (junto com o texto da música, em cor mais fraca, limitando às duas primeiras linhas)
     if (s.showNextPreview && s.nextText && s.nextText.trim()) {
@@ -508,13 +518,24 @@ function render(s: ViewerState): void {
   designRenderer?.setScene(s.design ?? null);
   document.title = (s.name || "") + " · Omni Presenter";
   document.body.style.background = s.transparent ? "transparent" : "#000";
-  background.style.background = s.hidden
-    ? s.transparent
-      ? "transparent"
-      : "#000"
-    : s.background || "transparent";
-  box.style.display = s.hidden || !s.text ? "none" : "flex";
+  // Hide content, not the theme background, just like the physical projector.
+  background.style.background = s.background || "transparent";
+  box.style.display = s.nativeText || s.hidden || !s.text ? "none" : "flex";
+  const nativeUrl = s.nativeText && !s.hidden ? s.textLayer : null;
+  if (nativeUrl && nativeText.dataset.source !== nativeUrl) {
+    nativeText.hidden = true;
+    nativeText.dataset.source = nativeUrl;
+    nativeText.onload = () => {
+      if (current?.textLayer === nativeUrl && !current.hidden) {
+        nativeText.hidden = false;
+        nativeText.dataset.ready = nativeUrl;
+      }
+    };
+    nativeText.onerror = () => { delete nativeText.dataset.source; };
+    nativeText.src = nativeUrl;
+  } else nativeText.hidden = !nativeUrl || nativeText.dataset.ready !== nativeUrl;
   title.textContent = s.title || "";
+  title.hidden = !!s.nativeText && !s.showTitle;
   if (stageClock) {
     stageClock.hidden = !s.showClock;
     if (s.showClock) updateClock();
@@ -549,7 +570,7 @@ function render(s: ViewerState): void {
   loadFont(s);
   fit();
   requestAnimationFrame(fit);
-  const showBackground = !s.transparent && !s.hidden;
+  const showBackground = !s.transparent;
   const showVideo =
     showBackground && s.backgroundType === "video" && !!s.videoUrl;
   video.style.display = showVideo ? "block" : "none";
@@ -795,4 +816,3 @@ addEventListener("message", (event: MessageEvent) => {
 
 addEventListener("resize", fit);
 poll();
-
