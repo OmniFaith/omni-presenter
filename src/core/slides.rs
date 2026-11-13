@@ -26,6 +26,7 @@ pub struct SlideDeck {
     library: Vec<Song>,
     selected_song_index: usize,
     is_song: bool,
+    is_bible: bool,
 
     // Live state (what is projected on projector & shown in Retorno Ao Vivo)
     live_title: String,
@@ -34,6 +35,7 @@ pub struct SlideDeck {
     live_index: usize,
     is_content_hidden: bool,
     live_is_song: bool,
+    live_is_bible: bool,
 }
 
 impl Default for SlideDeck {
@@ -60,12 +62,14 @@ impl Default for SlideDeck {
                 library: songs,
                 selected_song_index: 0,
                 is_song: true,
+                is_bible: false,
                 live_title: first_song.title,
                 live_artist: first_song.artist,
                 live_slides: slides,
                 live_index: 0,
                 is_content_hidden: false,
                 live_is_song: true,
+                live_is_bible: false,
             }
         } else {
             Self {
@@ -85,12 +89,14 @@ impl Default for SlideDeck {
                 library: Vec::new(),
                 selected_song_index: 0,
                 is_song: false,
+                is_bible: false,
                 live_title: String::new(),
                 live_artist: String::new(),
                 live_slides: Vec::new(),
                 live_index: 0,
                 is_content_hidden: false,
                 live_is_song: false,
+                live_is_bible: false,
             }
         }
     }
@@ -117,6 +123,7 @@ impl SlideDeck {
             library: Vec::new(),
             selected_song_index: 0,
             is_song: false,
+            is_bible: false,
 
             live_title: crate::core::i18n::Language::system().text("services-presentation").to_string(),
             live_artist: String::new(),
@@ -124,6 +131,7 @@ impl SlideDeck {
             live_index: 0,
             is_content_hidden: false,
             live_is_song: false,
+            live_is_bible: false,
         }
     }
 
@@ -165,6 +173,7 @@ impl SlideDeck {
             library: songs,
             selected_song_index: default_idx,
             is_song: true,
+            is_bible: false,
 
             live_title: def_title,
             live_artist: def_artist,
@@ -172,6 +181,7 @@ impl SlideDeck {
             live_index: current_index,
             is_content_hidden: false,
             live_is_song: true,
+            live_is_bible: false,
         }
     }
 
@@ -242,6 +252,7 @@ impl SlideDeck {
             self.slide_media = vec![None; self.slides.len()];
             self.preview_slide_index = 0;
             self.is_song = true;
+            self.is_bible = false;
         }
     }
 
@@ -293,6 +304,7 @@ impl SlideDeck {
             .min(self.live_slides.len().saturating_sub(1));
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
+        self.live_is_bible = self.is_bible;
         self.sync_live_media();
         if self.live_media.is_none() && self.preview_media.is_some() && self.slides.len() <= 1 {
             self.live_media = self.preview_media.clone();
@@ -315,6 +327,7 @@ impl SlideDeck {
         self.live_index = slide_index.min(self.live_slides.len().saturating_sub(1));
         self.is_content_hidden = false;
         self.live_is_song = self.is_song;
+        self.live_is_bible = self.is_bible;
         self.sync_live_media();
         if self.live_media.is_none() && self.preview_media.is_some() && self.slides.len() <= 1 {
             self.live_media = self.preview_media.clone();
@@ -333,6 +346,7 @@ impl SlideDeck {
         self.live_index = 0;
         self.is_content_hidden = false;
         self.live_is_song = false;
+        self.live_is_bible = false;
     }
 
     pub fn live_title(&self) -> &str {
@@ -388,6 +402,18 @@ impl SlideDeck {
         self.is_song = is_song;
     }
 
+    pub fn is_bible(&self) -> bool {
+        self.is_bible
+    }
+
+    pub fn set_is_bible(&mut self, is_bible: bool) {
+        self.is_bible = is_bible;
+    }
+
+    pub fn is_live_bible(&self) -> bool {
+        self.live_is_bible
+    }
+
     pub fn load_custom_content(&mut self, title: String, artist: String, text: String) {
         self.preview_design = None;
         self.preview_media = None;
@@ -403,6 +429,7 @@ impl SlideDeck {
         self.slide_media = vec![None; self.slides.len()];
         self.preview_slide_index = 0;
         self.is_song = false;
+        self.is_bible = text.contains("//ref-pos:") || text.lines().any(|l| l.trim().starts_with("//ref-"));
     }
 
     pub fn load_custom_slides(&mut self, title: String, artist: String, slides: Vec<String>) {
@@ -419,6 +446,7 @@ impl SlideDeck {
         self.slide_media = vec![None; self.slides.len()];
         self.preview_slide_index = 0;
         self.is_song = false;
+        self.is_bible = self.raw_text.contains("//ref-pos:") || self.raw_text.lines().any(|l| l.trim().starts_with("//ref-"));
     }
 
     pub fn load_custom_slides_with_media(
@@ -441,6 +469,7 @@ impl SlideDeck {
         self.slide_media = final_media;
         self.preview_slide_index = 0;
         self.is_song = false;
+        self.is_bible = self.raw_text.contains("//ref-pos:") || self.raw_text.lines().any(|l| l.trim().starts_with("//ref-"));
         self.sync_preview_media();
     }
 
@@ -448,6 +477,7 @@ impl SlideDeck {
         self.load_custom_content(title, artist, text);
         self.project_preview();
         self.live_is_song = false;
+        self.live_is_bible = self.is_bible;
     }
 
     pub fn add_or_update_song(&mut self, title: String, artist: String, text: String) {

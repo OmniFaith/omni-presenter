@@ -11,7 +11,7 @@ use crate::ui::components::{
 };
 use eframe::egui::{self, Margin, Stroke};
 use egui_phosphor::regular::{
-    ARROW_DOWN, ARROW_UP, COPY, EYE, GEAR, HEART, LIST_BULLETS, PENCIL_SIMPLE, PLAY, SQUARES_FOUR, TAG, TRASH,
+    ARROW_DOWN, ARROW_UP, COPY, EYE, FILE_PLUS, GEAR, HEART, LIST_BULLETS, PENCIL_SIMPLE, PLAY, SQUARES_FOUR, TAG, TRASH,
 };
 
 pub fn render_lyrics_column(
@@ -32,6 +32,13 @@ pub fn render_lyrics_column(
     }
     let theme = state.theme.clone();
     let language = crate::ui::i18n::language(ui.ctx());
+    let is_bible = slide_deck.is_bible()
+        || state.active_sidebar_page == crate::core::state::SidebarPage::Bible
+        || (state.active_sidebar_page == crate::core::state::SidebarPage::Home && state.selected_tab == 3)
+        || state
+            .selected_playlist_index
+            .and_then(|idx| state.playlist.get(idx))
+            .is_some_and(|item| item.kind == crate::core::models::PlaylistItemKind::Bible);
 
     // Barra de título com drag handle
     render_header_bar(ui, ContainerKind::Lyrics, "workspace-lyrics-preview", &theme);
@@ -60,7 +67,38 @@ pub fn render_lyrics_column(
             state.lyrics_cards_layout = !cards;
             state.capture_profiles();
         }
-        if toolbar_icon_button(ui, PENCIL_SIMPLE, language.text("workspace-edit-this-song-s-lyrics"), &theme).clicked() {
+        if is_bible {
+            if toolbar_icon_button(
+                ui,
+                FILE_PLUS,
+                language.text("workspace-create-text-from-bible"),
+                &theme,
+            )
+            .clicked()
+            {
+                let clean_slides: Vec<String> = slide_deck
+                    .slides()
+                    .iter()
+                    .map(|slide| {
+                        crate::core::slides::strip_directive_commands(
+                            &crate::core::slides::strip_comments(slide),
+                        )
+                        .trim()
+                        .to_string()
+                    })
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                let clean_content = clean_slides.join("\n\n");
+                state.open_text_editor(None, slide_deck.title(), "", &clean_content);
+            }
+        } else if toolbar_icon_button(
+            ui,
+            PENCIL_SIMPLE,
+            language.text("workspace-edit-this-song-s-lyrics"),
+            &theme,
+        )
+        .clicked()
+        {
             state.song_editor.title = slide_deck.title().to_owned();
             state.song_editor.artist = slide_deck.artist().to_owned();
             state.song_editor.text = slide_deck.raw_text().to_owned();
@@ -349,6 +387,12 @@ pub fn render_lyrics_column(
                                             if trimmed.starts_with("#*") {
                                                 continue;
                                             }
+                                            if crate::core::markup::is_directive_command(trimmed) {
+                                                continue;
+                                            }
+                                            if is_bible && trimmed.starts_with("//") {
+                                                continue;
+                                            }
                                             if trimmed.starts_with("//") {
                                                 ui.add(
                                                     egui::Label::new(
@@ -361,9 +405,17 @@ pub fn render_lyrics_column(
                                                 );
                                             } else {
                                                 let (main_text, comment_opt) = match line.find("//") {
-                                                    Some(idx) => (&line[..idx], Some(&line[idx..])),
+                                                    Some(idx) => {
+                                                        let m = &line[..idx];
+                                                        let c = if is_bible { None } else { Some(&line[idx..]) };
+                                                        (m, c)
+                                                    }
                                                     None => (line, None),
                                                 };
+
+                                                if is_bible && main_text.trim().is_empty() {
+                                                    continue;
+                                                }
 
                                                 let mut job = egui::text::LayoutJob::default();
                                                 job.wrap.max_width = content_w;
@@ -492,7 +544,31 @@ pub fn render_lyrics_column(
                                     },
                                 );
 
-                                if context_menu_item(
+                                if is_bible {
+                                    if context_menu_item(
+                                        ui,
+                                        FILE_PLUS,
+                                        "workspace-create-text-from-bible",
+                                        &theme,
+                                    )
+                                    .clicked()
+                                    {
+                                        let clean_slides: Vec<String> = slide_deck
+                                            .slides()
+                                            .iter()
+                                            .map(|slide| {
+                                                crate::core::slides::strip_directive_commands(
+                                                    &crate::core::slides::strip_comments(slide),
+                                                )
+                                                .trim()
+                                                .to_string()
+                                            })
+                                            .filter(|s| !s.is_empty())
+                                            .collect();
+                                        state.open_text_editor(None, slide_deck.title(), "", &clean_slides.join("\n\n"));
+                                        ui.close();
+                                    }
+                                } else if context_menu_item(
                                     ui,
                                     PENCIL_SIMPLE,
                                     "workspace-edit-this-stanza",

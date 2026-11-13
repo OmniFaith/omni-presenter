@@ -177,6 +177,46 @@ fn test_song_editor_with_conditional_breaks_and_ratio_toggle() {
 }
 
 #[test]
+fn test_text_editor_modal_parity_with_song_editor() {
+    let mut app = PresentationApp::with_db(AppDb::open_in_memory().unwrap());
+    let ctx = egui::Context::default();
+    let mut is_text_focused = false;
+
+    // Open text editor for new text
+    app.control_state.open_text_editor(
+        None,
+        "Avisos da Semana",
+        "Geral",
+        "Primeiro aviso\n//alinhar: centro\n\nSegundo aviso",
+    );
+
+    assert!(app.control_state.song_editor.open);
+    assert!(matches!(
+        app.control_state.song_editor.target,
+        crate::core::state::EditorTarget::Text { id: None }
+    ));
+    assert_eq!(app.control_state.song_editor.title, "Avisos da Semana");
+    assert_eq!(app.control_state.song_editor.folder, "Geral");
+
+    // Render text editor using render_editor_modal
+    let raw_input = egui::RawInput::default();
+    let mut out = ctx.run_ui(raw_input, |_ui| {
+        ui::render_editor_modal(
+            &ctx,
+            &mut app.control_state,
+            &mut app.slide_deck,
+            &mut is_text_focused,
+            Some(&app.db),
+        );
+    });
+    out.textures_delta.clear();
+
+    // Verify slide parsing and grid preview parity
+    let slides = crate::core::slides::parse_slides_from_text(&app.control_state.song_editor.text);
+    assert_eq!(slides.len(), 2);
+}
+
+#[test]
 fn test_theme_live_preview_in_settings_reverts_if_not_saved() {
     let mut app = PresentationApp::with_db(AppDb::open_in_memory().unwrap());
     let ctx = egui::Context::default();

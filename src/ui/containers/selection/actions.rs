@@ -41,11 +41,7 @@ pub(super) fn create(
         }
         LibraryKind::Media => import_media(state, db, folder),
         LibraryKind::Text => {
-            state.text_editor_title.clear();
-            state.text_editor_content.clear();
-            state.editing_text_id = None;
-            state.text_editor_folder = folder.unwrap_or_default().into();
-            state.show_create_text_modal = true;
+            state.open_text_editor(None, "", folder.unwrap_or_default(), "");
         }
         LibraryKind::Verse => {
             state.verse_editor_ref = format!(
@@ -284,6 +280,9 @@ fn execute_inner(
                             item.content.clone(),
                         );
                     }
+                    if kind == LibraryKind::Verse {
+                        deck.set_is_bible(true);
+                    }
                 }
             }
             if project {
@@ -305,11 +304,7 @@ fn execute_inner(
                         state.song_editor.open = true;
                     }
                     LibraryKind::Text => {
-                        state.editing_text_id = Some(id);
-                        state.text_editor_title = item.title.clone();
-                        state.text_editor_content = item.content.clone();
-                        state.text_editor_folder = item.folder.clone();
-                        state.show_create_text_modal = true;
+                        state.open_text_editor(Some(id), &item.title, &item.folder, &item.content);
                     }
                     _ => {}
                 }

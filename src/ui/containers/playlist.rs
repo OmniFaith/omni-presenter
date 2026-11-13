@@ -778,7 +778,11 @@ pub fn activate_selected_playlist_items(
         .map(|it| it.subtitle.clone())
         .unwrap_or_default();
 
+    let has_bible = selected_items.iter().any(|it| it.kind == PlaylistItemKind::Bible);
     deck.load_custom_slides_with_media(combined_title, combined_artist, all_slides, all_media);
+    if has_bible {
+        deck.set_is_bible(true);
+    }
     if project {
         deck.project_preview();
         if !deck

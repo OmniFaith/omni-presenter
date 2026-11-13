@@ -4,12 +4,12 @@ use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
 use crate::ui::components::{centered_horizontal, render_header_bar};
 use eframe::egui::{self, RichText, Stroke};
-use egui_phosphor::regular::{CARET_LEFT, CARET_RIGHT, LIST_PLUS, PLAY, PLUS, PUSH_PIN};
+use egui_phosphor::regular::{CARET_LEFT, CARET_RIGHT, FILE_PLUS, LIST_PLUS, PLAY, PLUS, PUSH_PIN};
 
 use super::helpers::current_book;
 use super::import::open_bible_settings;
 use super::selection::{
-    add_to_playlist, is_in_selection, pin_passage, project, select_reference, selected_passage,
+    add_to_playlist, create_text_from_selection, is_in_selection, pin_passage, project, select_reference, selected_passage,
     selection_passages, selection_toolbar, sync_preview,
 };
 
@@ -321,6 +321,17 @@ pub fn render_bible_text(
                         if ui.button(crate::ui::i18n::format(ui, "workspace-pin-to-quick-bar-label", &[("icon", PUSH_PIN)])).clicked() {
                             if !keep_selection { select_reference(state, book, state.bible_chapter, number, number); }
                             pin_passage(state);
+                            ui.close();
+                        }
+                        let create_text_label = if keep_selection && count > 1 {
+                            let count_str = count.to_string();
+                            crate::ui::i18n::format(ui, "workspace-create-text-from-verses-label", &[("icon", FILE_PLUS), ("count", &count_str)])
+                        } else {
+                            crate::ui::i18n::format(ui, "workspace-create-text-from-this-verse-label", &[("icon", FILE_PLUS)])
+                        };
+                        if ui.button(create_text_label).clicked() {
+                            if !keep_selection { select_reference(state, book, state.bible_chapter, number, number); }
+                            create_text_from_selection(state);
                             ui.close();
                         }
                     });

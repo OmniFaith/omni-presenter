@@ -281,11 +281,7 @@ impl PresentationApp {
                 None,
             ),
             Command::NewText => {
-                self.control_state.text_editor_title.clear();
-                self.control_state.text_editor_content.clear();
-                self.control_state.text_editor_folder.clear();
-                self.control_state.editing_text_id = None;
-                self.control_state.show_create_text_modal = true;
+                self.control_state.open_text_editor(None, "", "", "");
             }
             Command::SaveVerse => {
                 self.control_state.verse_editor_ref = format!(

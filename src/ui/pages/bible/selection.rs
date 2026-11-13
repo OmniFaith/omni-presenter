@@ -7,7 +7,7 @@ use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
 use crate::ui::components::{centered_horizontal, toolbar_icon_button};
 use eframe::egui;
-use egui_phosphor::regular::{HEART, LIST_PLUS, PLAY, STACK};
+use egui_phosphor::regular::{FILE_PLUS, HEART, LIST_PLUS, PLAY, STACK};
 
 use super::helpers::current_book;
 
@@ -356,15 +356,19 @@ pub fn sync_preview(state: &mut ControlPanelState, deck: &mut SlideDeck, force: 
                     .collect::<Vec<_>>()
                     .join("\n\n"),
             );
+            deck.set_is_bible(true);
             deck.select_preview_slide(index);
         } else {
             deck.load_custom_content(String::new(), code, String::new());
+            deck.set_is_bible(false);
         }
     } else if state.bible.merge_selection {
         if let Some(passage) = selected_passage(state) {
             deck.load_custom_content(passage.reference, passage.version, passage.content);
+            deck.set_is_bible(true);
         } else {
             deck.load_custom_content(String::new(), code, String::new());
+            deck.set_is_bible(false);
         }
     } else {
         // Range without merge: one slide per selected verse.
@@ -373,6 +377,7 @@ pub fn sync_preview(state: &mut ControlPanelState, deck: &mut SlideDeck, force: 
         let slides = chapter_slides(state, &bible, book, state.bible_chapter, start, end);
         if slides.is_empty() {
             deck.load_custom_content(String::new(), code, String::new());
+            deck.set_is_bible(false);
         } else {
             deck.load_custom_content(
                 format!("{} {}", state.bible_book, state.bible_chapter),
@@ -383,6 +388,7 @@ pub fn sync_preview(state: &mut ControlPanelState, deck: &mut SlideDeck, force: 
                     .collect::<Vec<_>>()
                     .join("\n\n"),
             );
+            deck.set_is_bible(true);
             deck.select_preview_slide(0);
         }
     }
@@ -454,8 +460,50 @@ pub(super) fn selection_toolbar(
             {
                 add_to_playlist(state);
             }
+            if toolbar_icon_button(
+                ui,
+                FILE_PLUS,
+                crate::ui::i18n::text(ui, "workspace-create-text-from-bible"),
+                theme,
+            )
+            .clicked()
+            {
+                create_text_from_selection(state);
+            }
         });
     });
+}
+
+pub(super) fn create_text_from_selection(state: &mut ControlPanelState) {
+    let Some(bible) = state.bible.library.get(&state.bible_version) else {
+        return;
+    };
+    let book = current_book(state, &bible);
+    let start = state.bible_verse.min(state.bible.verse_end).max(1);
+    let end = state.bible_verse.max(state.bible.verse_end);
+    let Some(verses) = bible.chapter(book, state.bible_chapter) else {
+        return;
+    };
+
+    let book_name = &bible.books[book].name;
+    let reference = if start == end {
+        format!("{} {}:{}", book_name, state.bible_chapter, start)
+    } else {
+        format!("{} {}:{}-{}", book_name, state.bible_chapter, start, end)
+    };
+
+    let verse_texts: Vec<String> = (start..=end)
+        .filter_map(|v| {
+            if v >= 1 && v <= verses.len() && !verses[v - 1].trim().is_empty() {
+                Some(verses[v - 1].trim().to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let clean_content = verse_texts.join("\n\n");
+    state.open_text_editor(None, &reference, "", &clean_content);
 }
 
 pub(super) fn add_to_playlist(state: &mut ControlPanelState) {

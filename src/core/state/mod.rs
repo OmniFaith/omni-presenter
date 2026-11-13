@@ -15,7 +15,7 @@ mod web_media;
 #[cfg(test)]
 mod theme_preferences_tests;
 pub use editors::{
-    EditorSnapshot, SongEditorState, StropheEditorState, ThemeDragHandle, ThemeEditorState,
+    EditorSnapshot, EditorTarget, SongEditorState, StropheEditorState, ThemeDragHandle, ThemeEditorState,
 };
 pub use events::EventEditorDraft;
 pub use lyrics_search::WebLyricsSearchState;

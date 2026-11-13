@@ -13,10 +13,20 @@ pub enum ThemeDragHandle {
     RightCenter,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EditorTarget {
+    #[default]
+    Song,
+    Text { id: Option<i64> },
+}
+
 #[derive(Clone)]
 pub struct EditorSnapshot {
+    pub target: EditorTarget,
     pub title: String,
     pub artist: String,
+    pub folder: String,
+    pub tags: String,
     pub text: String,
     pub theme: PresentationTheme,
 }
@@ -24,6 +34,7 @@ pub struct EditorSnapshot {
 #[derive(Clone)]
 pub struct SongEditorState {
     pub open: bool,
+    pub target: EditorTarget,
     pub title: String,
     pub artist: String,
     pub text: String,
@@ -48,6 +59,7 @@ impl Default for SongEditorState {
     fn default() -> Self {
         Self {
             open: false,
+            target: EditorTarget::Song,
             title: String::new(),
             artist: String::new(),
             text: String::new(),
@@ -67,6 +79,55 @@ impl Default for SongEditorState {
             hide_syntax_markers: false,
             show_syntax_guide: false,
         }
+    }
+}
+
+impl super::ControlPanelState {
+    pub fn open_song_editor(
+        &mut self,
+        title: &str,
+        artist: &str,
+        text: &str,
+        folder: &str,
+        tags: &str,
+    ) {
+        self.song_editor.target = EditorTarget::Song;
+        self.song_editor.title = title.to_string();
+        self.song_editor.artist = artist.to_string();
+        self.song_editor.text = text.to_string();
+        self.song_editor.folder = folder.to_string();
+        self.song_editor.tags = tags.to_string();
+        self.song_editor.theme = None;
+        self.song_editor.theme_dirty = false;
+        self.song_editor.selected_slide = None;
+        self.song_editor.history.clear();
+        self.song_editor.future.clear();
+        self.song_editor.show_versions = false;
+        self.song_editor.selection = (0, 0);
+        self.song_editor.open = true;
+    }
+
+    pub fn open_text_editor(
+        &mut self,
+        id: Option<i64>,
+        title: &str,
+        folder: &str,
+        text: &str,
+    ) {
+        self.song_editor.target = EditorTarget::Text { id };
+        self.song_editor.title = title.to_string();
+        self.song_editor.artist.clear();
+        self.song_editor.folder = folder.to_string();
+        self.song_editor.tags.clear();
+        self.song_editor.text = text.to_string();
+        self.song_editor.theme = None;
+        self.song_editor.theme_dirty = false;
+        self.song_editor.selected_slide = None;
+        self.song_editor.history.clear();
+        self.song_editor.future.clear();
+        self.song_editor.show_versions = false;
+        self.song_editor.selection = (0, 0);
+        self.song_editor.open = true;
     }
 }
 

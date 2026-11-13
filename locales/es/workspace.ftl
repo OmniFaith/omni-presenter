@@ -222,6 +222,14 @@ workspace-edit-item = Editar elemento
 
 workspace-edit-song = Editar canción
 
+workspace-create-text-from-bible = Crear texto a partir de estos versículos
+
+workspace-create-text-from-this-verse-label = { $icon } Crear texto a partir de este versículo
+
+workspace-create-text-from-verses-label = { $icon } Crear texto a partir de estos { $count } versículos
+
+workspace-create-text-from-bible-label = { $icon } Crear texto a partir de estos versículos
+
 workspace-edit-song-information = Editar información de la canción…
 
 workspace-edit-text = Editar texto

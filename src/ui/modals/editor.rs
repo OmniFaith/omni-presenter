@@ -45,9 +45,12 @@ pub fn render_editor_modal(
         state.song_editor.show_versions = false;
         state.song_editor.versions_query.clear();
         state.song_editor.selection = (0, 0);
-        state.song_editor.linked_versions = db
-            .and_then(|db| db.song_version_ids_of(&state.song_editor.title).ok())
-            .unwrap_or_default();
+        state.song_editor.linked_versions = if matches!(state.song_editor.target, crate::core::state::EditorTarget::Song) {
+            db.and_then(|db| db.song_version_ids_of(&state.song_editor.title).ok())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
     }
 
     let screen_rect = ctx.input(|i| i.viewport_rect());
@@ -162,17 +165,33 @@ pub fn render_editor_modal(
 
     if let Some(index) = project_slide {
         state.song_editor.selected_slide = Some(index);
-        slide_deck.load_custom_content(
-            state.song_editor.title.clone(),
-            state.song_editor.artist.clone(),
-            state.song_editor.text.clone(),
-        );
+        if matches!(state.song_editor.target, crate::core::state::EditorTarget::Text { .. }) {
+            slide_deck.load_custom_content(
+                state.song_editor.title.clone(),
+                state.song_editor.folder.clone(),
+                state.song_editor.text.clone(),
+            );
+        } else {
+            slide_deck.load_custom_content(
+                state.song_editor.title.clone(),
+                state.song_editor.artist.clone(),
+                state.song_editor.text.clone(),
+            );
+            slide_deck.set_is_song(true);
+        }
         slide_deck.select_preview_slide(index);
         state.notify(state.settings.language.format("workspace-stanza-loaded-in-preview", &[("name", &(index + 1).to_string())]));
     }
 
     if should_save {
-        save_song(state, slide_deck, db);
+        match state.song_editor.target {
+            crate::core::state::EditorTarget::Song => {
+                save_song(state, slide_deck, db);
+            }
+            crate::core::state::EditorTarget::Text { id } => {
+                save_text(id, state, slide_deck, db);
+            }
+        }
         state.song_editor.theme = None;
         state.song_editor.open = false;
     } else if should_cancel || !state.song_editor.open {
@@ -183,8 +202,11 @@ pub fn render_editor_modal(
 
 fn snapshot(state: &ControlPanelState, theme: &PresentationTheme) -> EditorSnapshot {
     EditorSnapshot {
+        target: state.song_editor.target,
         title: state.song_editor.title.clone(),
         artist: state.song_editor.artist.clone(),
+        folder: state.song_editor.folder.clone(),
+        tags: state.song_editor.tags.clone(),
         text: state.song_editor.text.clone(),
         theme: theme.clone(),
     }
@@ -203,8 +225,11 @@ fn restore(
     snap: EditorSnapshot,
     work_theme: &mut PresentationTheme,
 ) {
+    state.song_editor.target = snap.target;
     state.song_editor.title = snap.title;
     state.song_editor.artist = snap.artist;
+    state.song_editor.folder = snap.folder;
+    state.song_editor.tags = snap.tags;
     state.song_editor.text = snap.text;
     *work_theme = snap.theme;
 }
@@ -282,15 +307,21 @@ fn render_sidebar(
     library: &[Song],
     db: Option<&AppDb>,
 ) {
+    let is_text = matches!(state.song_editor.target, crate::core::state::EditorTarget::Text { .. });
     ui.vertical(|ui| {
         ui.spacing_mut().item_spacing.y = 8.0;
         field_label(ui, crate::ui::i18n::text(ui, "workspace-title"), tokens);
         pill_frame(tokens).show(ui, |ui| {
+            let hint = if is_text {
+                crate::ui::i18n::text(ui, "workspace-e-g-weekly-notices-liturgy-welcome")
+            } else {
+                crate::ui::i18n::text(ui, "workspace-song-title")
+            };
             let res = ui.add(
                 egui::TextEdit::singleline(&mut state.song_editor.title)
                     .frame(egui::Frame::NONE)
                     .desired_width(f32::INFINITY)
-                    .hint_text(crate::ui::i18n::text(ui, "workspace-song-title"))
+                    .hint_text(hint)
                     .font(egui::FontId::proportional(14.0)),
             );
             if res.has_focus() {
@@ -298,67 +329,88 @@ fn render_sidebar(
             }
         });
 
-        field_label(ui, crate::ui::i18n::text(ui, "workspace-songwriter-band"), tokens);
-        pill_frame(tokens).show(ui, |ui| {
-            let res = ui.add(
-                egui::TextEdit::singleline(&mut state.song_editor.artist)
-                    .frame(egui::Frame::NONE)
-                    .desired_width(f32::INFINITY)
-                    .hint_text(crate::ui::i18n::text(ui, "workspace-songwriter-or-band"))
-                    .font(egui::FontId::proportional(14.0)),
-            );
-            if res.has_focus() {
-                *is_text_focused = true;
-            }
-        });
+        if is_text {
+            field_label(ui, crate::ui::i18n::text(ui, "workspace-folder-optional"), tokens);
+            pill_frame(tokens).show(ui, |ui| {
+                let res = ui.add(
+                    egui::TextEdit::singleline(&mut state.song_editor.folder)
+                        .frame(egui::Frame::NONE)
+                        .desired_width(f32::INFINITY)
+                        .hint_text(crate::ui::i18n::text(ui, "workspace-no-folder"))
+                        .font(egui::FontId::proportional(14.0)),
+                );
+                if res.has_focus() {
+                    *is_text_focused = true;
+                }
+            });
+        } else {
+            field_label(ui, crate::ui::i18n::text(ui, "workspace-songwriter-band"), tokens);
+            pill_frame(tokens).show(ui, |ui| {
+                let res = ui.add(
+                    egui::TextEdit::singleline(&mut state.song_editor.artist)
+                        .frame(egui::Frame::NONE)
+                        .desired_width(f32::INFINITY)
+                        .hint_text(crate::ui::i18n::text(ui, "workspace-songwriter-or-band"))
+                        .font(egui::FontId::proportional(14.0)),
+                );
+                if res.has_focus() {
+                    *is_text_focused = true;
+                }
+            });
 
-        field_label(ui, crate::ui::i18n::text(ui, "workspace-tags"), tokens);
-        pill_frame(tokens).show(ui, |ui| {
-            let res = ui.add(
-                egui::TextEdit::singleline(&mut state.song_editor.tags)
-                    .frame(egui::Frame::NONE)
-                    .desired_width(f32::INFINITY)
-                    .hint_text(crate::ui::i18n::text(ui, "workspace-separated-by-commas"))
-                    .font(egui::FontId::proportional(13.0)),
-            );
-            if res.has_focus() {
-                *is_text_focused = true;
-            }
-        });
+            field_label(ui, crate::ui::i18n::text(ui, "workspace-tags"), tokens);
+            pill_frame(tokens).show(ui, |ui| {
+                let res = ui.add(
+                    egui::TextEdit::singleline(&mut state.song_editor.tags)
+                        .frame(egui::Frame::NONE)
+                        .desired_width(f32::INFINITY)
+                        .hint_text(crate::ui::i18n::text(ui, "workspace-separated-by-commas"))
+                        .font(egui::FontId::proportional(13.0)),
+                );
+                if res.has_focus() {
+                    *is_text_focused = true;
+                }
+            });
 
-        let versions_label = crate::ui::i18n::format(ui, "workspace-link-versions", &[("name", LINK)]);
-        let versions_btn = egui::Button::new(
-            RichText::new(versions_label)
-                .size(12.5)
-                .color(if state.song_editor.show_versions {
+            let versions_label = crate::ui::i18n::format(ui, "workspace-link-versions", &[("name", LINK)]);
+            let versions_btn = egui::Button::new(
+                RichText::new(versions_label)
+                    .size(12.5)
+                    .color(if state.song_editor.show_versions {
+                        tokens.accent
+                    } else {
+                        tokens.text_primary
+                    }),
+            )
+            .fill(if state.song_editor.show_versions {
+                tokens.accent_soft
+            } else {
+                tokens.bg_pill
+            })
+            .stroke(Stroke::new(
+                1.0,
+                if state.song_editor.show_versions {
                     tokens.accent
                 } else {
-                    tokens.text_primary
-                }),
-        )
-        .fill(if state.song_editor.show_versions {
-            tokens.accent_soft
-        } else {
-            tokens.bg_pill
-        })
-        .stroke(Stroke::new(
-            1.0,
+                    tokens.border_default
+                },
+            ))
+            .corner_radius(8.0)
+            .min_size(Vec2::new(ui.available_width(), 32.0));
+            if ui.add(versions_btn).clicked() {
+                state.song_editor.show_versions = !state.song_editor.show_versions;
+            }
             if state.song_editor.show_versions {
-                tokens.accent
-            } else {
-                tokens.border_default
-            },
-        ))
-        .corner_radius(8.0)
-        .min_size(Vec2::new(ui.available_width(), 32.0));
-        if ui.add(versions_btn).clicked() {
-            state.song_editor.show_versions = !state.song_editor.show_versions;
-        }
-        if state.song_editor.show_versions {
-            editing::versions_panel(ui, state, tokens, library, db);
+                editing::versions_panel(ui, state, tokens, library, db);
+            }
         }
 
-        field_label(ui, "workspace-text", tokens);
+        let text_label = if is_text {
+            "workspace-slide-content"
+        } else {
+            "workspace-text"
+        };
+        field_label(ui, crate::ui::i18n::text(ui, text_label), tokens);
         let remaining = (ui.available_height() - 4.0).max(60.0);
         egui::Frame::new()
             .fill(tokens.bg_pill)
@@ -383,6 +435,11 @@ fn render_sidebar(
                     );
                     ui.fonts_mut(|f| f.layout_job(job))
                 };
+                let text_hint = if is_text {
+                    crate::ui::i18n::text(ui, "workspace-enter-your-text-here-each-line-or-paragraph-will-be")
+                } else {
+                    crate::ui::i18n::text(ui, "workspace-enter-the-lyrics-here-separate-stanzas-with-a-blank-line")
+                };
                 egui::ScrollArea::vertical()
                     .id_salt("song_editor_text_scroll")
                     .max_height(content_h)
@@ -393,9 +450,7 @@ fn render_sidebar(
                             .frame(egui::Frame::NONE)
                             .desired_width(f32::INFINITY)
                             .min_size(Vec2::new(ui.available_width(), content_h))
-                            .hint_text(
-                                crate::ui::i18n::text(ui, "workspace-enter-the-lyrics-here-separate-stanzas-with-a-blank-line"),
-                            )
+                            .hint_text(text_hint)
                             .font(egui::FontId::proportional(14.0))
                             .layouter(&mut layouter)
                             .show(ui);
@@ -827,5 +882,52 @@ fn save_song(state: &mut ControlPanelState, slide_deck: &mut SlideDeck, db: Opti
             }
 
     state.notify(state.settings.language.format("workspace-saved", &[("title", &title)]));
+    state.song_editor.theme_dirty = false;
+}
+
+fn save_text(
+    id: Option<i64>,
+    state: &mut ControlPanelState,
+    slide_deck: &mut SlideDeck,
+    db: Option<&AppDb>,
+) {
+    let title = if state.song_editor.title.trim().is_empty() {
+        state.settings.language.text("workspace-new-text").to_owned()
+    } else {
+        state.song_editor.title.trim().to_owned()
+    };
+    let content = state.song_editor.text.trim().to_owned();
+    let folder = state.song_editor.folder.trim().to_owned();
+
+    if let Some(app_db) = db {
+        if let Some(text_id) = id {
+            let _ = app_db.update_custom_text(text_id, &title, &content, &folder);
+            state.notify(state.settings.language.text("workspace-text-updated-successfully"));
+        } else {
+            let _ = app_db.add_custom_text(&title, &content, &folder);
+            state.notify(state.settings.language.text("workspace-text-created-successfully"));
+        }
+        state.reload_custom_texts(app_db);
+        if !folder.is_empty() {
+            state.open_text_folders.insert(folder.clone());
+        }
+    }
+
+    if !slide_deck.is_song() && slide_deck.title() == title {
+        slide_deck.load_custom_content(title.clone(), folder, content.clone());
+    }
+
+    for item in &mut state.playlist {
+        if item.kind == crate::core::models::PlaylistItemKind::Text && item.title == title {
+            item.content = content.clone();
+        }
+    }
+
+    if state.song_editor.theme_dirty
+        && let Some(theme) = state.song_editor.theme.clone()
+            && state.selected_theme_index < state.themes.len() {
+                state.themes[state.selected_theme_index] = theme;
+            }
+
     state.song_editor.theme_dirty = false;
 }
