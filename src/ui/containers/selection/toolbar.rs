@@ -41,11 +41,6 @@ pub(super) fn toolbar(
             state.show_search = !state.show_search;
         }
         let is_media = state.selected_tab == 1;
-        if state.selected_tab == 0 && toolbar_icon_button(ui, DOWNLOAD_SIMPLE, language.text("transfer-lyrics-choose"), &theme).clicked() {
-            state.settings_ui.open = true;
-            state.settings_ui.tab = crate::core::state::SettingsTab::Transfer;
-            crate::ui::modals::settings::transfer::start_lyrics(ui.ctx());
-        }
         let link_label = if is_media {
             language.text("library-add-web-video")
         } else {

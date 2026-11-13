@@ -20,6 +20,9 @@ impl PresentationApp {
         // Operator Profile Selection Modal Dialog (Welcome on startup)
         crate::ui::render_welcome_profile_modal(ctx, &mut self.control_state, Some(&self.db));
 
+        // Web Hub Modal Dialog (Remote Control, Chat, Screens)
+        crate::ui::render_web_hub_modal(ctx, &mut self.control_state);
+
         // Settings Modal Dialog
         crate::ui::render_settings_modal(ctx, &mut self.control_state, &self.monitors, Some(&self.db));
         let monitor_changed_to = self.save_settings_draft().or(wizard_monitor_target);

@@ -11,7 +11,7 @@ pub fn render_welcome_profile_modal(
         return;
     }
 
-    if state.settings.operators.len() <= 1 {
+    if state.settings.operators.is_empty() {
         state.show_profile_picker_modal = false;
         return;
     }
@@ -81,7 +81,7 @@ pub fn render_welcome_profile_modal(
 
             // Lista / Grid de Perfis de Operadores
             let mut operators = state.settings.operators.clone();
-            operators.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            operators.sort_by_key(|a| a.name.to_lowercase());
             let active_id = state.settings.active_operator.clone();
 
             let card_w = 150.0;

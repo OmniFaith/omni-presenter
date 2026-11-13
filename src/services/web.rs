@@ -229,7 +229,7 @@ impl BrowserServer {
             (None, None)
         };
         let (discovery, discovery_error) = if settings.allow_lan {
-            let screens: Vec<String> = if settings.server_enabled {
+            let screens: Vec<String> = if settings.server_enabled || settings.screens.iter().any(|s| s.enabled) {
                 settings
                     .screens
                     .iter()

@@ -211,7 +211,7 @@ impl PresentationApp {
             "playlist":state.playlist.iter().enumerate().map(|(index,item)| json!({"id":item.id,"title":item.title,"subtitle":item.subtitle,"kind":item.kind,"played":item.played,"selected":state.playlist_selection.selected.contains(&item.id),"focused":Some(index)==state.selected_playlist_index})).collect::<Vec<_>>(),
             "quick":state.quick_bar.items.iter().map(|item|json!({"id":item.id,"title":item.title,"kind":item.kind})).collect::<Vec<_>>(),
             "themes":state.themes.iter().map(|t| theme(t, state.settings.language)).collect::<Vec<_>>(),"player":player,"timers":timers,"questions":design.is_some_and(|scene| scene.layers.iter().any(|layer| matches!(layer.content, crate::core::design::LayerContent::Questions{..}))),
-            "overlay":deck.live_overlay.as_ref().map(|scene| &scene.name),"screens":state.settings.screens.iter().filter(|screen| screen.enabled && state.settings.server_enabled).map(|screen|json!({"id":screen.id,"name":screen.name,"slug":crate::core::preferences::screen_url_slug(screen, &state.settings.screens)})).collect::<Vec<_>>()
+            "overlay":deck.live_overlay.as_ref().map(|scene| &scene.name),"screens":state.settings.screens.iter().filter(|screen| screen.enabled).map(|screen|json!({"id":screen.id,"name":screen.name,"slug":crate::core::preferences::screen_url_slug(screen, &state.settings.screens)})).collect::<Vec<_>>()
         }));
     }
 }

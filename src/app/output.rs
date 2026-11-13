@@ -13,7 +13,8 @@ impl PresentationApp {
         self.control_state.settings_ui.discovery_url.clear();
         self.control_state.settings_ui.discovery_chat_url.clear();
         self.control_state.settings_ui.discovery_error.clear();
-        if self.control_state.settings.server_enabled || self.control_state.settings.chat_enabled {
+        let has_screens = self.control_state.settings.screens.iter().any(|s| s.enabled);
+        if self.control_state.settings.server_enabled || has_screens || self.control_state.settings.chat_enabled {
             let chat = if self.control_state.settings.chat_enabled {
                 self.control_state.chat.service.clone()
             } else {
@@ -33,8 +34,7 @@ impl PresentationApp {
                     self.control_state.settings_ui.discovery_error =
                         server.discovery_error.clone().unwrap_or_default();
                     self.browser_server = Some(server);
-                    self.control_state.settings_ui.server_running =
-                        self.control_state.settings.server_enabled;
+                    self.control_state.settings_ui.server_running = true;
                     self.control_state.settings_ui.server_status = self
                         .control_state
                         .settings
@@ -251,9 +251,6 @@ impl PresentationApp {
             self.control_state.settings_ui.discovery_error =
                 server.discovery_error.clone().unwrap_or_default();
             ctx.request_repaint_after(std::time::Duration::from_millis(250));
-        }
-        if !self.control_state.settings.server_enabled {
-            return;
         }
         let Some(server) = &mut self.browser_server else {
             return;

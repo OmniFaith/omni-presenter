@@ -7,7 +7,7 @@ use crate::ui::components::{
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, Color32, Margin, Stroke};
 use egui_phosphor::regular::{
-    ARROWS_CLOCKWISE, CARET_DOWN, CHECK, CHURCH, EYE, MONITOR, PENCIL_SIMPLE, PLAY, PLUS,
+    ARROWS_CLOCKWISE, CARET_DOWN, EYE, MONITOR, PENCIL_SIMPLE, PLAY, PLUS,
     PUSH_PIN, TRASH, USER,
 };
 
@@ -70,41 +70,23 @@ pub fn render_top_bar(
             });
             ui.add_space(8.0);
 
-        // 2. Right-side options cluster (operador, culto, telas web, status)
-        let operators: Vec<(String, String)> = state
-            .settings
-            .operators
-            .iter()
-            .map(|p| (p.id.clone(), p.name.clone()))
-            .collect();
-        let services: Vec<(String, String)> = state
-            .settings
-            .services
-            .iter()
-            .map(|p| (p.id.clone(), p.display_name(language)))
-            .collect();
-        let active_operator = state.settings.active_operator.clone();
-        let active_service = state.settings.active_service.clone();
+        // 2. Right-side options cluster (operador, telas web, status)
         let operator_name = state.settings.operator().name.clone();
-        let service_name = state.settings.service().display_name(language);
+        let operator_avatar = state.settings.operator().avatar.clone();
         let screen_count = state
             .settings
             .screens
             .iter()
             .filter(|s| s.enabled)
             .count();
-        let web_label = if state.settings_ui.server_running {
-            language.format("quick-web-screens", &[("count", &screen_count.to_string())])
-        } else {
-            language.text("quick-web-off").to_string()
-        };
         let show_status = *is_presentation_open;
         let show_controls = *is_presentation_open && (!state.show_presentation_dock || state.active_sidebar_page==crate::core::state::SidebarPage::Design);
         let right_reserve = options_cluster_width(
             ui,
             &operator_name,
-            &service_name,
-            &web_label,
+            operator_avatar.is_some(),
+            screen_count,
+            state.settings_ui.server_running,
             show_status,
             show_controls,
         );
@@ -331,30 +313,12 @@ pub fn render_top_bar(
                     if state.active_sidebar_page==crate::core::state::SidebarPage::Design {state.active_sidebar_page=crate::core::state::SidebarPage::Home;}
                 }
 
-            screens_pill(ui, &tokens, &web_label, state.settings_ui.server_running);
-
-            if let Some(id) = filter_pill(
-                ui,
-                &tokens,
-                CHURCH,
-                language.text("workspace-choose-service"),
-                &active_service,
-                &service_name,
-                &services,
-            ) {
-                state.switch_service(&id);
+            if screens_pill(ui, &tokens, screen_count, state.settings_ui.server_running) {
+                state.show_web_hub_modal = true;
             }
 
-            if let Some(id) = filter_pill(
-                ui,
-                &tokens,
-                USER,
-                language.text("workspace-choose-operator"),
-                &active_operator,
-                &operator_name,
-                &operators,
-            ) {
-                state.switch_operator(&id);
+            if operator_pill(ui, &tokens, operator_avatar.as_deref(), &operator_name) {
+                state.show_profile_picker_modal = true;
             }
         });
 
@@ -547,10 +511,6 @@ fn label_width(ui: &egui::Ui, text: &str) -> f32 {
         .x
 }
 
-fn filter_width(ui: &egui::Ui, text: &str) -> f32 {
-    PILL_PAD * 2.0 + PILL_ICON_W + PILL_GAP + label_width(ui, text) + PILL_GAP + PILL_CARET_W
-}
-
 fn simple_pill_width(ui: &egui::Ui, text: &str, dot: bool) -> f32 {
     let lead = if dot { PILL_DOT_W } else { PILL_ICON_W };
     PILL_PAD * 2.0 + lead + PILL_GAP + label_width(ui, text)
@@ -559,17 +519,18 @@ fn simple_pill_width(ui: &egui::Ui, text: &str, dot: bool) -> f32 {
 fn options_cluster_width(
     ui: &egui::Ui,
     operator: &str,
-    service: &str,
-    web: &str,
+    has_avatar: bool,
+    screen_count: usize,
+    running: bool,
     show_status: bool,
     show_controls: bool,
 ) -> f32 {
-    let mut width = filter_width(ui, operator)
-        + PILL_GAP_X
-        + filter_width(ui, service)
-        + PILL_GAP_X
-        + simple_pill_width(ui, web, false)
-        + PILL_GAP_X;
+    let lead_w = if has_avatar { 20.0 } else { PILL_ICON_W };
+    let operator_w = PILL_PAD * 2.0 + lead_w + PILL_GAP + label_width(ui, operator) + PILL_GAP + PILL_CARET_W;
+    let count_text = if running { screen_count.to_string() } else { "0".to_string() };
+    let web_w = PILL_PAD * 2.0 + PILL_ICON_W + PILL_GAP + label_width(ui, &count_text);
+
+    let mut width = operator_w + PILL_GAP_X + web_w + PILL_GAP_X;
     if show_controls {
         width += 28.0 + PILL_GAP_X;
     }
@@ -630,34 +591,89 @@ fn pill(
     );
 }
 
-fn screens_pill(ui: &mut egui::Ui, tokens: &AppTheme, label: &str, running: bool) {
-    let (fg, bg) = if running {
-        (tokens.status_success_fg, tokens.status_success_bg)
-    } else {
-        (tokens.text_muted, tokens.bg_pill)
-    };
-    pill(ui, Some(MONITOR), None, label, fg, bg);
-}
-
-/// A pill-shaped dropdown used for the operator and service selectors.
-fn filter_pill(
+fn screens_pill(
     ui: &mut egui::Ui,
     tokens: &AppTheme,
-    icon: &str,
-    tooltip: &str,
-    active_id: &str,
-    active_name: &str,
-    options: &[(String, String)],
-) -> Option<String> {
-    let width = filter_width(ui, active_name);
+    screen_count: usize,
+    running: bool,
+) -> bool {
+    let count_text = if running {
+        screen_count.to_string()
+    } else {
+        "0".to_string()
+    };
+    let width = PILL_PAD * 2.0 + PILL_ICON_W + PILL_GAP + label_width(ui, &count_text);
     let (rect, response) = ui.allocate_exact_size(egui::vec2(width, PILL_H), egui::Sense::click());
-    let popup_id = response.id.with("popup");
-    let open = egui::Popup::is_id_open(ui.ctx(), popup_id);
+    let hover = ui
+        .ctx()
+        .animate_bool(response.id.with("hover"), response.hovered());
+    let (fg, bg) = if running {
+        (
+            tokens.status_success_fg,
+            tokens.status_success_bg.lerp_to_gamma(tokens.bg_card_hover, hover * 0.4),
+        )
+    } else {
+        (
+            tokens.text_muted,
+            tokens.bg_pill.lerp_to_gamma(tokens.bg_card_hover, hover),
+        )
+    };
+    let border = if response.hovered() {
+        tokens.accent
+    } else {
+        fg.linear_multiply(0.3)
+    };
+    ui.painter().rect_filled(rect, 8.0, bg);
+    ui.painter().rect_stroke(
+        rect,
+        8.0,
+        Stroke::new(1.0, border),
+        egui::StrokeKind::Inside,
+    );
+
+    let x = rect.min.x + PILL_PAD;
+    ui.painter().text(
+        egui::pos2(x + PILL_ICON_W * 0.5, rect.center().y),
+        egui::Align2::CENTER_CENTER,
+        MONITOR,
+        egui::FontId::proportional(14.0),
+        fg,
+    );
+    ui.painter().text(
+        egui::pos2(x + PILL_ICON_W + PILL_GAP, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        &count_text,
+        egui::FontId::proportional(12.5),
+        fg,
+    );
+
+    let tooltip = if running {
+        format!("{screen_count} telas web · Clique para Conexões Web")
+    } else {
+        "Web desativado · Clique para Conexões Web".to_string()
+    };
+
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(tooltip)
+        .clicked()
+}
+
+fn operator_pill(
+    ui: &mut egui::Ui,
+    tokens: &AppTheme,
+    avatar: Option<&[u8]>,
+    operator_name: &str,
+) -> bool {
+    let has_avatar = avatar.is_some();
+    let lead_w = if has_avatar { 20.0 } else { PILL_ICON_W };
+    let width = PILL_PAD * 2.0 + lead_w + PILL_GAP + label_width(ui, operator_name) + PILL_GAP + PILL_CARET_W;
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(width, PILL_H), egui::Sense::click());
     let hover = ui
         .ctx()
         .animate_bool(response.id.with("hover"), response.hovered());
     let bg = tokens.bg_pill.lerp_to_gamma(tokens.bg_card_hover, hover);
-    let border = if open {
+    let border = if response.hovered() {
         tokens.accent
     } else {
         tokens.border_default
@@ -669,20 +685,38 @@ fn filter_pill(
         Stroke::new(1.0, border),
         egui::StrokeKind::Inside,
     );
+
+    let mut x = rect.min.x + PILL_PAD;
+    if let Some(bytes) = avatar {
+        let avatar_size = 18.0;
+        let avatar_rect = egui::Rect::from_center_size(
+            egui::pos2(x + avatar_size * 0.5, rect.center().y),
+            egui::vec2(avatar_size, avatar_size),
+        );
+        crate::ui::components::avatar::paint(
+            ui,
+            avatar_rect,
+            Some(bytes),
+            USER,
+            tokens,
+            false,
+        );
+        x += avatar_size + PILL_GAP;
+    } else {
+        ui.painter().text(
+            egui::pos2(x + PILL_ICON_W * 0.5, rect.center().y),
+            egui::Align2::CENTER_CENTER,
+            USER,
+            egui::FontId::proportional(14.0),
+            tokens.icon_default,
+        );
+        x += PILL_ICON_W + PILL_GAP;
+    }
+
     ui.painter().text(
-        egui::pos2(rect.min.x + PILL_PAD + PILL_ICON_W * 0.5, rect.center().y),
-        egui::Align2::CENTER_CENTER,
-        icon,
-        egui::FontId::proportional(14.0),
-        tokens.icon_default,
-    );
-    ui.painter().text(
-        egui::pos2(
-            rect.min.x + PILL_PAD + PILL_ICON_W + PILL_GAP,
-            rect.center().y,
-        ),
+        egui::pos2(x, rect.center().y),
         egui::Align2::LEFT_CENTER,
-        active_name,
+        operator_name,
         egui::FontId::proportional(12.5),
         tokens.text_primary,
     );
@@ -693,75 +727,10 @@ fn filter_pill(
         egui::FontId::proportional(11.0),
         tokens.icon_muted,
     );
-    let response = response
-        .on_hover_cursor(egui::CursorIcon::PointingHand)
-        .on_hover_text(tooltip);
 
-    let row_width = options
-        .iter()
-        .map(|(_, name)| label_width(ui, name))
-        .fold(label_width(ui, active_name), f32::max)
-        + 52.0;
-
-    let mut chosen = None;
-    egui::Popup::menu(&response)
-        .id(popup_id)
-        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-        .show(|ui| {
-            ui.set_min_width(row_width);
-            ui.spacing_mut().item_spacing.y = 2.0;
-            for (id, name) in options {
-                if menu_option(ui, tokens, name, id == active_id, row_width) {
-                    chosen = Some(id.clone());
-                }
-            }
-        });
-    chosen
-}
-
-fn menu_option(
-    ui: &mut egui::Ui,
-    tokens: &AppTheme,
-    label: &str,
-    selected: bool,
-    row_width: f32,
-) -> bool {
-    let (rect, response) =
-        ui.allocate_exact_size(egui::vec2(row_width - 8.0, 28.0), egui::Sense::click());
-    let hover = ui
-        .ctx()
-        .animate_bool(response.id.with("hover"), response.hovered());
-    let highlight = if selected {
-        tokens.accent_soft
-    } else {
-        tokens.bg_pill_active.gamma_multiply(hover)
-    };
-    if selected || hover > 0.0 {
-        ui.painter().rect_filled(rect, 6.0, highlight);
-    }
-    let text_color = if selected {
-        tokens.accent
-    } else {
-        tokens.text_primary
-    };
-    ui.painter().text(
-        egui::pos2(rect.min.x + 10.0, rect.center().y),
-        egui::Align2::LEFT_CENTER,
-        label,
-        egui::FontId::proportional(12.5),
-        text_color,
-    );
-    if selected {
-        ui.painter().text(
-            egui::pos2(rect.max.x - 12.0, rect.center().y),
-            egui::Align2::CENTER_CENTER,
-            CHECK,
-            egui::FontId::proportional(12.0),
-            tokens.accent,
-        );
-    }
     response
         .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(crate::ui::i18n::language(ui.ctx()).text("workspace-choose-operator"))
         .clicked()
 }
 
