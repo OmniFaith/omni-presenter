@@ -523,6 +523,14 @@ workspace-reorder-playlist = Reordenar repertorio
 
 workspace-playlist-options = Opciones de la lista
 
+workspace-add-separator = Agregar separador
+workspace-rename-separator = Renombrar separador
+workspace-change-color = Cambiar color
+workspace-remove-separator = Eliminar separador
+workspace-new-separator = Nuevo separador
+workspace-separator-name-placeholder = Nombre del separador (ej: Alabanza, Avisos, Predicación)
+workspace-custom-color = Personalizado
+
 workspace-restore = Restaurar
 
 workspace-restore-default-themes = Restaurar temas predeterminados
@@ -657,23 +665,27 @@ workspace-themes = Temas
 
 theme-obsidian-pro = Obsidiana Minimalista
 
-theme-midnight-sapphire = Zafiro de Medianoche
+theme-golden-champagne = Dorado & Champaña
 
-theme-warm-ember = Brasas y Bronce
+theme-midnight-sapphire = Océano & Cian
 
-theme-deep-emerald = Esmeralda Profunda
+theme-warm-ember = Brasas y Terracota
+
+theme-deep-emerald = Esmeralda & Bosque
+
+theme-nordic-sage = Salvia & Lino
 
 theme-scripture-serif = Escrituras y Liturgia
 
 theme-celestial-violet = Amatista Celestial
 
-theme-bold-anthem = Alabanza Vibrante
+theme-bold-anthem = Alabanza Stadium
 
 theme-clean-alabaster = Alabastro Editorial
 
 theme-broadcast-lower-third = Cintillo de Transmisión
 
-theme-frosted-glass-card = Tarjeta de Vidrio Esmerilado
+theme-frosted-glass-card = Vidrio Esmerilado
 
 workspace-this-screen-is-currently-inactive = Esta pantalla está inactiva.
 

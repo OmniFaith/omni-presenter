@@ -242,7 +242,7 @@ impl AppDb {
         {
             let conn = self.conn.lock().unwrap();
             let _ = conn.execute(
-                "DELETE FROM themes WHERE id IN ('hands_water', 'starry_sky');",
+                "DELETE FROM themes WHERE id IN ('hands_water', 'starry_sky', 'deep_emerald', 'celestial_violet', 'scripture_serif', 'shader_nebula', 'shader_grid', 'shader_prism');",
                 [],
             );
             let _ = conn.execute(

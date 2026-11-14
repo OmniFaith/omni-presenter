@@ -5,6 +5,7 @@ pub enum PlaylistItemKind {
     Bible,
     Text,
     Design,
+    Separator,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -20,6 +21,9 @@ pub struct PlaylistItem {
 
 impl PlaylistItem {
     pub fn preview(&self, deck: &mut crate::core::slides::SlideDeck) -> Result<(), String> {
+        if self.kind == PlaylistItemKind::Separator {
+            return Ok(());
+        }
         if self.kind == PlaylistItemKind::Design {
             return deck.preview_design_by_id(&self.content);
         }

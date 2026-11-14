@@ -332,15 +332,18 @@ impl PresentationApp {
             }
             Pin { kind, id } => {
                 let item = self.web_control.resource(kind, &id)?;
-                let kind = match item.kind {
-                    PlaylistItemKind::Song => QuickItemKind::Song,
-                    PlaylistItemKind::Media => QuickItemKind::Media,
-                    PlaylistItemKind::Bible => QuickItemKind::Verse,
-                    PlaylistItemKind::Text => QuickItemKind::Text,
-                    PlaylistItemKind::Design => QuickItemKind::Design,
-                };
-                self.control_state
-                    .add_quick_item(item.title, item.subtitle, kind, item.content);
+                if item.kind != PlaylistItemKind::Separator {
+                    let kind = match item.kind {
+                        PlaylistItemKind::Song => QuickItemKind::Song,
+                        PlaylistItemKind::Media => QuickItemKind::Media,
+                        PlaylistItemKind::Bible => QuickItemKind::Verse,
+                        PlaylistItemKind::Text => QuickItemKind::Text,
+                        PlaylistItemKind::Design => QuickItemKind::Design,
+                        PlaylistItemKind::Separator => unreachable!(),
+                    };
+                    self.control_state
+                        .add_quick_item(item.title, item.subtitle, kind, item.content);
+                }
             }
             QuickSelect { id, project } => {
                 let item = self

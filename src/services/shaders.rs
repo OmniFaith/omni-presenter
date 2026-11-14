@@ -7,17 +7,14 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 mod custom;
 
-pub const PRESETS: [(&str, &str, &str); 10] = [
+pub const PRESETS: [(&str, &str, &str); 7] = [
     ("aurora", "settings-aurora", "settings-moving-curtains-of-light"),
-    ("nebula", "settings-nebula", "settings-cosmic-clouds-and-stars"),
     ("waves", "settings-waves", "settings-smooth-flowing-layers"),
     ("silk", "settings-silk", "settings-delicate-folds-and-reflections"),
     ("particles", "settings-particles", "settings-floating-points-of-light"),
     ("rings", "settings-rings", "settings-concentric-ripples"),
     ("fluid", "settings-fluid", "settings-ink-and-organic-motion"),
-    ("grid", "settings-light-grid", "settings-pulsing-geometric-lines"),
     ("bokeh", "settings-bokeh", "settings-soft-atmospheric-lights"),
-    ("prism", "settings-prism", "settings-color-changing-facets"),
 ];
 
 #[repr(C)]
@@ -430,6 +427,6 @@ mod tests {
         )
         .validate(&module)
         .unwrap();
-        assert_eq!(super::default_themes().len(), 10);
+        assert_eq!(super::default_themes().len(), 7);
     }
 }

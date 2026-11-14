@@ -230,9 +230,15 @@ fn test_default_themes_upgrade_and_restore() {
     assert!(!themes.iter().any(|t| t.id == "starry_sky"));
     assert!(themes.iter().any(|t| t.id == "midnight_sapphire"));
     assert!(themes.iter().any(|t| t.id == "warm_ember"));
-    assert!(themes.iter().any(|t| t.id == "deep_emerald"));
-    assert!(themes.iter().any(|t| t.id == "scripture_serif"));
+    assert!(!themes.iter().any(|t| t.id == "deep_emerald"));
+    assert!(!themes.iter().any(|t| t.id == "scripture_serif"));
+    assert!(!themes.iter().any(|t| t.id == "celestial_violet"));
+    assert!(!themes.iter().any(|t| t.id == "shader_nebula"));
+    assert!(!themes.iter().any(|t| t.id == "shader_grid"));
+    assert!(!themes.iter().any(|t| t.id == "shader_prism"));
     assert!(themes.iter().any(|t| t.id == "clean_alabaster"));
+    assert!(themes.iter().any(|t| t.id == "golden_champagne"));
+    assert!(themes.iter().any(|t| t.id == "nordic_sage"));
     assert!(themes.iter().any(|t| t.id == "broadcast_lower_third"));
     assert!(themes.iter().any(|t| t.id == "frosted_glass_card"));
     assert!(themes.iter().any(|t| t.id == "shader_aurora"));

@@ -76,6 +76,7 @@ export const paths: Record<string, string[]> = {
     "M5 8a8 8 0 0 1 13-3l2 3M4 16l2 3a8 8 0 0 0 13-3",
   ],
   grip: ["M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"],
+  clock: ["M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5v5l3 3"],
   grid: ["M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"],
 };
 
@@ -123,6 +124,7 @@ export const nativeGlyphs: Record<string, string> = {
   settings: "\u{E434}",
   user: "\u{E4C2}",
   church: "\u{ECEA}",
+  clock: "\u{E19A}",
   calendar: "\u{E120}",
   refresh: "\u{E094}",
   sun: "\u{E472}",

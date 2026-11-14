@@ -223,6 +223,7 @@ pub fn serve(request: tiny_http::Request, control: &WebControl) {
                     ("settings", SLIDERS_HORIZONTAL),
                     ("user", USER),
                     ("church", CHURCH),
+                    ("clock", CLOCK),
                     ("calendar", CALENDAR_BLANK),
                     ("refresh", ARROWS_CLOCKWISE),
                     ("sun", SUN),

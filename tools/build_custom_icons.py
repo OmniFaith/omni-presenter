@@ -100,7 +100,7 @@ ICON_TO_SVG = {
     "X": "cross.svg",
     "CHECK": "check.svg",
     "CHECKS": "square-ok.svg",
-    "CHECK_CIRCLE": "check.svg",
+    "CHECK_CIRCLE": "check-circle.svg",
     "CHECK_SQUARE": "square-ok.svg",
     "PROHIBIT": "cross.svg",
 
@@ -224,7 +224,7 @@ ICON_TO_SVG = {
     "SQUARE": "square-more.svg",
     "RECTANGLE": "card.svg",
     "SQUARES_FOUR": "grid-view.svg",
-    "CIRCLE": "bitcoin-circle.svg",
+    "CIRCLE": "circle.svg",
     "CUBE": "tile-2.svg",
     "CARDS": "grid-view.svg",
     "CHECKERBOARD": "grid-view.svg",
@@ -303,7 +303,7 @@ def convert_svg_to_plain(args: tuple[str, str, str]) -> tuple[str, bool, str]:
     cmd = [
         "inkscape",
         in_path,
-        "--actions=select-all:all;selection-ungroup;selection-ungroup;selection-ungroup;object-stroke-to-path;export-plain-svg;export-do",
+        "--actions=select-all:all;selection-ungroup;selection-ungroup;selection-ungroup;selection-ungroup;selection-ungroup;selection-ungroup;selection-ungroup;selection-ungroup;object-stroke-to-path;export-plain-svg;export-do",
         "-o",
         raw_out_path,
     ]
@@ -323,8 +323,17 @@ def convert_svg_to_plain(args: tuple[str, str, str]) -> tuple[str, bool, str]:
     return (os.path.basename(in_path), True, clean_out_path)
 
 def build_glyph(svg_path: str, glyf, scale_factor: float = 1.0):
-    sx = (1024.0 / 6.35) * scale_factor
-    sy = -(1005.0 / 6.35) * scale_factor
+    try:
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+        vb = root.attrib.get("viewBox", "0 0 6.35 6.35").split()
+        vw = float(vb[2]) if len(vb) >= 4 else 6.35
+        vh = float(vb[3]) if len(vb) >= 4 else 6.35
+    except Exception:
+        vw, vh = 6.35, 6.35
+
+    sx = (1024.0 / vw) * scale_factor
+    sy = -(1005.0 / vh) * scale_factor
 
     # Pass 1: compute bounds
     svg_path_obj = SVGPath(svg_path)

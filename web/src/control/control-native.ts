@@ -461,7 +461,7 @@ function prepareChrome(): void {
   const service = $("service");
   const servicePill = node("span", undefined, "native-service");
   service.before(servicePill);
-  servicePill.append(icon("church"), service);
+  servicePill.append(icon("clock"), service);
   const dateWrapper = $("service-date-wrapper");
   if (dateWrapper && $("service-date")) {
     $("service-date").before(icon("calendar"));

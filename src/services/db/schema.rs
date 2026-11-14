@@ -215,7 +215,7 @@ impl AppDb {
     }
     pub fn upgrade_default_presentation_themes(&self) -> Result<()> {
         let installed: bool = self.conn.lock().unwrap().query_row(
-            "SELECT EXISTS(SELECT 1 FROM app_migrations WHERE name = 'presentation_themes_v3_purge_legacy_images')",
+            "SELECT EXISTS(SELECT 1 FROM app_migrations WHERE name = 'presentation_themes_v6_clean_palette')",
             [],
             |row| row.get(0),
         )?;
@@ -233,6 +233,12 @@ impl AppDb {
             "classic_black",
             "clean_white",
             "teal_cyan",
+            "deep_emerald",
+            "celestial_violet",
+            "scripture_serif",
+            "shader_nebula",
+            "shader_grid",
+            "shader_prism",
         ];
 
         {
@@ -260,7 +266,7 @@ impl AppDb {
         }
 
         let _ = conn.execute(
-            "INSERT OR IGNORE INTO app_migrations (name) VALUES ('presentation_themes_v3_purge_legacy_images')",
+            "INSERT OR IGNORE INTO app_migrations (name) VALUES ('presentation_themes_v6_clean_palette')",
             [],
         );
         Ok(())

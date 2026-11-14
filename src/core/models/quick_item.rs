@@ -44,6 +44,7 @@ impl QuickItem {
                 PlaylistItemKind::Bible => QuickItemKind::Verse,
                 PlaylistItemKind::Text => QuickItemKind::Text,
                 PlaylistItemKind::Design => QuickItemKind::Design,
+                PlaylistItemKind::Separator => QuickItemKind::Text,
             },
         }
     }

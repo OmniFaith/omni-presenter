@@ -523,6 +523,14 @@ workspace-reorder-playlist = Reorder playlist
 
 workspace-playlist-options = Playlist options
 
+workspace-add-separator = Add separator
+workspace-rename-separator = Rename separator
+workspace-change-color = Change color
+workspace-remove-separator = Remove separator
+workspace-new-separator = New separator
+workspace-separator-name-placeholder = Separator name (e.g. Praise, Announcements, Sermon)
+workspace-custom-color = Custom color
+
 workspace-restore = Restore
 
 workspace-restore-default-themes = Restore default themes
@@ -657,23 +665,27 @@ workspace-themes = Themes
 
 theme-obsidian-pro = Obsidian Minimalist
 
-theme-midnight-sapphire = Midnight Sapphire
+theme-golden-champagne = Golden Champagne
 
-theme-warm-ember = Warm Ember
+theme-midnight-sapphire = Deep Ocean & Cyan
 
-theme-deep-emerald = Deep Emerald
+theme-warm-ember = Warm Terracotta
+
+theme-deep-emerald = Deep Emerald & Forest
+
+theme-nordic-sage = Sage & Linen
 
 theme-scripture-serif = Scripture & Liturgy
 
 theme-celestial-violet = Celestial Amethyst
 
-theme-bold-anthem = Bold Anthem
+theme-bold-anthem = Stadium Worship
 
 theme-clean-alabaster = Clean Alabaster
 
 theme-broadcast-lower-third = Broadcast Lower Third
 
-theme-frosted-glass-card = Frosted Glass Card
+theme-frosted-glass-card = Modern Frosted Glass
 
 workspace-this-screen-is-currently-inactive = This screen is currently inactive.
 

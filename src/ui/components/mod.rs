@@ -36,6 +36,6 @@ pub use icon_sidebar::{ICON_DESIGN, render_icon_sidebar};
 pub use pill_tab::render_pill_tabs;
 pub use presentation_dock::render_presentation_dock;
 pub use qr_code::{open_qr_dialog, qr_card, render_active_qr_dialog, render_qr_code, show_qr_dialog};
-pub use status_circle::render_status_circle;
+pub use status_circle::{paint_status_circle, render_status_circle};
 pub use toolbar::{centered_horizontal, toolbar_icon_button};
 pub use top_bar::render_top_bar;

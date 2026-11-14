@@ -1,3 +1,6 @@
+use super::playlist_separator::{
+    render_separator_item, SeparatorAction,
+};
 use crate::core::layout::ContainerKind;
 use crate::core::models::{PlaylistItemKind, QuickItemKind};
 use crate::core::slides::SlideDeck;
@@ -10,8 +13,9 @@ use crate::ui::components::{
 use crate::ui::AppTheme;
 use eframe::egui::{self, RichText, Vec2};
 use egui_phosphor::regular::{
-    ARROW_DOWN, ARROW_UP, ARROWS_DOWN_UP, BOOK_OPEN, CHECK_CIRCLE, CHURCH, CIRCLE, COPY_SIMPLE,
-    DOTS_THREE_CIRCLE, EYE, FILE_TEXT, MUSIC_NOTE, PENCIL_SIMPLE, PLAY, PUSH_PIN, TRASH, VIDEO,
+    ARROW_DOWN, ARROW_UP, ARROWS_DOWN_UP, BOOK_OPEN, CHECK_CIRCLE, CIRCLE, CLOCK, COPY_SIMPLE,
+    DOTS_THREE_CIRCLE, EYE, FILE_TEXT, MUSIC_NOTE, PENCIL_SIMPLE, PLAY, PLUS, PUSH_PIN, TRASH,
+    VIDEO,
 };
 
 pub fn render_playlist_column(
@@ -66,6 +70,28 @@ pub fn render_playlist_column(
         let options_btn = toolbar_icon_button(ui, DOTS_THREE_CIRCLE, crate::ui::i18n::text(ui, "workspace-playlist-options"), &theme);
         egui::Popup::menu(&options_btn).show(|ui| {
             context_menu_header(ui);
+            if context_menu_item(ui, PLUS, "workspace-add-separator", &theme).clicked() {
+                let new_sep = crate::core::models::PlaylistItem {
+                    id: crate::core::preferences::new_id("playlist"),
+                    title: String::new(),
+                    subtitle: String::new(),
+                    kind: PlaylistItemKind::Separator,
+                    played: false,
+                    content: "#3B82F6".to_string(),
+                };
+                let insert_pos = state
+                    .selected_playlist_index
+                    .map(|i| (i + 1).min(state.playlist.len()))
+                    .unwrap_or(state.playlist.len());
+                let new_id = new_sep.id.clone();
+                state.playlist.insert(insert_pos, new_sep);
+                state.selected_playlist_index = Some(insert_pos);
+                state.playlist_selection.clear();
+                state.playlist_selection.selected.insert(new_id.clone());
+                state.renaming_separator_id = Some(new_id);
+                ui.close();
+            }
+            context_menu_separator(ui);
             let selected = state.selected_playlist_index;
             if selected.is_some_and(|index| index > 0) {
                 if context_menu_item(ui, ARROW_UP, "workspace-move-selected-item-up", &theme).clicked() {
@@ -145,6 +171,11 @@ pub fn render_playlist_column(
             let mut action_mark_all_played = false;
             let mut action_mark_all_unplayed = false;
             let mut action_clear_playlist = false;
+            let mut action_add_separator_after = None;
+            let mut action_rename_separator = None;
+            let mut action_save_separator_title = None;
+            let mut action_cancel_rename_separator = false;
+            let mut action_set_color = None;
             let mut reorder = None;
 
             let order: Vec<String> = state.playlist.iter().map(|item| item.id.clone()).collect();
@@ -153,6 +184,53 @@ pub fn render_playlist_column(
             let total_items = state.playlist.len();
 
             for (idx, item) in state.playlist.iter().enumerate() {
+                if item.kind == PlaylistItemKind::Separator {
+                    let is_selected = state.playlist_selection.selected.contains(&item.id)
+                        || (state.playlist_selection.selected.is_empty() && state.selected_playlist_index == Some(idx));
+                    let is_renaming = state.renaming_separator_id.as_deref() == Some(&item.id);
+                    let drag_ids = state.playlist_selection.drag_ids(&item.id, &order);
+                    let (sep_action, sep_clicked, sep_drag_started, sep_reorder) = render_separator_item(
+                        ui,
+                        item,
+                        idx,
+                        total_items,
+                        is_selected,
+                        is_renaming,
+                        drag_ids,
+                        &theme,
+                    );
+                    if sep_drag_started {
+                        if !state.playlist_selection.selected.contains(&item.id) {
+                            state.playlist_selection.clear();
+                            state.playlist_selection.selected.insert(item.id.clone());
+                        }
+                        state.selected_playlist_index = Some(idx);
+                    }
+                    if sep_clicked {
+                        let (shift, ctrl) = ui.input(|i| (i.modifiers.shift, i.modifiers.ctrl || i.modifiers.command));
+                        state.playlist_selection.click(item.id.clone(), &order, shift, ctrl);
+                        state.selected_playlist_index = Some(idx);
+                    }
+                    if let Some(r) = sep_reorder {
+                        reorder = Some(r);
+                    }
+                    match sep_action {
+                        SeparatorAction::None => {}
+                        SeparatorAction::StartRename(id) => action_rename_separator = Some(id),
+                        SeparatorAction::SaveTitle(id, new_title) => {
+                            action_save_separator_title = Some((id, new_title));
+                        }
+                        SeparatorAction::CancelRename => action_cancel_rename_separator = true,
+                        SeparatorAction::SetColor(id, hex) => action_set_color = Some((id, hex)),
+                        SeparatorAction::MoveUp(i) => action_move_up = Some(i),
+                        SeparatorAction::MoveDown(i) => action_move_down = Some(i),
+                        SeparatorAction::AddSeparatorAfter(i) => action_add_separator_after = Some(i),
+                        SeparatorAction::Remove(i) => action_remove_idx = Some(i),
+                    }
+                    ui.add_space(2.0);
+                    continue;
+                }
+
                 let is_selected = state.playlist_selection.selected.contains(&item.id)
                     || (state.playlist_selection.selected.is_empty() && state.selected_playlist_index == Some(idx));
                 let row_w = ui.available_width();
@@ -170,7 +248,7 @@ pub fn render_playlist_column(
 
                 let circle_rect = egui::Rect::from_center_size(
                     egui::pos2(rect.max.x - 14.0, rect.center().y),
-                    Vec2::new(20.0, 20.0),
+                    Vec2::new(16.0, 16.0),
                 );
                 let circle_resp = ui
                     .interact(
@@ -191,23 +269,13 @@ pub fn render_playlist_column(
                     toggled_played_idx = Some(idx);
                 }
 
-                let (c_icon, c_color) = if item.played {
-                    (CHECK_CIRCLE, theme.accent)
-                } else {
-                    (CIRCLE, theme.text_muted)
-                };
-                let circle_galley = ui.painter().layout_no_wrap(
-                    c_icon.to_string(),
-                    egui::FontId::proportional(16.0),
-                    c_color,
-                );
-                ui.painter().galley(
-                    egui::pos2(
-                        circle_rect.center().x - circle_galley.size().x / 2.0,
-                        circle_rect.center().y - circle_galley.size().y / 2.0,
-                    ),
-                    circle_galley,
-                    c_color,
+                crate::ui::components::paint_status_circle(
+                    ui.painter(),
+                    circle_rect.center(),
+                    6.5,
+                    item.played,
+                    circle_resp.hovered(),
+                    &theme,
                 );
 
                 let kind_icon = match item.kind {
@@ -216,6 +284,7 @@ pub fn render_playlist_column(
                     PlaylistItemKind::Bible => BOOK_OPEN,
                     PlaylistItemKind::Text => FILE_TEXT,
                     PlaylistItemKind::Design => crate::ui::components::ICON_DESIGN,
+                    PlaylistItemKind::Separator => FILE_TEXT,
                 };
                 let drag_ids = state.playlist_selection.drag_ids(&item.id, &order);
                 crate::ui::components::drag_drop::source(ui, &resp, || {
@@ -244,15 +313,28 @@ pub fn render_playlist_column(
                 );
                 let painter = ui.painter().with_clip_rect(text_clip);
                 let text_y = rect.center().y;
+                let (icon_color, title_color, subtitle_color) = if item.played {
+                    (
+                        theme.text_muted,
+                        theme.text_muted,
+                        theme.text_muted.linear_multiply(0.75),
+                    )
+                } else {
+                    (
+                        theme.icon_default,
+                        theme.text_primary,
+                        theme.text_muted,
+                    )
+                };
                 let icon_galley = painter.layout_no_wrap(
                     kind_icon.to_string(),
                     egui::FontId::proportional(13.0),
-                    theme.icon_default,
+                    icon_color,
                 );
                 painter.galley(
                     egui::pos2(rect.min.x + 8.0, text_y - icon_galley.size().y / 2.0),
                     icon_galley,
-                    theme.icon_default,
+                    icon_color,
                 );
 
                 crate::ui::components::interaction::render_item_title_and_subtitle(
@@ -262,8 +344,8 @@ pub fn render_playlist_column(
                     &item.subtitle,
                     egui::FontId::proportional(12.0),
                     egui::FontId::proportional(11.0),
-                    theme.text_primary,
-                    theme.text_muted,
+                    title_color,
+                    subtitle_color,
                     egui::pos2(title_x, text_y),
                     avail_w,
                 );
@@ -356,6 +438,13 @@ pub fn render_playlist_column(
 
                     context_menu_separator(ui);
 
+                    if context_menu_item(ui, PLUS, "workspace-add-separator", &theme).clicked() {
+                        action_add_separator_after = Some(idx);
+                        ui.close();
+                    }
+
+                    context_menu_separator(ui);
+
                     if context_menu_danger_item(ui, TRASH, "workspace-remove-from-playlist", &theme).clicked() {
                         action_remove_idx = Some(idx);
                         ui.close();
@@ -375,6 +464,11 @@ pub fn render_playlist_column(
                     );
                     empty_resp.context_menu(|ui| {
                         context_menu_header(ui);
+                        if context_menu_item(ui, PLUS, "workspace-add-separator", &theme).clicked() {
+                            action_add_separator_after = Some(state.playlist.len().saturating_sub(1));
+                            ui.close();
+                        }
+                        context_menu_separator(ui);
                         if context_menu_item(ui, CHECK_CIRCLE, "workspace-mark-all-as-played", &theme)
                             .clicked()
                         {
@@ -400,7 +494,7 @@ pub fn render_playlist_column(
                 ui.add_space(28.0);
                 ui.vertical_centered(|ui| {
                     ui.label(
-                        RichText::new(CHURCH)
+                        RichText::new(CLOCK)
                             .size(32.0)
                             .color(theme.text_secondary.linear_multiply(0.6)),
                     );
@@ -510,22 +604,25 @@ pub fn render_playlist_column(
             if let Some(idx) = action_add_to_shortcuts
                 && idx < state.playlist.len() {
                     let item = &state.playlist[idx];
-                    let (qkind, content) = match item.kind {
-                        PlaylistItemKind::Song => {
-                            let c = slide_deck
-                                .library()
-                                .iter()
-                                .find(|s| s.title == item.title)
-                                .map(|s| s.text.clone())
-                                .unwrap_or_default();
-                            (QuickItemKind::Song, c)
-                        }
-                        PlaylistItemKind::Media => (QuickItemKind::Media, item.content.clone()),
-                        PlaylistItemKind::Bible => (QuickItemKind::Verse, item.content.clone()),
-                        PlaylistItemKind::Text => (QuickItemKind::Text, item.content.clone()),
-                        PlaylistItemKind::Design => (QuickItemKind::Design, item.content.clone()),
-                    };
-                    state.add_quick_item(item.title.clone(), item.subtitle.clone(), qkind, content);
+                    if item.kind != PlaylistItemKind::Separator {
+                        let (qkind, content) = match item.kind {
+                            PlaylistItemKind::Song => {
+                                let c = slide_deck
+                                    .library()
+                                    .iter()
+                                    .find(|s| s.title == item.title)
+                                    .map(|s| s.text.clone())
+                                    .unwrap_or_default();
+                                (QuickItemKind::Song, c)
+                            }
+                            PlaylistItemKind::Media => (QuickItemKind::Media, item.content.clone()),
+                            PlaylistItemKind::Bible => (QuickItemKind::Verse, item.content.clone()),
+                            PlaylistItemKind::Text => (QuickItemKind::Text, item.content.clone()),
+                            PlaylistItemKind::Design => (QuickItemKind::Design, item.content.clone()),
+                            PlaylistItemKind::Separator => unreachable!(),
+                        };
+                        state.add_quick_item(item.title.clone(), item.subtitle.clone(), qkind, content);
+                    }
                 }
             if let Some(title) = action_edit_song
                 && let Some(s) = slide_deck.library().iter().find(|s| s.title == title) {
@@ -550,6 +647,40 @@ pub fn render_playlist_column(
                             state.selected_playlist_index = Some(sel - 1);
                         }
                 }
+            }
+            if let Some(target_id) = action_rename_separator {
+                state.renaming_separator_id = Some(target_id);
+            }
+            if let Some((target_id, new_title)) = action_save_separator_title {
+                if let Some(item) = state.playlist.iter_mut().find(|it| it.id == target_id) {
+                    item.title = new_title;
+                }
+                state.renaming_separator_id = None;
+            }
+            if action_cancel_rename_separator {
+                state.renaming_separator_id = None;
+            }
+            if let Some((target_id, new_color)) = action_set_color {
+                if let Some(item) = state.playlist.iter_mut().find(|it| it.id == target_id) {
+                    item.content = new_color;
+                }
+            }
+            if let Some(idx) = action_add_separator_after {
+                let new_sep = crate::core::models::PlaylistItem {
+                    id: crate::core::preferences::new_id("playlist"),
+                    title: String::new(),
+                    subtitle: String::new(),
+                    kind: PlaylistItemKind::Separator,
+                    played: false,
+                    content: "#3B82F6".to_string(),
+                };
+                let insert_pos = (idx + 1).min(state.playlist.len());
+                let new_id = new_sep.id.clone();
+                state.playlist.insert(insert_pos, new_sep);
+                state.selected_playlist_index = Some(insert_pos);
+                state.playlist_selection.clear();
+                state.playlist_selection.selected.insert(new_id.clone());
+                state.renaming_separator_id = Some(new_id);
             }
             if action_mark_all_played {
                 for it in &mut state.playlist {
@@ -748,6 +879,7 @@ pub fn activate_selected_playlist_items(
                     kind: kind.to_string(),
                 }));
             }
+            PlaylistItemKind::Separator => {}
         }
     }
 
@@ -802,6 +934,9 @@ pub(crate) fn activate_item(
         return;
     };
     state.selected_playlist_index = Some(index);
+    if item.kind == PlaylistItemKind::Separator {
+        return;
+    }
     if item.kind == PlaylistItemKind::Media {
         match crate::services::media::activate(
             state,

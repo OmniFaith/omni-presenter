@@ -2,7 +2,7 @@ use crate::core::state::ControlPanelState;
 use crate::ui::AppTheme;
 use eframe::egui::{self, RichText};
 use egui_phosphor::regular::{
-    CARET_DOWN, CARET_LEFT, CARET_RIGHT, CHECK, CHURCH, COPY_SIMPLE, GEAR, PLUS, REPEAT, TRASH,
+    CARET_DOWN, CARET_LEFT, CARET_RIGHT, CHECK, CLOCK, COPY_SIMPLE, GEAR, PLUS, REPEAT, TRASH,
 };
 
 fn split_date_tag(date_str: &str) -> (&str, Option<&str>) {
@@ -246,7 +246,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
         ui.painter().text(
             rect.left_center() + egui::vec2(7.0, 0.0),
             egui::Align2::LEFT_CENTER,
-            CHURCH,
+            CLOCK,
             egui::FontId::proportional(11.5),
             theme.accent,
         );
@@ -306,7 +306,7 @@ pub fn render_event_footer(ui: &mut egui::Ui, state: &mut ControlPanelState, the
         egui::Popup::menu(&resp).show(|ui| {
             ui.set_max_width(280.0);
             ui.label(
-                RichText::new(crate::ui::i18n::text(ui, "workspace-events"))
+                RichText::new(format!("{CLOCK}  {}", crate::ui::i18n::text(ui, "workspace-events")))
                     .size(11.0)
                     .strong()
                     .color(theme.text_secondary),

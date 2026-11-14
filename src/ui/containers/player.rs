@@ -138,11 +138,13 @@ fn render_active_player(
             }
 
             let next_playlist_idx = state.selected_playlist_index.and_then(|idx| {
-                if idx + 1 < state.playlist.len() {
-                    Some(idx + 1)
-                } else {
-                    None
-                }
+                state
+                    .playlist
+                    .iter()
+                    .enumerate()
+                    .skip(idx + 1)
+                    .find(|(_, it)| it.kind != crate::core::models::PlaylistItemKind::Separator)
+                    .map(|(i, _)| i)
             });
 
             if is_live_video && let Some(next_idx) = next_playlist_idx {
