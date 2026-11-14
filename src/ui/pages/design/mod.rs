@@ -14,6 +14,8 @@ mod toolbar;
 mod inspector_text;
 mod inspector_appearance;
 mod inspector_transition;
+pub mod animation_bar;
+pub(super) mod animation_timeline;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -29,6 +31,29 @@ use crate::ui::draw_splitter_handle;
 use crate::ui::theme::AppTheme;
 use eframe::egui::{self, RichText, Vec2};
 use egui_phosphor::regular::*;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TimelineMode {
+    #[default]
+    Layers,
+    Slides,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum TimelineDragHandle {
+    Start,
+    End,
+    Move,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct TimelineDrag {
+    pub layer_index: usize,
+    pub handle: TimelineDragHandle,
+    pub initial_pointer_x: f32,
+    pub initial_start_ms: u32,
+    pub initial_end_ms: u32,
+}
 
 pub struct DesignEditor {
     language: crate::core::i18n::Language,
@@ -55,6 +80,14 @@ pub struct DesignEditor {
     pub preview_theme_id: Option<String>,
     pub theme_search: String,
     pub preview_aspect_ratio: Option<f32>,
+    pub animation_playing: bool,
+    pub animation_started_at: Option<std::time::Instant>,
+    pub animation_time_ms: u64,
+    pub animation_loop: bool,
+    pub show_filmstrip: bool,
+    pub timeline_mode: TimelineMode,
+    pub timeline_drag: Option<TimelineDrag>,
+    pub timeline_height: f32,
 }
 
 impl Default for DesignEditor {
@@ -84,6 +117,14 @@ impl Default for DesignEditor {
             preview_theme_id: None,
             theme_search: String::new(),
             preview_aspect_ratio: None,
+            animation_playing: false,
+            animation_started_at: None,
+            animation_time_ms: 0,
+            animation_loop: true,
+            show_filmstrip: true,
+            timeline_mode: TimelineMode::Layers,
+            timeline_drag: None,
+            timeline_height: 140.0,
         }
     }
 }
@@ -213,6 +254,28 @@ impl DesignEditor {
         self.drag = None;
         self.saved = true;
         self.confirm_delete = false;
+        self.animation_playing = false;
+        self.animation_started_at = None;
+        self.animation_time_ms = 0;
+    }
+
+    pub fn play_animation(&mut self) {
+        self.animation_playing = true;
+        self.animation_started_at = Some(std::time::Instant::now());
+        self.animation_time_ms = 0;
+    }
+
+    pub fn pause_animation(&mut self) {
+        self.animation_playing = false;
+        self.animation_started_at = None;
+    }
+
+    pub fn toggle_animation(&mut self) {
+        if self.animation_playing {
+            self.pause_animation();
+        } else {
+            self.play_animation();
+        }
     }
 
     #[cfg(test)]
@@ -682,7 +745,7 @@ impl DesignEditor {
                 deck.live_overlay = None;
             }
             if ui
-                .add_enabled(*presenting, egui::Button::new(crate::ui::i18n::format(ui, "design-overlay-variant-3", &[("name", STACK)])))
+                .add_enabled(*presenting, egui::Button::new(crate::ui::i18n::format(ui, "design-overlay-variant-3", &[("icon", STACK)])))
                 .on_hover_text(
                     crate::ui::i18n::text(ui, "design-add-this-design-over-the-live-content-without-replacing-the"),
                 )

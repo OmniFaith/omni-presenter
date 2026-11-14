@@ -1,5 +1,8 @@
 //! Resolution-independent scenes shared by the editor, projector and browser.
 use serde::{Deserialize, Serialize};
+pub use super::design_animation::{
+    default_slide_duration, AnimationEffect, DesignSlide, LayerAnimation,
+};
 pub use super::design_style::{ShapeKind,LayerStroke,LayerShadow,DesignTextStyle,LayerBackground};
 
 pub fn now_ms() -> u64 {
@@ -232,6 +235,8 @@ pub struct DesignLayer {
     pub group_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group_name: Option<String>,
+    #[serde(default)]
+    pub animation: LayerAnimation,
 }
 fn default_line_width()->f32{4.0}
 impl Default for DesignLayer {
@@ -270,6 +275,7 @@ impl DesignLayer {
             rotation:0.0,blur:0.0,stroke:LayerStroke::default(),shadow:LayerShadow::default(),shape:ShapeKind::Rectangle,line_width:4.0,text_style:DesignTextStyle::default(),
             group_id: None,
             group_name: None,
+            animation: LayerAnimation::default(),
         }
     }
 }
@@ -304,6 +310,15 @@ pub struct DesignDocument {
     /// Transition easing curve.
     #[serde(default = "default_transition_easing")]
     pub transition_easing: String,
+    /// Multiple slides support.
+    #[serde(default)]
+    pub slides: Vec<DesignSlide>,
+    /// Index of currently selected slide.
+    #[serde(default)]
+    pub active_slide_index: usize,
+    /// Default slide duration in seconds (for presentations/animations).
+    #[serde(default = "default_slide_duration")]
+    pub slide_duration_secs: f32,
 }
 fn default_design_transition() -> String {
     "fade".into()
@@ -337,6 +352,9 @@ impl Default for DesignDocument {
             transition_strength: 12.0,
             transition_easing: "smooth".into(),
             layers: Vec::new(),
+            slides: Vec::new(),
+            active_slide_index: 0,
+            slide_duration_secs: 5.0,
         }
     }
 }
@@ -381,6 +399,132 @@ impl DesignDocument {
         std::borrow::Cow::Owned(scene)
     }
 
+    pub fn ensure_slides(&mut self) {
+        if self.slides.is_empty() {
+            self.slides.push(DesignSlide {
+                id: new_id(),
+                name: self.name.clone(),
+                layers: self.layers.clone(),
+                duration_secs: if self.slide_duration_secs > 0.0 { self.slide_duration_secs } else { 5.0 },
+                transition: self.transition.clone(),
+                transition_ms: self.transition_ms,
+            });
+            self.active_slide_index = 0;
+        } else {
+            if self.active_slide_index >= self.slides.len() {
+                self.active_slide_index = self.slides.len().saturating_sub(1);
+            }
+            if self.layers.is_empty() && !self.slides[self.active_slide_index].layers.is_empty() {
+                self.layers = self.slides[self.active_slide_index].layers.clone();
+            }
+        }
+    }
+
+    pub fn sync_active_slide_from_layers(&mut self) {
+        self.ensure_slides();
+        let idx = self.active_slide_index;
+        if let Some(slide) = self.slides.get_mut(idx) {
+            slide.layers = self.layers.clone();
+        }
+    }
+
+    pub fn set_active_slide(&mut self, index: usize) {
+        self.ensure_slides();
+        if index < self.slides.len() {
+            let prev = self.active_slide_index;
+            if let Some(slide) = self.slides.get_mut(prev) {
+                slide.layers = self.layers.clone();
+            }
+            self.active_slide_index = index;
+            self.layers = self.slides[index].layers.clone();
+        }
+    }
+
+    pub fn add_slide(&mut self) -> usize {
+        self.ensure_slides();
+        let prev = self.active_slide_index;
+        if let Some(slide) = self.slides.get_mut(prev) {
+            slide.layers = self.layers.clone();
+        }
+        let new_idx = self.slides.len();
+        self.slides.push(DesignSlide {
+            id: new_id(),
+            name: format!("Slide {}", new_idx + 1),
+            layers: Vec::new(),
+            duration_secs: self.slide_duration_secs.max(1.0),
+            transition: self.transition.clone(),
+            transition_ms: self.transition_ms,
+        });
+        self.set_active_slide(new_idx);
+        new_idx
+    }
+
+    pub fn duplicate_current_slide(&mut self) -> usize {
+        self.ensure_slides();
+        let curr = self.active_slide_index;
+        if let Some(slide) = self.slides.get_mut(curr) {
+            slide.layers = self.layers.clone();
+        }
+        let mut clone = self.slides[curr].clone();
+        clone.id = new_id();
+        clone.name = format!("{} (2)", clone.name);
+        for layer in &mut clone.layers {
+            layer.id = new_id();
+        }
+        let insert_idx = curr + 1;
+        self.slides.insert(insert_idx, clone);
+        self.set_active_slide(insert_idx);
+        insert_idx
+    }
+
+    pub fn delete_slide(&mut self, index: usize) -> bool {
+        self.ensure_slides();
+        if self.slides.len() <= 1 {
+            return false;
+        }
+        if index < self.slides.len() {
+            self.slides.remove(index);
+            let next_idx = if index >= self.slides.len() {
+                self.slides.len() - 1
+            } else {
+                index
+            };
+            self.active_slide_index = next_idx;
+            self.layers = self.slides[next_idx].layers.clone();
+            return true;
+        }
+        false
+    }
+
+    pub fn active_slide_duration_ms(&self) -> u64 {
+        let secs = self.slides.get(self.active_slide_index)
+            .map(|s| s.duration_secs)
+            .unwrap_or(self.slide_duration_secs);
+        (secs.max(0.5) * 1000.0) as u64
+    }
+
+    pub fn animated_layers_at(&self, elapsed_ms: u64) -> Vec<DesignLayer> {
+        let slide_duration_ms = self.active_slide_duration_ms();
+        let mut result = self.layers.clone();
+        for layer in &mut result {
+            if layer.animation.is_animated() {
+                let (anim_rect, anim_opacity) = layer.animation.apply_at(
+                    layer.rect,
+                    layer.opacity,
+                    elapsed_ms,
+                    slide_duration_ms,
+                );
+                layer.rect = anim_rect;
+                layer.opacity = anim_opacity;
+            }
+        }
+        result
+    }
+
+    pub fn has_layer_animations(&self) -> bool {
+        self.layers.iter().any(|l| l.animation.is_animated())
+    }
+
     pub fn start_timers(&mut self) {
         for layer in &mut self.layers {
             if let LayerContent::Countdown(timer) = &mut layer.content
@@ -394,20 +538,21 @@ impl DesignDocument {
         self.width as f32 / self.height.max(1) as f32
     }
     pub fn is_dynamic(&self) -> bool {
-        self.layers.iter().any(|layer| {
-            layer.visible
-                && matches!(
-                    layer.content,
-                    LayerContent::Plugin(ref instance) if instance.definition.animated
-                ) || layer.visible && matches!(
-                    layer.content,
-                    LayerContent::Clock { .. }
-                        | LayerContent::Countdown(Countdown {
-                            started_at: Some(_),
-                            ..
-                        })
-                )
-        })
+        self.has_layer_animations()
+            || self.layers.iter().any(|layer| {
+                layer.visible
+                    && matches!(
+                        layer.content,
+                        LayerContent::Plugin(ref instance) if instance.definition.animated
+                    ) || layer.visible && matches!(
+                        layer.content,
+                        LayerContent::Clock { .. }
+                            | LayerContent::Countdown(Countdown {
+                                started_at: Some(_),
+                                ..
+                            })
+                    )
+            })
     }
     pub fn template(kind: usize) -> Self {
         let mut scene = Self::default();
@@ -755,5 +900,54 @@ mod tests {
             serde_json::from_str::<DesignDocument>(&json).unwrap(),
             scene
         );
+    }
+
+    #[test]
+    fn multi_slide_creation_and_layer_synchronization() {
+        let mut doc = DesignDocument::default();
+        doc.layers.push(DesignLayer::new(LayerContent::Text("Slide 1 Text".into())));
+        doc.ensure_slides();
+        assert_eq!(doc.slides.len(), 1);
+        assert_eq!(doc.slides[0].layers.len(), 1);
+
+        let new_idx = doc.add_slide();
+        assert_eq!(new_idx, 1);
+        assert_eq!(doc.active_slide_index, 1);
+        assert_eq!(doc.layers.len(), 0);
+
+        doc.layers.push(DesignLayer::new(LayerContent::Text("Slide 2 Text".into())));
+        doc.sync_active_slide_from_layers();
+        assert_eq!(doc.slides[1].layers.len(), 1);
+
+        let dup_idx = doc.duplicate_current_slide();
+        assert_eq!(dup_idx, 2);
+        assert_eq!(doc.slides.len(), 3);
+        assert_eq!(doc.slides[2].layers.len(), 1);
+
+        assert!(doc.delete_slide(1));
+        assert_eq!(doc.slides.len(), 2);
+    }
+
+    #[test]
+    fn layer_animation_interpolation_in_document() {
+        let mut doc = DesignDocument::default();
+        let mut layer = DesignLayer::new(LayerContent::Text("Animated".into()));
+        layer.animation.in_effect = AnimationEffect::Fade;
+        layer.animation.in_duration_ms = 1000;
+        layer.animation.in_delay_ms = 500;
+        layer.opacity = 1.0;
+        doc.layers.push(layer);
+
+        assert!(doc.has_layer_animations());
+        assert!(doc.is_dynamic());
+
+        let layers_at_100 = doc.animated_layers_at(100);
+        assert_eq!(layers_at_100[0].opacity, 0.0);
+
+        let layers_at_1000 = doc.animated_layers_at(1000);
+        assert!(layers_at_1000[0].opacity > 0.0 && layers_at_1000[0].opacity < 1.0);
+
+        let layers_at_2000 = doc.animated_layers_at(2000);
+        assert_eq!(layers_at_2000[0].opacity, 1.0);
     }
 }

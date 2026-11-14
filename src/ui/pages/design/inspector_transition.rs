@@ -1,5 +1,5 @@
 use crate::{
-    core::design::{DesignLayer, LayerContent},
+    core::design::{AnimationEffect, DesignLayer, LayerContent},
     ui::theme::AppTheme,
 };
 use eframe::egui::{self, RichText};
@@ -18,6 +18,124 @@ pub(super) fn render_transition_tab(
     runtime_changed: &mut bool,
 ) {
     ui.add_enabled_ui(!layer.locked, |ui| {
+        // --- 1. Layer Entrance Animation ---
+        section_header(ui, "design-in-animation", theme);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(crate::ui::i18n::text(ui, "design-effect")).size(12.0).color(theme.text_secondary));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                egui::ComboBox::from_id_salt("layer_anim_in_effect")
+                    .selected_text(crate::ui::i18n::text(ui, layer.animation.in_effect.label()))
+                    .width((ui.available_width() - 4.0).clamp(110.0, 180.0))
+                    .show_ui(ui, |ui| {
+                        for eff in AnimationEffect::ALL {
+                            ui.selectable_value(
+                                &mut layer.animation.in_effect,
+                                eff,
+                                crate::ui::i18n::text(ui, eff.label()),
+                            );
+                        }
+                    });
+            });
+        });
+
+        if layer.animation.in_effect != AnimationEffect::None {
+            ui.add_space(3.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(crate::ui::i18n::text(ui, "design-duration-ms")).size(12.0).color(theme.text_secondary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut layer.animation.in_duration_ms)
+                            .range(100..=5000)
+                            .speed(25)
+                            .suffix(" ms"),
+                    );
+                });
+            });
+            ui.add_space(3.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(crate::ui::i18n::text(ui, "design-delay")).size(12.0).color(theme.text_secondary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut layer.animation.in_delay_ms)
+                            .range(0..=10000)
+                            .speed(50)
+                            .suffix(" ms"),
+                    );
+                });
+            });
+        }
+
+        ui.add_space(6.0);
+
+        // --- 2. Layer Exit Animation ---
+        section_header(ui, "design-out-animation", theme);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(crate::ui::i18n::text(ui, "design-effect")).size(12.0).color(theme.text_secondary));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                egui::ComboBox::from_id_salt("layer_anim_out_effect")
+                    .selected_text(crate::ui::i18n::text(ui, layer.animation.out_effect.label()))
+                    .width((ui.available_width() - 4.0).clamp(110.0, 180.0))
+                    .show_ui(ui, |ui| {
+                        for eff in AnimationEffect::ALL {
+                            ui.selectable_value(
+                                &mut layer.animation.out_effect,
+                                eff,
+                                crate::ui::i18n::text(ui, eff.label()),
+                            );
+                        }
+                    });
+            });
+        });
+
+        if layer.animation.out_effect != AnimationEffect::None {
+            ui.add_space(3.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(crate::ui::i18n::text(ui, "design-duration-ms")).size(12.0).color(theme.text_secondary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut layer.animation.out_duration_ms)
+                            .range(100..=5000)
+                            .speed(25)
+                            .suffix(" ms"),
+                    );
+                });
+            });
+            ui.add_space(3.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(crate::ui::i18n::text(ui, "design-delay")).size(12.0).color(theme.text_secondary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut layer.animation.out_delay_ms)
+                            .range(0..=5000)
+                            .speed(50)
+                            .suffix(" ms"),
+                    );
+                });
+            });
+        }
+
+        if layer.animation.is_animated() {
+            ui.add_space(3.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(crate::ui::i18n::text(ui, "design-easing")).size(12.0).color(theme.text_secondary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    egui::ComboBox::from_id_salt("layer_anim_easing")
+                        .selected_text(crate::ui::i18n::easing(ui, &layer.animation.easing))
+                        .width((ui.available_width() - 4.0).clamp(90.0, 160.0))
+                        .show_ui(ui, |ui| {
+                            for easing in ["smooth", "linear", "ease_in", "ease_out", "ease_in_out"] {
+                                ui.selectable_value(&mut layer.animation.easing, easing.into(), crate::ui::i18n::easing(ui, easing));
+                            }
+                        });
+                });
+            });
+        }
+
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+
+        // --- 3. Plugin / Slide Transition ---
         let is_plugin = matches!(&layer.content, LayerContent::Plugin(_));
         if let LayerContent::Plugin(instance) = &mut layer.content {
             let has_trans = instance.definition.fields.iter().any(|f| f.is_transition());

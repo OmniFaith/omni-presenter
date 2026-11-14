@@ -723,4 +723,23 @@ design-quiz-a3 = Love, joy, peace, patience, kindness, goodness, faithfulness, g
 
 design-questions-layer = Questions
 
+design-none = None
+design-pop = Pop
+design-float = Float
+design-delay = Delay
+design-animation = Animation
+design-in-animation = Entrance animation
+design-out-animation = Exit animation
+design-preview-animation = Preview animation
+design-loop = Loop
+design-add-slide = Add slide
+design-duplicate-slide = { $icon } Duplicate slide
+design-delete-slide = { $icon } Delete slide
+design-slide-duration = Slide duration
+design-timeline = Timeline
+design-no-layers-on-slide = No objects on this slide
+design-resize-timeline = Drag to resize timeline (double-click to toggle size)
+design-toggle-timeline-height = Adjust timeline height
+
+
 

@@ -723,4 +723,23 @@ design-quiz-a3 = Amor, gozo, paz, paciencia, benignidad, bondad, fe, mansedumbre
 
 design-questions-layer = Preguntas
 
+design-none = Ninguno
+design-pop = Saltar (Pop)
+design-float = Flotar
+design-delay = Retraso
+design-animation = Animación
+design-in-animation = Animación de entrada
+design-out-animation = Animación de salida
+design-preview-animation = Previsualizar animación
+design-loop = Repetir
+design-add-slide = Añadir diapositiva
+design-duplicate-slide = { $icon } Duplicar diapositiva
+design-delete-slide = { $icon } Eliminar diapositiva
+design-slide-duration = Duración de la diapositiva
+design-timeline = Línea de tiempo
+design-no-layers-on-slide = Sin objetos en esta diapositiva
+design-resize-timeline = Arrastrar para redimensionar la línea de tiempo (doble clic para alternar)
+design-toggle-timeline-height = Ajustar altura de la línea de tiempo
+
+
 

@@ -69,7 +69,26 @@ pub(super) fn render(
         .preview_aspect_ratio
         .unwrap_or(state.presentation_aspect_ratio)
         .clamp(0.4, 4.0);
-    let reserve = if available.y > 280.0 { 95.0 } else { 10.0 };
+    let reserve = if available.y > 340.0 {
+        if editor.show_filmstrip {
+            match editor.timeline_mode {
+                super::TimelineMode::Layers => {
+                    (80.0 + editor.timeline_height).min(available.y - 120.0)
+                }
+                super::TimelineMode::Slides => 155.0,
+            }
+        } else {
+            75.0
+        }
+    } else if available.y > 240.0 {
+        if editor.show_filmstrip {
+            (60.0 + editor.timeline_height * 0.5).min(available.y - 100.0)
+        } else {
+            60.0
+        }
+    } else {
+        10.0
+    };
     let max_h = (available.y - reserve).max(90.0);
     let w = available.x.min(max_h * aspect).max(90.0);
     let size = Vec2::new(w, w / aspect);
@@ -102,7 +121,37 @@ pub(super) fn render(
             }
         }
     }
+
+    let total_slide_ms = scene.active_slide_duration_ms();
+    let current_ms = if editor.animation_playing {
+        if let Some(start) = editor.animation_started_at {
+            let elapsed = start.elapsed().as_millis() as u64;
+            if elapsed >= total_slide_ms {
+                if editor.animation_loop {
+                    editor.animation_started_at = Some(std::time::Instant::now());
+                    0
+                } else {
+                    editor.animation_playing = false;
+                    editor.animation_started_at = None;
+                    editor.animation_time_ms = total_slide_ms;
+                    total_slide_ms
+                }
+            } else {
+                ui.ctx().request_repaint_after(std::time::Duration::from_millis(16));
+                editor.animation_time_ms = elapsed;
+                elapsed
+            }
+        } else {
+            0
+        }
+    } else {
+        editor.animation_time_ms
+    };
+
     let mut render_scene = scene.clone();
+    if current_ms > 0 || editor.animation_playing {
+        render_scene.layers = scene.animated_layers_at(current_ms);
+    }
     if let Some(preview_theme_id) = &editor.preview_theme_id {
         if let Some(preview_theme) = state
             .themes
@@ -240,4 +289,6 @@ pub(super) fn render(
     if let Some((index, action)) = menu_action {
         super::menus::apply_layer(editor, index, action);
     }
+    ui.add_space(8.0);
+    super::animation_bar::render(ui, editor, theme, &state.themes);
 }

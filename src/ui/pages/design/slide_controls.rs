@@ -51,6 +51,25 @@ pub(super) fn render(
         },
         theme,
     );
+    controls::caption(ui, "design-slide-duration", theme);
+    ui.horizontal(|ui| {
+        ui.label(RichText::new(crate::ui::i18n::text(ui, "design-duration")).size(12.0).color(theme.text_secondary));
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let active_idx = scene.active_slide_index;
+            let dur = if let Some(slide) = scene.slides.get_mut(active_idx) {
+                &mut slide.duration_secs
+            } else {
+                &mut scene.slide_duration_secs
+            };
+            ui.add(
+                egui::DragValue::new(dur)
+                    .range(0.5..=120.0)
+                    .speed(0.2)
+                    .suffix(" s"),
+            );
+        });
+    });
+    ui.add_space(8.0);
     render_transition_controls(
         ui,
         &mut scene.transition,

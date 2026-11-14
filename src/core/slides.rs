@@ -693,6 +693,12 @@ impl SlideDeck {
     }
 
     pub fn next_slide(&mut self) -> bool {
+        if let Some(scene) = &mut self.live_design {
+            if scene.slides.len() > 1 && scene.active_slide_index + 1 < scene.slides.len() {
+                scene.set_active_slide(scene.active_slide_index + 1);
+                return true;
+            }
+        }
         if !self.live_slides.is_empty() && self.live_index + 1 < self.live_slides.len() {
             self.live_index += 1;
             self.is_content_hidden = false;
@@ -712,6 +718,12 @@ impl SlideDeck {
     }
 
     pub fn prev_slide(&mut self) {
+        if let Some(scene) = &mut self.live_design {
+            if scene.slides.len() > 1 && scene.active_slide_index > 0 {
+                scene.set_active_slide(scene.active_slide_index - 1);
+                return;
+            }
+        }
         if self.live_index > 0 {
             self.live_index -= 1;
             self.is_content_hidden = false;

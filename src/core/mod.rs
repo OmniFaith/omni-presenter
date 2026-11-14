@@ -8,6 +8,7 @@ pub mod bible_split;
 pub mod breaks;
 pub mod commands;
 pub mod design;
+pub mod design_animation;
 pub mod design_style;
 pub mod emoji;
 pub mod i18n;

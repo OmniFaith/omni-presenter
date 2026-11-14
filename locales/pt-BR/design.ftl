@@ -723,4 +723,23 @@ design-quiz-a3 = Amor, alegria, paz, longanimidade, benignidade, bondade, fideli
 
 design-questions-layer = Perguntas
 
+design-none = Nenhum
+design-pop = Saltar (Pop)
+design-float = Flutuar
+design-delay = Atraso
+design-animation = Animação
+design-in-animation = Animação de entrada
+design-out-animation = Animação de saída
+design-preview-animation = Pré-visualizar animação
+design-loop = Repetir
+design-add-slide = Adicionar slide
+design-duplicate-slide = { $icon } Duplicar slide
+design-delete-slide = { $icon } Excluir slide
+design-slide-duration = Duração do slide
+design-timeline = Linha do tempo
+design-no-layers-on-slide = Nenhum objeto neste slide
+design-resize-timeline = Arrastar para redimensionar a linha do tempo (duplo clique para alternar)
+design-toggle-timeline-height = Ajustar altura da linha do tempo
+
+
 
