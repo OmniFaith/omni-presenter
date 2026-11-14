@@ -101,6 +101,7 @@ pub fn highlight_lyrics_job(
                 );
             } else if trimmed_start.starts_with("//fonte:")
                 || trimmed_start.starts_with("//font:")
+                || trimmed_start.starts_with("//fuente:")
                 || trimmed_start.starts_with("//f:")
                 || trimmed_start.starts_with("//f ")
             {
@@ -133,6 +134,8 @@ pub fn highlight_lyrics_job(
                     },
                 );
             } else if trimmed_start.starts_with("//tamanho:")
+                || trimmed_start.starts_with("//tamaño:")
+                || trimmed_start.starts_with("//tamano:")
                 || trimmed_start.starts_with("//size:")
                 || trimmed_start.starts_with("//t:")
                 || trimmed_start.starts_with("//s:")
@@ -170,6 +173,7 @@ pub fn highlight_lyrics_job(
                     },
                 );
             } else if trimmed_start.starts_with("//alinhar:")
+                || trimmed_start.starts_with("//alinear:")
                 || trimmed_start.starts_with("//align:")
                 || trimmed_start.starts_with("//a:")
                 || trimmed_start.starts_with("//a ")
@@ -184,6 +188,8 @@ pub fn highlight_lyrics_job(
                     },
                 );
             } else if trimmed_start.starts_with("//linha:")
+                || trimmed_start.starts_with("//linea:")
+                || trimmed_start.starts_with("//línea:")
                 || trimmed_start.starts_with("//line:")
                 || trimmed_start.starts_with("//l:")
                 || trimmed_start.starts_with("//l ")
@@ -472,14 +478,14 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
     let mut best: Option<(usize, usize, usize, usize, MarkupType)> = None;
 
     // 1. Check custom font tag: [f: Nome]...[/f] or [fonte: Nome]...[/fonte] or [font: Nome]...[/font]
-    for prefix in &["[fonte:", "[font:", "[f:"] {
+    for prefix in &["[fonte:", "[font:", "[fuente:", "[f:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
                 let open_tag_len = open_close + 1;
                 let font_name = after[prefix.len()..open_close].trim().to_string();
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/fonte]", "[/font]", "[/f]"] {
+                for close_tag in &["[/fonte]", "[/font]", "[/fuente]", "[/f]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {
@@ -514,14 +520,14 @@ fn find_next_markup(text: &str) -> Option<(usize, usize, usize, usize, MarkupTyp
     }
 
     // 3. Check custom size tag: [t: N]...[/t] or [tamanho: N]...[/tamanho] or [size: N]...[/size] or [s: N]...[/s]
-    for prefix in &["[tamanho:", "[size:", "[t:", "[s:"] {
+    for prefix in &["[tamanho:", "[tamaño:", "[tamano:", "[size:", "[t:", "[s:"] {
         if let Some(start) = text.find(prefix) {
             let after = &text[start..];
             if let Some(open_close) = after.find(']') {
                 let open_tag_len = open_close + 1;
                 let sz = after[prefix.len()..open_close].trim().parse::<f32>().unwrap_or(46.0);
                 let rest = &after[open_tag_len..];
-                for close_tag in &["[/tamanho]", "[/size]", "[/t]", "[/s]"] {
+                for close_tag in &["[/tamanho]", "[/tamaño]", "[/tamano]", "[/size]", "[/t]", "[/s]"] {
                     if let Some(close_idx) = rest.find(close_tag) {
                         let end = start + open_tag_len + close_idx + close_tag.len();
                         if best.is_none() || start < best.as_ref().unwrap().0 {

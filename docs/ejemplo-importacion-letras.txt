@@ -1,0 +1,123 @@
+//titulo: Ejemplo completo de letras — Omni Presenter
+//artista: Canción de demostración
+//tags: ejemplo,importación
+//carpeta: Ejemplos
+// Este archivo se puede importar: las explicaciones son comentarios.
+// METADATOS: solo en el encabezado, antes de la primera línea de letra.
+// //titulo: o //título: o //title: define el título.
+// //artista: o //artist: define el artista.
+// //tags: o //etiquetas: define etiquetas separadas por comas.
+// //carpeta: o //folder: o //pasta: define una carpeta; si no existe, se creará.
+// Sin título indicado, se usa el nombre del archivo. Un archivo = una canción.
+// Una línea vacía separa las diapositivas/estrofas. Un Enter mantiene la misma diapositiva.
+// Los comandos // solo aplican a la estrofa en la que aparecen; repita en la siguiente diapositiva.
+// Las fuentes deben estar instaladas en la computadora de destino.
+#*verso 1
+//fuente: Montserrat
+//color: #FFFFFF
+//tamaño: 48
+//sombra: #000000
+//alinear: centro
+//valign: centro
+//linea: 1.3
+//letra: 0
+Esta es una línea de la letra
+Esta es otra línea de la misma diapositiva
+
+// COMENTARIOS Y ETIQUETAS
+// Las líneas que comienzan con // son comentarios, excepto comandos reconocidos.
+// // en medio de una línea elimina el resto en la proyección (evite URLs en la letra).
+// #* seguido de cualquier nombre identifica la estrofa y no se proyecta.
+// Ejemplos de etiquetas: #*verso 1, #*coro, #*puente, #*final.
+// No hay comando de repetición automática: copie la estrofa para repetirla.
+#*coro
+**Destacado/negrita** y ==destacado==
+*Cursiva* __subrayado__ ~~tachado~~
+// Los marcadores ** y == activan el mismo resalte visual del tema.
+// No combine marcadores Markdown anidados: no es Markdown completo.
+[fuente: Arial]Fuente del fragmento[/fuente]
+[color: #FFD700]Color del fragmento[/color]
+[tamaño: 56]Tamaño del fragmento[/tamaño]
+[sombra: #000000]Sombra/fondo del fragmento[/sombra]
+// Las etiquetas se pueden anidar; ciérrelas antes del final de la línea.
+// Las etiquetas y nombres de comandos aceptan mayúsculas/minúsculas.
+// Colores: #RGB, #RRGGBB o #RRGGBBAA. Tamaños > 0; decimales con punto.
+
+// TODOS LOS NOMBRES ALTERNATIVOS DE COMANDOS DE DIAPOSITIVA
+// Nombres para fuente: fuente, font, f, fonte. Ejemplo: //f: Arial
+// Nombres para color: color, c, cor. Ejemplo: //c: #FFF
+// Nombres para tamaño: tamaño, tamano, size, t, s, tamanho. Ejemplo: //t: 44
+// Sombra/fondo: sombra, shadow, box, b, fundo. Ejemplo: //b: #000
+// Alineación: alinear, align, a, alinhar. Ejemplo: //a: centro
+// Valores horizontales: centro/center/c; izquierda/izq/left/l/i;
+// derecha/right/r/d; justificado/justify/j (según compatibilidad del renderizador).
+// Espaciado entre líneas: linea, línea, line, l, linha. Ejemplo: //l: 1.4
+// Espaciado entre letras: letra, letter, ls. Ejemplo: //ls: 1.5
+// Vertical: valign, va, valinhar. Ejemplo: //va: centro
+// Valores verticales: arriba/alto/top/t/cima/topo; centro/center/c/meio/medio;
+// abajo/bajo/bottom/b/inferior/baixo/tercio inferior/terço inferior.
+// Prefiera siempre los dos puntos. Para linea/line/linha/l, son obligatorios.
+// Para los demás, también se acepta espacio: //f Arial o // a centro.
+// ETIQUETAS DE FRAGMENTO (siempre con dos puntos al inicio y / al cerrar):
+// fuente/font/f/fonte; color/c/cor; tamaño/tamano/size/t/s/tamanho; sombra/shadow/box/b/fundo.
+// Ejemplos: [f: Arial]texto[/f], [c: #FFF]texto[/c],
+// [t: 50]texto[/t], [b: #000]texto[/b]. La alineación no es etiqueta de fragmento.
+#*puente
+//f: Arial
+//c: #FFFFFF
+//t: 44
+//b: #000000
+//a: center
+//va: center
+//l: 1.4
+//ls: 1.5
+Ejemplo con todos los atajos de apariencia
+
+// SALTOS CONDICIONALES (no crean otra diapositiva)
+// | o [br]: salto en pantallas 4:3; en otros formatos se convierte en espacio.
+// [4:3], [4x3], |4:3|, |4x3|, [salto: 4:3], [break: 4:3], [quebra: 4:3].
+// [16:9], [16x9], |16:9|, |16x9|, [salto: 16:9], [break: 16:9], [quebra: 16:9].
+// [9:16], [9x16], |9:16|, |9x16|, [salto: 9:16], [break: 9:16], [quebra: 9:16].
+// [21:9], [21x9], |21:9|, |21x9|, [salto: 21:9], [break: 21:9], [quebra: 21:9].
+// Cada marcador solo salta en la proporción correspondiente; si no, es un espacio.
+// Las proporciones son rangos: vertical <= 0.85; 4:3 > 0.85 e <= 1.45;
+// 16:9 > 1.45 e < 2.1; ultrawide >= 2.1.
+// Use "salto:", "break:" o "quebra:" en minúsculas. Los marcadores entre [] no distinguen caja.
+Una frase | en dos líneas en pantalla 4:3
+Otra frase [16:9] con salto en pantalla ancha
+Una frase [9:16] para pantallas verticales
+Una frase [21:9] para pantallas ultrawide
+
+// REFERENCIAS (también utilizadas internamente por la Biblia)
+// //ref: texto de la referencia; también acepta //ref texto.
+// //ref-pos: top, bottom o below. Use estos valores en inglés.
+// //ref-alinear: o //ref-align: izquierda/left/l/i, centro/center/c,
+// derecha/right/r/d. Ejemplo: //ref-align: right
+// //ref-size: o //ref-tamaño: small/compact/reducido (70%) o normal.
+// Todos estos comandos aceptan espacio en lugar de dos puntos.
+// Para una referencia separada, use ref y ref-pos en la misma estrofa.
+// Con ref-pos y varias líneas visibles, la primera (top) o última (bottom/below)
+// línea visible se usa como referencia. ref es la alternativa de una sola línea.
+// Estos comandos no seleccionan un pasaje ni una traducción de la Biblia.
+#*final
+//ref: Referencia de demostración
+//ref-pos: below
+//ref-align: right
+//ref-size: normal
+//valign: center
+Letra con una referencia abajo
+
+// FORMATOS DE IMPORTACIÓN
+// Texto sin extensión, TXT, TEXT, MD/MARKDOWN: UTF-8 (con/sin BOM)
+// o UTF-16 con BOM. MD solo usa los marcadores descritos, no HTML completo.
+// LRC: lee título [ti:...] y artista [ar:...], eliminando marcas de tiempo [00:12.30].
+// SRT/VTT: extrae el texto de subtítulos; cada bloque se convierte en una estrofa.
+// PPTX: texto en el orden de las diapositivas de la presentación; una diapositiva = estrofa.
+// DOCX/ODT: extrae párrafos; los párrafos vacíos separan estrofes.
+// ODP: extrae texto de las páginas; una página = estrofa.
+// No importa imágenes, notas del orador, animaciones, audio ni fuentes incrustadas.
+// PPT/DOC antiguos, PDF, RTF y texto en codificaciones heredadas no son compatibles.
+// Conviértalos a PPTX/DOCX o texto UTF-8 antes de importar.
+// No existen comandos para ejecutar scripts, abrir archivos o descargar medios.
+// La importación de letras es aditiva y confirma la vista previa; no actualiza homónimos.
+Ejemplo completado

@@ -150,11 +150,45 @@ fn example_is_importable_and_documented_directives_parse() {
     let song = read(&Fixture::new("txt", EXAMPLE.as_bytes()).0).unwrap();
     assert_eq!(song.title, "Exemplo completo de letras — Omni Presenter");
     assert!(song.text.contains("#*refrão"));
+
+    let song_en = read(&Fixture::new("txt", EXAMPLE_EN.as_bytes()).0).unwrap();
+    assert_eq!(song_en.title, "Complete Lyrics Example — Omni Presenter");
+    assert_eq!(song_en.artist, "Demonstration Song");
+    assert_eq!(song_en.folder, "Examples");
+    assert_eq!(song_en.tags, "example,import");
+    assert!(song_en.text.contains("#*chorus"));
+
+    let song_es = read(&Fixture::new("txt", EXAMPLE_ES.as_bytes()).0).unwrap();
+    assert_eq!(song_es.title, "Ejemplo completo de letras — Omni Presenter");
+    assert_eq!(song_es.artist, "Canción de demostración");
+    assert_eq!(song_es.folder, "Ejemplos");
+    assert_eq!(song_es.tags, "ejemplo,importación");
+    assert!(song_es.text.contains("#*coro"));
+
+    for lang in crate::core::i18n::Language::ALL {
+        let content = example(lang);
+        assert!(!content.is_empty());
+        let filename = example_filename(lang);
+        assert!(filename.ends_with(".txt"));
+        let parsed = read(&Fixture::new("txt", content.as_bytes()).0).unwrap();
+        assert!(!parsed.title.is_empty());
+    }
+
     let directives = crate::core::markup::parse_slide_directives(
         "//ref: Test\n//ref-pos: below\n//ref-align: right\n//ref-size: small\n//va: centro",
     );
     assert_eq!(directives.ref_pos.as_deref(), Some("below"));
     assert_eq!(directives.valign.as_deref(), Some("center"));
+
+    let directives_es = crate::core::markup::parse_slide_directives(
+        "//fuente: Arial\n//tamaño: 42\n//alinear: izquierda\n//linea: 1.5\n//va: arriba",
+    );
+    assert_eq!(directives_es.font_family.as_deref(), Some("Arial"));
+    assert_eq!(directives_es.font_size, Some(42.0));
+    assert_eq!(directives_es.align.as_deref(), Some("left"));
+    assert_eq!(directives_es.line_spacing, Some(1.5));
+    assert_eq!(directives_es.valign.as_deref(), Some("top"));
+
     assert_eq!(crate::core::markup::parse_hex_color("áx"), None);
     assert_eq!(crate::core::markup::parse_hex_color("日本"), None);
 }

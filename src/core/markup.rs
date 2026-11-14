@@ -96,15 +96,15 @@ pub fn is_directive_command(trimmed: &str) -> bool {
         return false;
     };
     for prefix in &[
-        "fonte:", "font:", "f:", "f ", "fonte ", "font ",
+        "fonte:", "font:", "fuente:", "f:", "f ", "fonte ", "font ", "fuente ",
         "cor:", "color:", "c:", "c ", "cor ", "color ",
-        "tamanho:", "size:", "t:", "s:", "t ", "s ", "tamanho ", "size ",
+        "tamanho:", "tamaño:", "tamano:", "size:", "t:", "s:", "t ", "s ", "tamanho ", "tamaño ", "tamano ", "size ",
         "sombra:", "shadow:", "fundo:", "box:", "b:", "b ", "box ", "sombra ", "shadow ", "fundo ",
-        "alinhar:", "align:", "a:", "a ", "alinhar ", "align ",
-        "linha:", "line:", "l:",
+        "alinhar:", "alinear:", "align:", "a:", "a ", "alinhar ", "alinear ", "align ",
+        "linha:", "line:", "línea:", "linea:", "l:",
         "letra:", "letter:", "ls:", "ls ", "letra ", "letter ",
-        "ref:", "ref ", "ref-pos:", "ref-pos ", "ref-alinhar:", "ref-align:", "ref-alinhar ", "ref-align ",
-        "ref-size:", "ref-size ", "ref-tamanho:", "ref-tamanho ",
+        "ref:", "ref ", "ref-pos:", "ref-pos ", "ref-alinhar:", "ref-alinear:", "ref-align:", "ref-alinhar ", "ref-alinear ", "ref-align ",
+        "ref-size:", "ref-size ", "ref-tamanho:", "ref-tamanho ", "ref-tamaño:", "ref-tamaño ", "ref-tamano:", "ref-tamano ",
         "valign:", "valign ", "valinhar:", "valinhar ", "va:", "va ",
     ] {
         if after_slash.len() >= prefix.len()
@@ -155,6 +155,7 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
         let trimmed = line.trim();
         if let Some(font) = strip_command_prefix(trimmed, "fonte")
             .or_else(|| strip_command_prefix(trimmed, "font"))
+            .or_else(|| strip_command_prefix(trimmed, "fuente"))
             .or_else(|| strip_command_prefix(trimmed, "f"))
         {
             if !font.is_empty() {
@@ -171,6 +172,8 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
         }
         if let Some(size_str) = strip_command_prefix(trimmed, "t")
             .or_else(|| strip_command_prefix(trimmed, "tamanho"))
+            .or_else(|| strip_command_prefix(trimmed, "tamaño"))
+            .or_else(|| strip_command_prefix(trimmed, "tamano"))
             .or_else(|| strip_command_prefix(trimmed, "size"))
             .or_else(|| strip_command_prefix(trimmed, "s"))
         {
@@ -191,20 +194,23 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
             }
         }
         if let Some(align_str) = strip_command_prefix(trimmed, "alinhar")
+            .or_else(|| strip_command_prefix(trimmed, "alinear"))
             .or_else(|| strip_command_prefix(trimmed, "align"))
             .or_else(|| strip_command_prefix(trimmed, "a"))
         {
             let lower = align_str.to_lowercase();
             let norm = match lower.as_str() {
                 "centro" | "center" | "c" => "center",
-                "direita" | "right" | "r" | "d" => "right",
+                "direita" | "derecha" | "right" | "r" | "d" => "right",
                 "justificado" | "justify" | "j" => "justify",
-                "esquerda" | "left" | "l" | "e" => "left",
+                "esquerda" | "izquierda" | "izq" | "left" | "l" | "e" | "i" => "left",
                 _ => align_str.trim(),
             };
             dirs.align = Some(norm.to_string());
         }
         if let Some(line_str) = strip_command_prefix_with_colon(trimmed, "linha")
+            .or_else(|| strip_command_prefix_with_colon(trimmed, "línea"))
+            .or_else(|| strip_command_prefix_with_colon(trimmed, "linea"))
             .or_else(|| strip_command_prefix_with_colon(trimmed, "line"))
             .or_else(|| strip_command_prefix_with_colon(trimmed, "l"))
         {
@@ -231,19 +237,22 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
             dirs.ref_pos = Some(rp.to_lowercase());
         }
         if let Some(ra) = strip_command_prefix(trimmed, "ref-alinhar")
+            .or_else(|| strip_command_prefix(trimmed, "ref-alinear"))
             .or_else(|| strip_command_prefix(trimmed, "ref-align"))
         {
             let lower = ra.to_lowercase();
             let norm = match lower.as_str() {
                 "centro" | "center" | "c" => "center",
-                "direita" | "right" | "r" | "d" => "right",
-                "esquerda" | "left" | "l" | "e" => "left",
+                "direita" | "derecha" | "right" | "r" | "d" => "right",
+                "esquerda" | "izquierda" | "izq" | "left" | "l" | "e" | "i" => "left",
                 _ => ra.trim(),
             };
             dirs.ref_align = Some(norm.to_string());
         }
         if let Some(rs) = strip_command_prefix(trimmed, "ref-size")
             .or_else(|| strip_command_prefix(trimmed, "ref-tamanho"))
+            .or_else(|| strip_command_prefix(trimmed, "ref-tamaño"))
+            .or_else(|| strip_command_prefix(trimmed, "ref-tamano"))
         {
             dirs.ref_size = Some(rs.to_lowercase());
         }
@@ -253,9 +262,9 @@ pub fn parse_slide_directives(text: &str) -> SlideDirectives {
         {
             let lower = va.to_lowercase();
             let norm = match lower.as_str() {
-                "topo" | "top" | "t" | "cima" => "top",
-                "centro" | "center" | "c" | "meio" => "center",
-                "inferior" | "bottom" | "b" | "baixo" | "terço inferior" | "terco inferior" => "bottom",
+                "topo" | "top" | "t" | "cima" | "arriba" | "alto" => "top",
+                "centro" | "center" | "c" | "meio" | "medio" => "center",
+                "inferior" | "bottom" | "b" | "baixo" | "bajo" | "terço inferior" | "terco inferior" | "tercio inferior" => "bottom",
                 _ => va.trim(),
             };
             dirs.valign = Some(norm.to_string());
@@ -326,14 +335,14 @@ fn parse_line_runs<'a>(
     let mut rest = line;
 
     while !rest.is_empty() {
-        // 1. Tag [fonte: Nome], [font: Nome] or [f: Nome]
-        if let Some((tag_len, font_name)) = match_open_tag(rest, &["fonte:", "font:", "f:"]) {
+        // 1. Tag [fonte: Nome], [font: Nome], [fuente: Nome] or [f: Nome]
+        if let Some((tag_len, font_name)) = match_open_tag(rest, &["fonte:", "font:", "fuente:", "f:"]) {
             font_stack.push(font_name.to_string());
             rest = &rest[tag_len..];
             continue;
         }
-        // 2. Tag [/fonte], [/font] or [/f]
-        if let Some(tag_len) = match_close_tag(rest, &["/fonte", "/font", "/f"]) {
+        // 2. Tag [/fonte], [/font], [/fuente] or [/f]
+        if let Some(tag_len) = match_close_tag(rest, &["/fonte", "/font", "/fuente", "/f"]) {
             if font_stack.len() > usize::from(default_font.is_some()) {
                 font_stack.pop();
             }
@@ -356,8 +365,8 @@ fn parse_line_runs<'a>(
             rest = &rest[tag_len..];
             continue;
         }
-        // 5. Tag [tamanho: N], [size: N], [t: N] or [s: N]
-        if let Some((tag_len, size_str)) = match_open_tag(rest, &["tamanho:", "size:", "t:", "s:"]) {
+        // 5. Tag [tamanho: N], [tamaño: N], [tamano: N], [size: N], [t: N] or [s: N]
+        if let Some((tag_len, size_str)) = match_open_tag(rest, &["tamanho:", "tamaño:", "tamano:", "size:", "t:", "s:"]) {
             if let Ok(val) = size_str.parse::<f32>() {
                 if val > 0.0 {
                     size_stack.push(val);
@@ -366,8 +375,8 @@ fn parse_line_runs<'a>(
             rest = &rest[tag_len..];
             continue;
         }
-        // 6. Tag [/tamanho], [/size], [/t] or [/s]
-        if let Some(tag_len) = match_close_tag(rest, &["/tamanho", "/size", "/t", "/s"]) {
+        // 6. Tag [/tamanho], [/tamaño], [/tamano], [/size], [/t] or [/s]
+        if let Some(tag_len) = match_close_tag(rest, &["/tamanho", "/tamaño", "/tamano", "/size", "/t", "/s"]) {
             if size_stack.len() > usize::from(default_size.is_some()) {
                 size_stack.pop();
             }
@@ -645,21 +654,21 @@ pub fn clear_selection_formatting(
     let mut rest = selected;
     while !rest.is_empty() {
         if let Some((len, _)) = match_open_tag(rest, &[
-            "fonte:", "font:", "f:",
+            "fonte:", "font:", "fuente:", "f:",
             "cor:", "color:", "c:",
-            "tamanho:", "size:", "t:", "s:",
+            "tamanho:", "tamaño:", "tamano:", "size:", "t:", "s:",
             "sombra:", "shadow:", "fundo:", "box:", "b:",
-            "alinhar:", "align:", "a:",
+            "alinhar:", "alinear:", "align:", "a:",
         ]) {
             rest = &rest[len..];
             continue;
         }
         if let Some(len) = match_close_tag(rest, &[
-            "/fonte", "/font", "/f",
+            "/fonte", "/font", "/fuente", "/f",
             "/cor", "/color", "/c",
-            "/tamanho", "/size", "/t", "/s",
+            "/tamanho", "/tamaño", "/tamano", "/size", "/t", "/s",
             "/sombra", "/shadow", "/fundo", "/box", "/b",
-            "/alinhar", "/align", "/a",
+            "/alinhar", "/alinear", "/align", "/a",
         ]) {
             rest = &rest[len..];
             continue;

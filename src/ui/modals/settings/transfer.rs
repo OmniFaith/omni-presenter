@@ -245,14 +245,14 @@ pub fn render(ui: &mut egui::Ui, draft: &AppSettings, db: Option<&AppDb>) {
             data = get(ui.ctx());
         }
         if actions.example {
-            data.task = Some(BackgroundTask::spawn_with_repaint(ui.ctx(), || {
+            data.task = Some(BackgroundTask::spawn_with_repaint(ui.ctx(), move || {
                 let Some(path) = rfd::FileDialog::new()
-                    .set_file_name("exemplo-importacao-letras.txt")
+                    .set_file_name(crate::services::lyrics_import::example_filename(language))
                     .save_file()
                 else {
                     return Ok(None);
                 };
-                std::fs::write(path, crate::services::lyrics_import::EXAMPLE)
+                std::fs::write(path, crate::services::lyrics_import::example(language))
                     .map_err(|e| e.to_string())?;
                 Ok(Some(ResultData::Example))
             }));

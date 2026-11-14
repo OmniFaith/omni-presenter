@@ -4,7 +4,26 @@ use std::{io::Read, path::Path};
 use zip::ZipArchive;
 
 const LIMIT: u64 = 16 * 1024 * 1024;
-pub const EXAMPLE: &str = include_str!("../../docs/exemplo-importacao-letras.txt");
+pub const EXAMPLE_PT: &str = include_str!("../../docs/exemplo-importacao-letras.txt");
+pub const EXAMPLE_EN: &str = include_str!("../../docs/lyrics-import-example.txt");
+pub const EXAMPLE_ES: &str = include_str!("../../docs/ejemplo-importacion-letras.txt");
+pub const EXAMPLE: &str = EXAMPLE_PT;
+
+pub fn example(language: crate::core::i18n::Language) -> &'static str {
+    match language {
+        crate::core::i18n::Language::Portuguese => EXAMPLE_PT,
+        crate::core::i18n::Language::English => EXAMPLE_EN,
+        crate::core::i18n::Language::Spanish => EXAMPLE_ES,
+    }
+}
+
+pub fn example_filename(language: crate::core::i18n::Language) -> &'static str {
+    match language {
+        crate::core::i18n::Language::Portuguese => "exemplo-importacao-letras.txt",
+        crate::core::i18n::Language::English => "lyrics-import-example.txt",
+        crate::core::i18n::Language::Spanish => "ejemplo-importacion-letras.txt",
+    }
+}
 
 fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -99,8 +118,8 @@ pub fn read(path: &Path) -> Result<Song, String> {
                 let target = match key.trim().to_lowercase().as_str() {
                     "title" | "titulo" | "título" => Some(&mut song.title),
                     "artist" | "artista" => Some(&mut song.artist),
-                    "tags" => Some(&mut song.tags),
-                    "folder" | "pasta" => Some(&mut song.folder),
+                    "tags" | "etiquetas" => Some(&mut song.tags),
+                    "folder" | "pasta" | "carpeta" => Some(&mut song.folder),
                     _ => None,
                 };
                 if let Some(target) = target {

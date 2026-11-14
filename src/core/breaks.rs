@@ -95,12 +95,16 @@ pub fn find_next_break(text: &str) -> Option<(usize, usize, BreakToken)> {
                     return Some((idx, idx + 4, BreakToken::SoftBreak));
                 }
             }
-            // Extended syntax `[quebra: 4:3]`, `[quebra: 16:9]`, `[quebra: 9:16]`
+            // Extended syntax `[quebra: 4:3]`, `[break: 4:3]`, `[salto: 4:3]`, etc.
             let slice = &text[idx..];
             if let Some(close) = slice.find(']') {
                 let inside = slice[1..close].trim();
-                if let Some(arg) = inside.strip_prefix("quebra:") {
-                    let clean_arg = arg.trim();
+                let clean_arg = inside
+                    .strip_prefix("quebra:")
+                    .or_else(|| inside.strip_prefix("break:"))
+                    .or_else(|| inside.strip_prefix("salto:"))
+                    .map(str::trim);
+                if let Some(clean_arg) = clean_arg {
                     if clean_arg == "4:3" || clean_arg == "4x3" {
                         return Some((idx, idx + close + 1, BreakToken::Ratio43));
                     }
@@ -227,6 +231,14 @@ mod tests {
         let input = "Santo [quebra: 4:3] Poderoso";
         assert_eq!(resolve_conditional_breaks(input, 4.0 / 3.0), "Santo\nPoderoso");
         assert_eq!(resolve_conditional_breaks(input, 16.0 / 9.0), "Santo Poderoso");
+
+        let input_en = "Holy [break: 4:3] Mighty";
+        assert_eq!(resolve_conditional_breaks(input_en, 4.0 / 3.0), "Holy\nMighty");
+        assert_eq!(resolve_conditional_breaks(input_en, 16.0 / 9.0), "Holy Mighty");
+
+        let input_es = "Santo [salto: 4:3] Poderoso";
+        assert_eq!(resolve_conditional_breaks(input_es, 4.0 / 3.0), "Santo\nPoderoso");
+        assert_eq!(resolve_conditional_breaks(input_es, 16.0 / 9.0), "Santo Poderoso");
     }
 
     #[test]
