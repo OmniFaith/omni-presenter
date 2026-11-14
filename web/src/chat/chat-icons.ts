@@ -4,6 +4,8 @@ const chatGlyphs: Record<string, string> = {
   bible: "\u{E002}",
   song: "\u{E001}",
   music: "\u{E001}",
+  design: "\u{E004}",
+  layers: "\u{E004}",
   playlist: "\u{E2F8}",
   play: "\u{E3D0}",
   pause: "\u{E39E}",

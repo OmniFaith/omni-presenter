@@ -309,7 +309,7 @@ pub fn render_selection(
             (MAGNIFYING_GLASS, "library-empty-search-hint",
                 state.settings.language.text("library-clear-search").to_owned())
         } else {
-            (STACK, "design-your-designs-will-appear-here-automatically",
+            (crate::ui::components::ICON_DESIGN, "design-your-designs-will-appear-here-automatically",
                 state.settings.language.format("design-create-design", &[("icon", PLUS)]))
         };
         if crate::ui::components::empty_state::show(ui, icon, "common-empty", hint, &label, &theme).clicked() {

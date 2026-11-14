@@ -44,6 +44,7 @@ pub(super) fn render(
     ui.add_space(2.0);
     let mut document_action = None;
     let mut new_document = None;
+    let mut delete_design_id = None;
     let library_rect =
         Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 155.0));
     crate::ui::containers::selection::file_drop::handle(ui, state, library_rect);
@@ -65,6 +66,67 @@ pub(super) fn render(
                     .scene
                     .as_ref()
                     .is_some_and(|selected| selected.id == scene.id);
+                if editor.confirm_delete && active {
+                    egui::Frame::new()
+                        .fill(theme.bg_card_hover.lerp_to_gamma(theme.status_danger, 0.08))
+                        .stroke(egui::Stroke::new(1.0, theme.status_danger.linear_multiply(0.45)))
+                        .corner_radius(6.0)
+                        .inner_margin(egui::Margin::symmetric(8, 6))
+                        .show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            ui.spacing_mut().item_spacing = egui::vec2(4.0, 5.0);
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new(TRASH).size(12.5).color(theme.status_danger));
+                                ui.add(
+                                    egui::Label::new(
+                                        RichText::new(crate::ui::i18n::text(ui, "design-delete-this-design-from-the-library"))
+                                            .size(10.0)
+                                            .strong()
+                                            .color(theme.text_primary),
+                                    )
+                                    .truncate(),
+                                );
+                            });
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add(
+                                        egui::Button::new(
+                                            RichText::new(format!("{X} {}", crate::ui::i18n::text(ui, "common-cancel")))
+                                                .size(10.0)
+                                                .color(theme.text_primary),
+                                        )
+                                        .stroke(egui::Stroke::new(1.0, theme.border_default))
+                                        .corner_radius(6.0)
+                                        .min_size(egui::vec2(58.0, 20.0)),
+                                    )
+                                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                    .clicked()
+                                {
+                                    editor.confirm_delete = false;
+                                }
+
+                                if ui
+                                    .add(
+                                        egui::Button::new(
+                                            RichText::new(format!("{TRASH} {}", crate::ui::i18n::text(ui, "common-delete")))
+                                                .size(10.0)
+                                                .strong()
+                                                .color(egui::Color32::WHITE),
+                                        )
+                                        .fill(theme.status_danger)
+                                        .corner_radius(6.0)
+                                        .min_size(egui::vec2(68.0, 20.0)),
+                                    )
+                                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                    .clicked()
+                                {
+                                    delete_design_id = Some(scene.id.clone());
+                                }
+                            });
+                        });
+                    ui.add_space(3.0);
+                    continue;
+                }
                 let card_height = if editor.dense_cards { 44.0 } else { 55.0 };
                 let (rect, _) = ui.allocate_exact_size(
                     Vec2::new(ui.available_width(), card_height),
@@ -163,6 +225,31 @@ pub(super) fn render(
                 ui.add_space(3.0);
             }
         });
+    if let Some(target_id) = delete_design_id {
+        match db.delete_design(&target_id) {
+            Ok(()) => {
+                deck.designs.retain(|item| item.id != target_id);
+                if deck
+                    .preview_design
+                    .as_ref()
+                    .is_some_and(|preview| preview.id == target_id)
+                {
+                    deck.preview_design = None;
+                }
+                editor.scene = None;
+                editor.selected = None;
+                editor.saved = true;
+                editor.confirm_delete = false;
+            }
+            Err(error) => {
+                editor.error = crate::ui::i18n::format(
+                    ui,
+                    "design-could-not-delete",
+                    &[("error", &error.to_string())],
+                );
+            }
+        }
+    }
     library_background.context_menu(|ui| {
         new_document = super::menus::new_design_menu(ui, theme);
     });
@@ -187,6 +274,7 @@ pub(super) fn render(
         let _ = deck.preview_design_by_id(&scene.id);
         if action == 2 {
             editor.confirm_delete = true;
+            ui.ctx().request_repaint();
         }
     }
 
@@ -216,29 +304,70 @@ pub(super) fn render(
             editor.rename_in_progress = false;
         }
     }
-    if editor.confirm_delete {
+    let scene_in_library = deck
+        .designs
+        .iter()
+        .any(|s| editor.scene.as_ref().map_or(false, |cur| cur.id == s.id));
+    if editor.confirm_delete && !scene_in_library {
         egui::Frame::new()
-            .fill(theme.bg_app)
-            .corner_radius(8.0)
-            .inner_margin(10)
+            .fill(theme.bg_card_hover.lerp_to_gamma(theme.status_danger, 0.08))
+            .stroke(egui::Stroke::new(1.0, theme.status_danger.linear_multiply(0.45)))
+            .corner_radius(6.0)
+            .inner_margin(egui::Margin::symmetric(8, 6))
             .show(ui, |ui| {
-                controls::note(ui, "design-delete-this-design-from-the-library", theme);
                 ui.horizontal(|ui| {
-                    if ui.button(crate::ui::i18n::text(ui, "common-cancel")).clicked() {
+                    ui.label(RichText::new(TRASH).size(12.5).color(theme.status_danger));
+                    ui.add(
+                        egui::Label::new(
+                            RichText::new(crate::ui::i18n::text(ui, "design-delete-this-design-from-the-library"))
+                                .size(10.0)
+                                .strong()
+                                .color(theme.text_primary),
+                        )
+                        .truncate(),
+                    );
+                });
+                ui.horizontal(|ui| {
+                    if ui
+                        .add(
+                            egui::Button::new(
+                                RichText::new(format!("{X} {}", crate::ui::i18n::text(ui, "common-cancel")))
+                                    .size(10.0)
+                                    .color(theme.text_primary),
+                            )
+                            .stroke(egui::Stroke::new(1.0, theme.border_default))
+                            .corner_radius(6.0)
+                            .min_size(egui::vec2(58.0, 20.0)),
+                        )
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
+                        .clicked()
+                    {
                         editor.confirm_delete = false;
                     }
                     if ui
-                        .button(RichText::new(crate::ui::i18n::text(ui, "common-delete")).color(theme.status_danger))
+                        .add(
+                            egui::Button::new(
+                                RichText::new(format!("{TRASH} {}", crate::ui::i18n::text(ui, "common-delete")))
+                                    .size(10.0)
+                                    .strong()
+                                    .color(egui::Color32::WHITE),
+                            )
+                            .fill(theme.status_danger)
+                            .corner_radius(6.0)
+                            .min_size(egui::vec2(68.0, 20.0)),
+                        )
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
                         .clicked()
                         && let Some(scene) = editor.scene.as_ref()
                     {
-                        match db.delete_design(&scene.id) {
+                        let target_id = scene.id.clone();
+                        match db.delete_design(&target_id) {
                             Ok(()) => {
-                                deck.designs.retain(|item| item.id != scene.id);
+                                deck.designs.retain(|item| item.id != target_id);
                                 if deck
                                     .preview_design
                                     .as_ref()
-                                    .is_some_and(|preview| preview.id == scene.id)
+                                    .is_some_and(|preview| preview.id == target_id)
                                 {
                                     deck.preview_design = None;
                                 }
@@ -328,9 +457,12 @@ pub(super) fn render(
                     "design-add-text-images-or-dynamic-information",
                     theme,
                 );
+                ui.add_space(6.0);
                 ui.add_enabled_ui(editor.scene.is_some(), |ui| {
-                    ui.menu_button(format!("{PLUS} {}", crate::ui::i18n::text(ui, "design-add-layer")), |ui| {
-                        add_menu(ui, editor)
+                    centered_horizontal(ui, "design_empty_add_layer", 140.0, |ui| {
+                        ui.menu_button(format!("{PLUS} {}", crate::ui::i18n::text(ui, "design-add-layer")), |ui| {
+                            add_menu(ui, editor)
+                        });
                     });
                 });
             } else if let Some(scene) = &mut editor.scene {

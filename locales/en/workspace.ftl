@@ -521,6 +521,8 @@ workspace-removed-from-the-playlist = "{ $title }" removed from the playlist.
 
 workspace-reorder-playlist = Reorder playlist
 
+workspace-playlist-options = Playlist options
+
 workspace-restore = Restore
 
 workspace-restore-default-themes = Restore default themes

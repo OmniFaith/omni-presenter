@@ -119,6 +119,7 @@ export const nativeGlyphs: Record<string, string> = {
   chat: "\u{E003}",
   grip: "\u{EAE2}",
   grid: "\u{E464}",
+  list: "\u{E2F0}",
   settings: "\u{E434}",
   user: "\u{E4C2}",
   church: "\u{ECEA}",

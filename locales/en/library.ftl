@@ -1,6 +1,15 @@
 ## Library
 
 library-all-tags = All songs
+library-untagged = Untagged
+library-filter-title = Filter library
+library-clear-filter = Clear
+library-search-tags = Search tag...
+library-no-tags-tip = Add tags when editing songs (e.g. Praise, Worship, Communion) to organize them easily.
+library-all-media = All media
+library-media-videos = Videos
+library-media-images = Images
+library-media-audios = Audio
 
 library-designs = Designs
 

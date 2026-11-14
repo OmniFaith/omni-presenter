@@ -521,6 +521,8 @@ workspace-removed-from-the-playlist = "{ $title }" removida do repertório.
 
 workspace-reorder-playlist = Reordenar lista
 
+workspace-playlist-options = Opções da lista
+
 workspace-restore = Restaurar
 
 workspace-restore-default-themes = Restaurar temas padrão

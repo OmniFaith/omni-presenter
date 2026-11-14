@@ -11,7 +11,7 @@ use crate::ui::components::{
 };
 use eframe::egui::{self, Margin, Stroke};
 use egui_phosphor::regular::{
-    ARROW_DOWN, ARROW_UP, COPY, EYE, FILE_PLUS, GEAR, HEART, LIST_BULLETS, PENCIL_SIMPLE, PLAY, SQUARES_FOUR, TAG, TRASH,
+    ARROW_DOWN, ARROW_UP, COPY, EYE, FILE_PLUS, GEAR, HEART, LIST, PENCIL_SIMPLE, PLAY, SQUARES_FOUR, TAG, TRASH,
 };
 
 pub fn render_lyrics_column(
@@ -56,7 +56,7 @@ pub fn render_lyrics_column(
         }
         let cards = state.lyrics_cards_layout;
         let (icon, tooltip) = if cards {
-            (LIST_BULLETS, language.text("workspace-list-layout"))
+            (LIST, language.text("workspace-list-layout"))
         } else {
             (SQUARES_FOUR, language.text("workspace-card-layout"))
         };
@@ -780,7 +780,7 @@ mod tests {
             assert_eq!(deck.preview_slide_index(), 1);
             assert_eq!(deck.slides(), slides);
             assert_eq!(deck.live_slides(), live);
-            let button = text_rect(&output, LIST_BULLETS).center();
+            let button = text_rect(&output, LIST).center();
             click(&ctx, &mut state, &mut deck, width, button);
             assert!(!state.lyrics_cards_layout);
             assert_eq!(deck.preview_slide_index(), 1);

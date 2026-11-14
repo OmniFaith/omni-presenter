@@ -39,12 +39,29 @@ pub fn render_selection_column(
     let filtered: Vec<_> = entries
         .iter()
         .filter(|entry| {
-            (kind != LibraryKind::Song
-                || state.tag_filter.is_empty()
-                || entry
-                    .tags
-                    .split(',')
-                    .any(|tag| tag.trim().eq_ignore_ascii_case(&state.tag_filter)))
+            let matches_filter = match kind {
+                LibraryKind::Song => {
+                    if state.tag_filter.is_empty() {
+                        true
+                    } else if state.tag_filter == ":untagged:" {
+                        entry.tags.trim().is_empty()
+                    } else {
+                        entry
+                            .tags
+                            .split(',')
+                            .any(|tag| tag.trim().eq_ignore_ascii_case(&state.tag_filter))
+                    }
+                }
+                LibraryKind::Media => {
+                    if state.tag_filter.is_empty() {
+                        true
+                    } else {
+                        entry.subtitle.eq_ignore_ascii_case(&state.tag_filter)
+                    }
+                }
+                _ => true,
+            };
+            matches_filter
                 && query.split_whitespace().all(|token| {
                     fold(&format!(
                         "{} {} {}",

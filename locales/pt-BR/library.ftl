@@ -1,6 +1,15 @@
 ## Library
 
 library-all-tags = Todas as músicas
+library-untagged = Sem tags
+library-filter-title = Filtrar biblioteca
+library-clear-filter = Limpar
+library-search-tags = Buscar tag...
+library-no-tags-tip = Adicione tags ao editar suas músicas (ex: Louvor, Adoração, Ceia) para organizá-las facilmente.
+library-all-media = Todas as mídias
+library-media-videos = Vídeos
+library-media-images = Imagens
+library-media-audios = Áudios
 
 library-designs = Designs
 

@@ -76,7 +76,7 @@ pub fn item_icon(kind: &QuickItemKind) -> &'static str {
         QuickItemKind::Media => VIDEO,
         QuickItemKind::Verse => BOOK_OPEN,
         QuickItemKind::Text => FILE_TEXT,
-        QuickItemKind::Design => STACK,
+        QuickItemKind::Design => super::ICON_DESIGN,
     }
 }
 

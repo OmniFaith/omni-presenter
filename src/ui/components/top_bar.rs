@@ -154,7 +154,7 @@ pub fn render_top_bar(
                                         QuickItemKind::Media => egui_phosphor::regular::VIDEO,
                                         QuickItemKind::Verse => egui_phosphor::regular::BOOK_OPEN,
                                         QuickItemKind::Text => egui_phosphor::regular::FILE_TEXT,
-                                        QuickItemKind::Design => egui_phosphor::regular::STACK,
+                                        QuickItemKind::Design => super::ICON_DESIGN,
                                     };
 
                                     let bg_col = if is_active {

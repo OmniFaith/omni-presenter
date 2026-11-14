@@ -32,7 +32,7 @@ pub use context_menu::{
 };
 pub use font_picker::font_picker;
 pub use header_bar::render_header_bar;
-pub use icon_sidebar::render_icon_sidebar;
+pub use icon_sidebar::{ICON_DESIGN, render_icon_sidebar};
 pub use pill_tab::render_pill_tabs;
 pub use presentation_dock::render_presentation_dock;
 pub use qr_code::{open_qr_dialog, qr_card, render_active_qr_dialog, render_qr_code, show_qr_dialog};

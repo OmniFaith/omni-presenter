@@ -10,8 +10,8 @@ use crate::ui::components::{
 use crate::ui::AppTheme;
 use eframe::egui::{self, RichText, Vec2};
 use egui_phosphor::regular::{
-    ARROW_DOWN, ARROW_UP, BOOK_OPEN, CHECK_CIRCLE, CHURCH, CIRCLE, COPY_SIMPLE, EYE, FILE_TEXT, HEART, LIST, MUSIC_NOTE,
-    PENCIL_SIMPLE, PLAY, PUSH_PIN, TRASH, VIDEO,
+    ARROW_DOWN, ARROW_UP, ARROWS_DOWN_UP, BOOK_OPEN, CHECK_CIRCLE, CHURCH, CIRCLE, COPY_SIMPLE,
+    DOTS_THREE_CIRCLE, EYE, FILE_TEXT, MUSIC_NOTE, PENCIL_SIMPLE, PLAY, PUSH_PIN, TRASH, VIDEO,
 };
 
 pub fn render_playlist_column(
@@ -30,71 +30,10 @@ pub fn render_playlist_column(
     ui.add_space(2.0);
 
     // Botões embaixo da barra de título (centralizados)
-    centered_horizontal(ui, "playlist_toolbar", 160.0, |ui| {
+    centered_horizontal(ui, "playlist_toolbar", 136.0, |ui| {
         if toolbar_icon_button(ui, PLAY, language.text("workspace-play-selected-item"), &theme).clicked() {
             activate_selected_playlist_items(state, slide_deck, is_presentation_open, true);
         }
-        let reorder = toolbar_icon_button(ui, LIST, language.text("workspace-reorder-playlist"), &theme);
-        egui::Popup::menu(&reorder).show(|ui| {
-            let selected = state.selected_playlist_index;
-            if ui
-                .add_enabled(
-                    selected.is_some_and(|index| index > 0),
-                    egui::Button::new(crate::ui::i18n::text(ui, "workspace-move-selected-item-up")),
-                )
-                .clicked()
-            {
-                if let Some(index) = selected
-                    && index > 0
-                    && index < state.playlist.len()
-                {
-                    state.playlist.swap(index, index - 1);
-                    state.selected_playlist_index = Some(index - 1);
-                }
-                ui.close();
-            }
-            if ui
-                .add_enabled(
-                    selected.is_some_and(|index| index + 1 < state.playlist.len()),
-                    egui::Button::new(crate::ui::i18n::text(ui, "workspace-move-selected-item-down")),
-                )
-                .clicked()
-            {
-                if let Some(index) = selected
-                    && index + 1 < state.playlist.len()
-                {
-                    state.playlist.swap(index, index + 1);
-                    state.selected_playlist_index = Some(index + 1);
-                }
-                ui.close();
-            }
-            ui.separator();
-            if ui.button(crate::ui::i18n::text(ui, "workspace-sort-by-title")).clicked() {
-                state
-                    .playlist
-                    .sort_by_key(|a| a.title.to_lowercase());
-                state.selected_playlist_index = None;
-                ui.close();
-            }
-            if ui.button(crate::ui::i18n::text(ui, "workspace-reverse-order")).clicked() {
-                state.playlist.reverse();
-                state.selected_playlist_index = None;
-                ui.close();
-            }
-            ui.separator();
-            if ui.button(crate::ui::i18n::text(ui, "workspace-mark-all-as-played")).clicked() {
-                for item in &mut state.playlist {
-                    item.played = true;
-                }
-                ui.close();
-            }
-            if ui.button(crate::ui::i18n::text(ui, "workspace-mark-all-as-not-played")).clicked() {
-                for item in &mut state.playlist {
-                    item.played = false;
-                }
-                ui.close();
-            }
-        });
         if toolbar_icon_button(ui, PENCIL_SIMPLE, crate::ui::i18n::text(ui, "workspace-edit-item"), &theme).clicked()
             && let Some(idx) = state.selected_playlist_index
                 && idx < state.playlist.len() {
@@ -124,10 +63,64 @@ pub fn render_playlist_column(
                     state.selected_playlist_index = None;
                 }
         }
-        if toolbar_icon_button(ui, HEART, crate::ui::i18n::text(ui, "workspace-save-playlist"), &theme).clicked() {
-            state.capture_profiles();
-            state.notify(state.settings.language.text("workspace-playlist-saved-in-preferences"));
-        }
+        let options_btn = toolbar_icon_button(ui, DOTS_THREE_CIRCLE, crate::ui::i18n::text(ui, "workspace-playlist-options"), &theme);
+        egui::Popup::menu(&options_btn).show(|ui| {
+            context_menu_header(ui);
+            let selected = state.selected_playlist_index;
+            if selected.is_some_and(|index| index > 0) {
+                if context_menu_item(ui, ARROW_UP, "workspace-move-selected-item-up", &theme).clicked() {
+                    if let Some(index) = selected
+                        && index > 0
+                        && index < state.playlist.len()
+                    {
+                        state.playlist.swap(index, index - 1);
+                        state.selected_playlist_index = Some(index - 1);
+                    }
+                    ui.close();
+                }
+            } else {
+                context_menu_disabled_item(ui, ARROW_UP, "workspace-move-selected-item-up", &theme);
+            }
+            if selected.is_some_and(|index| index + 1 < state.playlist.len()) {
+                if context_menu_item(ui, ARROW_DOWN, "workspace-move-selected-item-down", &theme).clicked() {
+                    if let Some(index) = selected
+                        && index + 1 < state.playlist.len()
+                    {
+                        state.playlist.swap(index, index + 1);
+                        state.selected_playlist_index = Some(index + 1);
+                    }
+                    ui.close();
+                }
+            } else {
+                context_menu_disabled_item(ui, ARROW_DOWN, "workspace-move-selected-item-down", &theme);
+            }
+            context_menu_separator(ui);
+            if context_menu_item(ui, ARROWS_DOWN_UP, "workspace-sort-by-title", &theme).clicked() {
+                state
+                    .playlist
+                    .sort_by_key(|a| a.title.to_lowercase());
+                state.selected_playlist_index = None;
+                ui.close();
+            }
+            if context_menu_item(ui, ARROWS_DOWN_UP, "workspace-reverse-order", &theme).clicked() {
+                state.playlist.reverse();
+                state.selected_playlist_index = None;
+                ui.close();
+            }
+            context_menu_separator(ui);
+            if context_menu_item(ui, CHECK_CIRCLE, "workspace-mark-all-as-played", &theme).clicked() {
+                for item in &mut state.playlist {
+                    item.played = true;
+                }
+                ui.close();
+            }
+            if context_menu_item(ui, CIRCLE, "workspace-mark-all-as-not-played", &theme).clicked() {
+                for item in &mut state.playlist {
+                    item.played = false;
+                }
+                ui.close();
+            }
+        });
     });
 
     ui.add_space(2.0);
@@ -222,7 +215,7 @@ pub fn render_playlist_column(
                     PlaylistItemKind::Media => VIDEO,
                     PlaylistItemKind::Bible => BOOK_OPEN,
                     PlaylistItemKind::Text => FILE_TEXT,
-                    PlaylistItemKind::Design => egui_phosphor::regular::STACK,
+                    PlaylistItemKind::Design => crate::ui::components::ICON_DESIGN,
                 };
                 let drag_ids = state.playlist_selection.drag_ids(&item.id, &order);
                 crate::ui::components::drag_drop::source(ui, &resp, || {

@@ -3,7 +3,7 @@ use crate::services::db::AppDb;
 use crate::services::monitor::MonitorInfo;
 use eframe::egui::{self, Color32, RichText, Stroke};
 use egui_phosphor::regular::{
-    ARROWS_DOWN_UP, BOOK_OPEN, BOOKS, GEAR_SIX, GLOBE, INFO, KEYBOARD, PALETTE, PUZZLE_PIECE, USER, X,
+    ARROWS_DOWN_UP, BOOKS, GEAR_SIX, GLOBE, INFO, KEYBOARD, MONITOR, PALETTE, PUZZLE_PIECE, USER, X,
 };
 
 mod about;
@@ -186,7 +186,7 @@ pub fn render_settings_modal(
             for (tab, icon, label) in [
                 (
                     SettingsTab::Outputs,
-                    BOOK_OPEN,
+                    MONITOR,
                     language.text("settings-outputs"),
                 ),
                 (
@@ -295,7 +295,7 @@ pub fn render_settings_modal(
             let (active_icon, active_title, active_subtitle) = match state.settings_ui.tab {
                 SettingsTab::Transfer => (ARROWS_DOWN_UP, language.text("transfer-title"), language.text("transfer-subtitle")),
                 SettingsTab::Outputs => (
-                    BOOK_OPEN,
+                    MONITOR,
                     language.text("settings-outputs"),
                     language.text("settings-manage-presentation-monitors-and-virtual-screens-for-obs-and-the"),
                 ),

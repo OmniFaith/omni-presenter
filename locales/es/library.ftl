@@ -1,6 +1,15 @@
 ## Library
 
 library-all-tags = Todas las canciones
+library-untagged = Sin etiquetas
+library-filter-title = Filtrar biblioteca
+library-clear-filter = Limpiar
+library-search-tags = Buscar etiqueta...
+library-no-tags-tip = Agregue etiquetas al editar canciones (ej. Alabanza, Adoración, Santa Cena) para organizarlas fácilmente.
+library-all-media = Todos los medios
+library-media-videos = Videos
+library-media-images = Imágenes
+library-media-audios = Audios
 
 library-designs = Diseños
 

@@ -5,6 +5,7 @@ use eframe::egui::{self, Vec2};
 const ICON_LYRICS: &str = "\u{E001}"; // music-note-2.svg
 const ICON_BIBLE: &str = "\u{E002}";  // christian-bible.svg
 const ICON_CHAT: &str = "\u{E003}";   // chat-circle-2.svg
+pub const ICON_DESIGN: &str = "\u{E004}"; // Layers.svg
 
 fn sidebar_button(
     ui: &mut egui::Ui,
@@ -128,7 +129,7 @@ pub fn render_icon_sidebar(ui: &mut egui::Ui, state: &mut ControlPanelState) {
         ui.add_space(8.0);
         if sidebar_button(
             ui,
-            egui_phosphor::regular::STACK,
+            ICON_DESIGN,
             state.active_sidebar_page == SidebarPage::Design,
             language.text("nav-design"),
             theme,

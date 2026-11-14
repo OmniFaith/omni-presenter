@@ -17,7 +17,7 @@ pub(super) fn canvas_toolbar(
     let can_redo = editor.scene.is_some() && !editor.redo.is_empty();
     let can_snap = editor.scene.is_some();
 
-    ui.horizontal(|ui| {
+    crate::ui::components::centered_horizontal(ui, "design_canvas_toolbar", 420.0, |ui| {
         ui.spacing_mut().item_spacing = egui::vec2(6.0, 0.0);
 
         if toolbar_pill_button(

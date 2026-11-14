@@ -1,9 +1,11 @@
 use crate::core::layout::ContainerKind;
 use crate::core::slides::SlideDeck;
 use crate::core::state::ControlPanelState;
-use crate::ui::components::{centered_horizontal, render_header_bar, toolbar_icon_button};
+use crate::ui::components::{centered_horizontal, render_header_bar};
 use eframe::egui::{self, RichText, Stroke};
-use egui_phosphor::regular::{FUNNEL, GEAR, LIST_BULLETS, MAGNIFYING_GLASS, SQUARES_FOUR, X};
+use egui_phosphor::regular::{
+    BOOK_OPEN, CHURCH, FUNNEL, GEAR, LIST, MAGNIFYING_GLASS, SCROLL, SQUARES_FOUR, X,
+};
 
 use super::cards::cards_body;
 use super::search::{close_bible_search, matching_books, prepare_search, split_reference};
@@ -42,24 +44,50 @@ pub fn render_bible_navigation(
                 state.bible.search_focus = true;
             }
         }
-        let filter = toolbar_icon_button(ui, FUNNEL, crate::ui::i18n::text(ui, "workspace-filter-books"), &theme);
+        let is_filter_active = state.bible.testament != 0;
+        let filter_tooltip = match state.bible.testament {
+            1 => format!("{}: {}", crate::ui::i18n::text(ui, "workspace-filter-books"), crate::ui::i18n::text(ui, "workspace-old-testament")),
+            2 => format!("{}: {}", crate::ui::i18n::text(ui, "workspace-filter-books"), crate::ui::i18n::text(ui, "workspace-new-testament")),
+            _ => crate::ui::i18n::text(ui, "workspace-filter-books").into(),
+        };
+        let filter = theme.icon_button(ui, FUNNEL, &filter_tooltip, is_filter_active, eframe::egui::Vec2::new(28.0, 28.0));
         egui::Popup::menu(&filter).show(|ui| {
-            for (value, label) in [
-                (0, "workspace-all-books"),
-                (1, "workspace-old-testament"),
-                (2, "workspace-new-testament"),
+            ui.set_width(190.0);
+            ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(FUNNEL).size(13.0).color(theme.accent));
+                ui.label(
+                    RichText::new(crate::ui::i18n::text(ui, "workspace-filter-books"))
+                        .size(12.0)
+                        .strong()
+                        .color(theme.text_primary),
+                );
+            });
+            ui.separator();
+            for (value, label, icon, count) in [
+                (0, "workspace-all-books", BOOK_OPEN, "66"),
+                (1, "workspace-old-testament", SCROLL, "39"),
+                (2, "workspace-new-testament", CHURCH, "27"),
             ] {
-                if ui
-                    .selectable_value(&mut state.bible.testament, value, crate::ui::i18n::text(ui, label))
-                    .clicked()
-                {
+                let is_selected = state.bible.testament == value;
+                let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 26.0), egui::Sense::click());
+                if is_selected {
+                    ui.painter().rect_filled(rect, 4.0, theme.accent_soft);
+                } else if resp.hovered() {
+                    ui.painter().rect_filled(rect, 4.0, theme.bg_card_hover);
+                }
+                ui.painter().text(rect.left_center() + egui::vec2(8.0, 0.0), egui::Align2::LEFT_CENTER, icon, egui::FontId::proportional(12.0), if is_selected { theme.accent } else { theme.icon_muted });
+                ui.painter().text(rect.left_center() + egui::vec2(26.0, 0.0), egui::Align2::LEFT_CENTER, crate::ui::i18n::text(ui, label), egui::FontId::proportional(11.0), if is_selected { theme.text_primary } else { theme.text_secondary });
+                ui.painter().text(rect.right_center() - egui::vec2(8.0, 0.0), egui::Align2::RIGHT_CENTER, format!("({count})"), egui::FontId::proportional(10.0), theme.text_muted);
+                if resp.clicked() {
+                    state.bible.testament = value;
                     ui.close();
                 }
             }
         });
         let cards = state.bible.cards_layout;
         let (icon, tooltip) = if cards {
-            (LIST_BULLETS, crate::ui::i18n::text(ui, "workspace-list-layout"))
+            (LIST, crate::ui::i18n::text(ui, "workspace-list-layout"))
         } else {
             (SQUARES_FOUR, crate::ui::i18n::text(ui, "workspace-card-layout"))
         };

@@ -100,7 +100,7 @@ pub fn show_dropdown(
             ui.set_width(popup_w);
             ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
 
-            ui.horizontal(|ui| {
+            crate::ui::components::centered_horizontal(ui, "design_aspect_ratio_header", 180.0, |ui| {
                 ui.label(RichText::new(RECTANGLE).size(13.0).color(tokens.accent));
                 ui.label(
                     RichText::new(crate::ui::i18n::text(ui, "design-preview-aspect-ratio"))
@@ -109,11 +109,6 @@ pub fn show_dropdown(
                         .color(tokens.text_primary),
                 );
             });
-            ui.label(
-                RichText::new(crate::ui::i18n::text(ui, "design-preview-aspect-ratio-desc"))
-                    .size(10.0)
-                    .color(tokens.text_muted),
-            );
             ui.add_space(2.0);
 
             let default_ratio = state.presentation_aspect_ratio.clamp(0.5, 3.5);
